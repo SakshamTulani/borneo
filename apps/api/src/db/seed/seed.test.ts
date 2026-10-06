@@ -76,6 +76,22 @@ describe('seed catalog', () => {
     expect(issues).toContain('audio.form_factor: label for unlisted option "earcup" (D-16)');
   });
 
+  it('D-184: a pincode listed as both served and unserved is reported', () => {
+    const issues = seedIssues(
+      plant((d) => d.unservedPincodes.push({ ...d.unservedPincodes[0]!, pincode: '560001' })),
+    );
+    expect(issues).toContain('duplicate pincode "560001"');
+  });
+
+  it('D-50: a serviceability override for an unknown category is reported', () => {
+    const issues = seedIssues(
+      plant((d) => {
+        d.servicePincodes[0]!.except = { fridges: { deliverable: false, codAllowed: false } };
+      }),
+    );
+    expect(issues).toContain('pincode 560001: unknown category "fridges" (D-50)');
+  });
+
   it('D-31: a selling price above MRP is reported', () => {
     const issues = seedIssues(plant((d) => (product(d, 'nova-3').variants[0]!.price = 99999)));
     expect(issues).toContain('BN3-8-128-MIS: price must be > 0 and ≤ MRP (D-31)');

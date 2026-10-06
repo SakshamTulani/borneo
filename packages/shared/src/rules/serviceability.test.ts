@@ -1,6 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import type { DeliveryLane, ServiceabilityRow, WarehouseStock } from '../contracts/delivery';
-import { addressNeedsRecheck, deliveryEstimate } from './serviceability';
+import {
+  addressNeedsRecheck,
+  deliveryEstimate,
+  distanceKm,
+  nearestPincode,
+  PIN_MATCH_MAX_KM,
+} from './serviceability';
 
 const now = Date.parse('2026-10-06T06:30:00Z'); // 6 Oct, noon IST
 const rows: ServiceabilityRow[] = [
@@ -97,11 +103,56 @@ describe('serviceability', () => {
     });
   });
 
+  it('D-64: a pre-order dispatch window widens the range to its last day', () => {
+    const dispatchFrom = Date.parse('2026-11-01T06:30:00Z');
+    const dispatchTo = Date.parse('2026-11-08T06:30:00Z');
+    expect(est({ dispatchFrom, dispatchTo })).toMatchObject({
+      from: '2026-11-02',
+      to: '2026-11-10',
+    });
+  });
+
+  it('D-64: a dispatch date already passed counts from today', () => {
+    const past = Date.parse('2026-09-01T06:30:00Z');
+    expect(est({ dispatchFrom: past, dispatchTo: past })).toMatchObject({
+      from: '2026-10-07',
+      to: '2026-10-08',
+    });
+  });
+
   it('D-55: recheck when pincode or map pin changes', () => {
     const a = { pincode: '560001', lat: 12.97, lng: 77.59 };
     expect(addressNeedsRecheck(undefined, a)).toBe(true);
     expect(addressNeedsRecheck(a, { ...a })).toBe(false);
     expect(addressNeedsRecheck(a, { ...a, lat: 12.98 })).toBe(true);
     expect(addressNeedsRecheck(a, { ...a, pincode: '560002' })).toBe(true);
+  });
+
+  it('D-184: a map pin resolves to the nearest known pincode centre', () => {
+    const areas = [
+      { pincode: '560001', city: 'Bengaluru', state: 'Karnataka', lat: 12.9762, lng: 77.6033 },
+      { pincode: '560034', city: 'Bengaluru', state: 'Karnataka', lat: 12.9279, lng: 77.6271 },
+      { pincode: '110001', city: 'New Delhi', state: 'Delhi', lat: 28.6328, lng: 77.2197 },
+    ];
+    expect(nearestPincode({ lat: 12.93, lng: 77.62 }, areas)?.pincode).toBe('560034');
+    expect(nearestPincode({ lat: 12.975, lng: 77.6 }, areas)?.pincode).toBe('560001');
+  });
+
+  it('D-184: a pin far from every known pincode resolves to none', () => {
+    const areas = [
+      { pincode: '110001', city: 'New Delhi', state: 'Delhi', lat: 28.63, lng: 77.22 },
+    ];
+    expect(nearestPincode({ lat: 12.97, lng: 77.6 }, areas)).toBeUndefined();
+    expect(nearestPincode({ lat: 28.63, lng: 77.22 }, [])).toBeUndefined();
+  });
+
+  it('D-184: distance is great-circle km', () => {
+    // Bengaluru → New Delhi is about 1,740 km.
+    expect(distanceKm({ lat: 12.9716, lng: 77.5946 }, { lat: 28.6139, lng: 77.209 })).toBeCloseTo(
+      1740,
+      -1,
+    );
+    expect(distanceKm({ lat: 10, lng: 10 }, { lat: 10, lng: 10 })).toBe(0);
+    expect(PIN_MATCH_MAX_KM).toBeGreaterThan(0);
   });
 });

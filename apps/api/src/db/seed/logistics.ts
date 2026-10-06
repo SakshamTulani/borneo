@@ -41,37 +41,47 @@ const none: Service = { deliverable: false, codAllowed: false };
 export const servicePincodes: {
   pincode: string;
   city: string;
+  state: string;
+  /** Pincode centre, for map pins (D-184). */
+  lat: number;
+  lng: number;
   except?: Record<string, Service>;
 }[] = [
-  { pincode: '560001', city: 'Bengaluru' },
-  { pincode: '560034', city: 'Bengaluru' },
-  { pincode: '560102', city: 'Bengaluru' },
-  { pincode: '110001', city: 'New Delhi' },
-  { pincode: '110017', city: 'New Delhi' },
-  { pincode: '122001', city: 'Gurugram' },
-  { pincode: '201301', city: 'Noida' },
-  { pincode: '400001', city: 'Mumbai' },
-  { pincode: '400076', city: 'Mumbai' },
-  { pincode: '411001', city: 'Pune' },
-  { pincode: '600001', city: 'Chennai' },
-  { pincode: '600040', city: 'Chennai' },
-  { pincode: '500001', city: 'Hyderabad' },
-  { pincode: '500081', city: 'Hyderabad' },
-  { pincode: '700001', city: 'Kolkata' },
-  { pincode: '380001', city: 'Ahmedabad' },
-  { pincode: '302001', city: 'Jaipur' },
-  { pincode: '226001', city: 'Lucknow' },
-  { pincode: '682001', city: 'Kochi' },
-  { pincode: '641001', city: 'Coimbatore' },
-  { pincode: '751001', city: 'Bhubaneswar' },
+  { pincode: '560001', city: 'Bengaluru', state: 'Karnataka', lat: 12.9763, lng: 77.6033 },
+  { pincode: '560034', city: 'Bengaluru', state: 'Karnataka', lat: 12.9279, lng: 77.6271 },
+  { pincode: '560102', city: 'Bengaluru', state: 'Karnataka', lat: 12.9121, lng: 77.6446 },
+  { pincode: '110001', city: 'New Delhi', state: 'Delhi', lat: 28.6315, lng: 77.2167 },
+  { pincode: '110017', city: 'New Delhi', state: 'Delhi', lat: 28.5355, lng: 77.21 },
+  { pincode: '122001', city: 'Gurugram', state: 'Haryana', lat: 28.4595, lng: 77.0266 },
+  { pincode: '201301', city: 'Noida', state: 'Uttar Pradesh', lat: 28.5706, lng: 77.3272 },
+  { pincode: '400001', city: 'Mumbai', state: 'Maharashtra', lat: 18.9388, lng: 72.8354 },
+  { pincode: '400076', city: 'Mumbai', state: 'Maharashtra', lat: 19.1176, lng: 72.906 },
+  { pincode: '411001', city: 'Pune', state: 'Maharashtra', lat: 18.5196, lng: 73.8553 },
+  { pincode: '600001', city: 'Chennai', state: 'Tamil Nadu', lat: 13.0878, lng: 80.2785 },
+  { pincode: '600040', city: 'Chennai', state: 'Tamil Nadu', lat: 13.085, lng: 80.2101 },
+  { pincode: '500001', city: 'Hyderabad', state: 'Telangana', lat: 17.385, lng: 78.4867 },
+  { pincode: '500081', city: 'Hyderabad', state: 'Telangana', lat: 17.4483, lng: 78.3915 },
+  { pincode: '700001', city: 'Kolkata', state: 'West Bengal', lat: 22.5726, lng: 88.3639 },
+  { pincode: '380001', city: 'Ahmedabad', state: 'Gujarat', lat: 23.0225, lng: 72.5714 },
+  { pincode: '302001', city: 'Jaipur', state: 'Rajasthan', lat: 26.9124, lng: 75.7873 },
+  { pincode: '226001', city: 'Lucknow', state: 'Uttar Pradesh', lat: 26.8467, lng: 80.9462 },
+  { pincode: '682001', city: 'Kochi', state: 'Kerala', lat: 9.9658, lng: 76.2421 },
+  { pincode: '641001', city: 'Coimbatore', state: 'Tamil Nadu', lat: 11.0168, lng: 76.9558 },
+  { pincode: '751001', city: 'Bhubaneswar', state: 'Odisha', lat: 20.2961, lng: 85.8245 },
   {
     pincode: '781001',
     city: 'Guwahati',
+    state: 'Assam',
+    lat: 26.1445,
+    lng: 91.7362,
     except: { tvs: prepaidOnly, 'robot-vacuums': prepaidOnly },
   },
   {
     pincode: '744101',
     city: 'Port Blair',
+    state: 'Andaman and Nicobar Islands',
+    lat: 11.6234,
+    lng: 92.7265,
     except: {
       smartphones: prepaidOnly,
       audio: prepaidOnly,
@@ -85,6 +95,9 @@ export const servicePincodes: {
   {
     pincode: '194101',
     city: 'Leh',
+    state: 'Ladakh',
+    lat: 34.1526,
+    lng: 77.5771,
     except: {
       smartphones: prepaidOnly,
       audio: prepaidOnly,
@@ -95,4 +108,10 @@ export const servicePincodes: {
       'robot-vacuums': none,
     },
   },
+];
+
+/** Known pincodes with no serviceability rows: a map pin there shows "not deliverable" (D-62). */
+export const unservedPincodes = [
+  { pincode: '171001', city: 'Shimla', state: 'Himachal Pradesh', lat: 31.1048, lng: 77.1734 },
+  { pincode: '795001', city: 'Imphal', state: 'Manipur', lat: 24.817, lng: 93.9368 },
 ];

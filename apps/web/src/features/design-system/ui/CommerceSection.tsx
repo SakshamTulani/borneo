@@ -120,7 +120,9 @@ export function CommerceSection() {
               pincode={d.pincode}
               onPincodeChange={noop}
               onCheck={noop}
+              onChooseOnMap={noop}
               state={d.result}
+              {...(d.place ? { place: d.place } : {})}
             />
           </State>
         ))}

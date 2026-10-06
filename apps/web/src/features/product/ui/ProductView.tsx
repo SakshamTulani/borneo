@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { CheckIcon, ChevronDownIcon, InfoIcon, RotateCcwIcon, XIcon } from 'lucide-react';
 import { toCatalogCard, toPriceBlock } from '@/features/catalog';
@@ -21,6 +22,8 @@ type Props = {
   product: ProductDetail;
   variant: ProductVariant;
   onVariantChange: (sku: string) => void;
+  /** Delivery checker for the selected variant; not shown for discontinued products. */
+  delivery?: ReactNode;
 };
 
 function variantBadges(product: ProductDetail, v: ProductVariant): StatusBadgeProps[] {
@@ -37,7 +40,7 @@ function variantBadges(product: ProductDetail, v: ProductVariant): StatusBadgePr
 const h2 = 'font-heading text-headline tracking-tight';
 
 /** Product page template (D-13, D-14): the same for every category, driven by data. */
-export function ProductView({ product, variant, onVariantChange }: Props) {
+export function ProductView({ product, variant, onVariantChange, delivery }: Props) {
   const groups = optionGroups(product, variant);
   const badges = variantBadges(product, variant);
   const offers = toOfferCards(variant.offers);
@@ -144,6 +147,10 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
                   />
                 ))}
               </div>
+            ) : null}
+
+            {delivery && !discontinued ? (
+              <div className="rounded-xl bg-surface p-5">{delivery}</div>
             ) : null}
 
             <div className="flex gap-3 rounded-xl bg-surface p-5 text-sm">

@@ -81,3 +81,21 @@ export const deliveryLane = pgTable(
     check('delivery_lane_days', sql`${t.minDays} >= 0 and ${t.maxDays} >= ${t.minDays}`),
   ],
 );
+
+/** Known pincodes with their centre; a map pin resolves to the nearest one (D-184). */
+export const pincodeArea = pgTable(
+  'pincode_area',
+  {
+    pincode: text('pincode').primaryKey(),
+    city: text('city').notNull(),
+    state: text('state').notNull(),
+    lat: doublePrecision('lat').notNull(),
+    lng: doublePrecision('lng').notNull(),
+  },
+  (t) => [
+    check('pincode_area_pincode', pincodeCheck(t.pincode)),
+    check('pincode_area_lat', sql`${t.lat} between -90 and 90`),
+    check('pincode_area_lng', sql`${t.lng} between -180 and 180`),
+    index('pincode_area_lat_lng').on(t.lat, t.lng),
+  ],
+);

@@ -1,9 +1,10 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
 import { Badge } from './badge';
 import { Button } from './button';
 import { Card, CardContent, CardHeader, CardTitle } from './card';
+import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogTrigger } from './dialog';
 import { Input } from './input';
 import { Label } from './label';
 import { RadioGroup, RadioGroupItem } from './radio-group';
@@ -135,5 +136,23 @@ describe('base components', () => {
     expect(select.value).toBe('b');
     expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('Dialog: opens from its trigger, is labelled and closes', async () => {
+    render(
+      <Dialog>
+        <DialogTrigger>Choose on map</DialogTrigger>
+        <DialogContent>
+          <DialogTitle>Delivery location</DialogTitle>
+          <DialogDescription>Move the map so the pin sits on your address.</DialogDescription>
+        </DialogContent>
+      </Dialog>,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Choose on map' }));
+    const dialog = screen.getByRole('dialog', { name: 'Delivery location' });
+    expect(dialog.getAttribute('aria-describedby')).toBeTruthy();
+    expect(await axe(dialog)).toHaveNoViolations();
+    fireEvent.click(screen.getByRole('button', { name: 'Close' }));
+    expect(screen.queryByRole('dialog')).toBeNull();
   });
 });

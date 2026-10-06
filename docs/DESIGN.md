@@ -59,7 +59,7 @@ Every component has a render test and a vitest-axe check per state.
 
 | Layer                   | Path                    | Components                                                                                                                                |
 | ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Base (shadcn, restyled) | `shared/ui/base/`       | Button (variants, disabled, loading, ≥ 44px), Badge (9 tones), Card, Input, Label, RadioGroup, Separator, Skeleton, Table                 |
+| Base (shadcn, restyled) | `shared/ui/base/`       | Button (variants, disabled, loading, ≥ 44px), Badge (9 tones), Card, Dialog, Input, Label, RadioGroup, Separator, Skeleton, Table         |
 | Feedback                | `shared/ui/feedback/`   | EmptyState, ErrorState (retry, `role=alert`), DemoBox                                                                                     |
 | Brand                   | `shared/ui/brand/`      | Logo                                                                                                                                      |
 | Navigation              | `shared/ui/navigation/` | BottomNav (mobile, `aria-current`), Breadcrumbs; `AppShell` has a skip link and sticky header                                             |
@@ -74,7 +74,7 @@ Commerce components only display. They never compute prices, savings, eligibilit
 | StatusBadge     | Text label + icon                                                                                              | in stock, low stock (real count), out of stock, pre-order, flash sale, new, upgrade available, bundle, works with X |
 | ProductCard     | Image well with badges over it, family, name (stretched router link), rating once reviews exist, compact price | in stock, flash, pre-order, out of stock + Watch/Watching, skeleton                                                 |
 | VariantSelector | Legend + current choice; unavailable options stay visible                                                      | selected, unavailable                                                                                               |
-| DeliveryChecker | Pincode field, date range, COD                                                                                 | idle, checking, deliverable ± COD, not deliverable, out of stock here, invalid                                      |
+| DeliveryChecker | Pincode field, date range, COD (with reason), place, optional "Choose on map"                                  | idle, checking, deliverable ± COD, not deliverable, out of stock here, invalid, error                               |
 | OfferCard       | Kind, title, terms, code                                                                                       | available, applied, not applicable (with reason)                                                                    |
 | Countdown       | Real fixed deadline plus its absolute time                                                                     | pending (SSR), upcoming, live, urgent (announced once), ended                                                       |
 | SpecTable       | Grouped rows                                                                                                   | full, "Not specified", empty                                                                                        |

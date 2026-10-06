@@ -20,14 +20,14 @@ src/modules/<m>/
   <m>.schema.ts         request/response Zod (leaf)
   index.ts              public exports
 src/db/                 client, schema/ (Drizzle, one file per area), seed/ (data + buildSeed)
-src/session/            the only code that reads the session (Better Auth in Phase H)
+src/session/            the only code that reads the session (Better Auth in Phase I)
 src/adapters/<port>/    interface + demo impl (+ real impl later) (ADR-0003)
 src/jobs/               pg-boss workers; thin, call services (ADR-0004)
 src/test/               factories, globalSetup (seeded test DB), useTestDb()
 drizzle/                generated migrations; commit them
 ```
 
-Reference modules: `src/modules/health` (minimal), `src/modules/catalog` (DB-backed, filtered keyset pagination, error codes). `src/modules/offers` has only a repository (`loadOfferBook`); services get it injected. `src/modules/search` reuses the catalog's `summarize` (injected) so results price like listings. `src/modules/relations` has no routes; the reset script and (later) jobs call it.
+Reference modules: `src/modules/health` (minimal), `src/modules/catalog` (DB-backed, filtered keyset pagination, error codes). `src/modules/offers` has only a repository (`loadOfferBook`); services get it injected. `src/modules/search` reuses the catalog's `summarize` (injected) so results price like listings. `src/modules/delivery` composes serviceability, stock, lanes and flash state into the PDP estimate and resolves map pins to pincodes. `src/modules/relations` has no routes; the reset script and (later) jobs call it.
 
 ## Rules (enforced)
 
@@ -46,7 +46,7 @@ Services call these; never re-implement them. Each cites its `D-xx` IDs.
 | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Price shown on PDP/cards             | `priceDisplay` (selling price, savings, effective price, EMI from)                                                                                        |
 | Order totals with offers             | `priceOrder` (1 coupon + 1 payment offer, per-line shares)                                                                                                |
-| Delivery estimate / not deliverable  | `deliveryEstimate`, `addressNeedsRecheck`                                                                                                                 |
+| Delivery estimate / not deliverable  | `deliveryEstimate`, `addressNeedsRecheck`, `nearestPincode`, `distanceKm`                                                                                 |
 | COD and payment methods              | `codEligibility`, `allowedPaymentMethods`                                                                                                                 |
 | 5-min stock hold, late payment       | `startHold`, `holdStatus`, `resolvePaidOrder`                                                                                                             |
 | Flash sale state and purchase        | `flashState`, `unitPriceWithFlash`, `canBuyFlash`, `lowStockCount`                                                                                        |

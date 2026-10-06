@@ -1,6 +1,8 @@
 import { isValidPincode } from '../contracts/common';
 import type {
   AddressPin,
+  GeoPoint,
+  PincodeArea,
   DeliveryLane,
   ServiceabilityRow,
   WarehouseStock,
@@ -27,7 +29,9 @@ export function deliveryEstimate(input: {
   stock: WarehouseStock[];
   lanes: DeliveryLane[];
   now: number;
+  /** Pre-orders: expected dispatch window (D-64). `dispatchTo` defaults to `dispatchFrom`. */
   dispatchFrom?: number;
+  dispatchTo?: number;
 }): DeliveryEstimate {
   const { pincode, categoryId, qty, now } = input;
   if (!isValidPincode(pincode)) return { status: 'invalidPincode' };
@@ -61,11 +65,12 @@ export function deliveryEstimate(input: {
   if (!best) return { status: 'outOfStockHere' };
 
   const start = Math.max(now, input.dispatchFrom ?? now);
+  const end = Math.max(start, input.dispatchTo ?? start);
   return {
     status: 'deliverable',
     warehouseId: best.warehouseId,
     from: addIstDays(start, best.lane.minDays),
-    to: addIstDays(start, best.lane.maxDays),
+    to: addIstDays(end, best.lane.maxDays),
     codAllowed: row.codAllowed,
   };
 }
@@ -78,4 +83,39 @@ export function addressNeedsRecheck(previous: AddressPin | undefined, next: Addr
     previous.lat !== next.lat ||
     previous.lng !== next.lng
   );
+}
+
+/** A map pin resolves to a pincode only within this distance of its centre (D-184). */
+export const PIN_MATCH_MAX_KM = 15;
+const EARTH_RADIUS_KM = 6371;
+
+/** Great-circle distance in km (haversine). */
+export function distanceKm(a: GeoPoint, b: GeoPoint): number {
+  const rad = (d: number) => (d * Math.PI) / 180;
+  const dLat = rad(b.lat - a.lat);
+  const dLng = rad(b.lng - a.lng);
+  const h =
+    Math.sin(dLat / 2) ** 2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng / 2) ** 2;
+  return 2 * EARTH_RADIUS_KM * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+/**
+ * The pincode for a map pin (D-52, D-184): the nearest known pincode centre within
+ * `maxKm`, else none, and the customer types the pincode instead.
+ */
+export function nearestPincode<T extends PincodeArea>(
+  pin: GeoPoint,
+  areas: T[],
+  maxKm = PIN_MATCH_MAX_KM,
+): T | undefined {
+  let best: { area: T; km: number } | undefined;
+  for (const area of areas) {
+    const km = distanceKm(pin, area);
+    if (
+      km <= maxKm &&
+      (!best || km < best.km || (km === best.km && area.pincode < best.area.pincode))
+    )
+      best = { area, km };
+  }
+  return best?.area;
 }

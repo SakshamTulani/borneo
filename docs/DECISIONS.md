@@ -67,24 +67,28 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 
 ## Delivery, stock, serviceability
 
-| ID   | Rule                                                                                                                                           | Status     |
-| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| D-50 | Pan-India. Serviceability configurable per pincode × category.                                                                                 | v1         |
-| D-51 | PDP shows "not deliverable here" clearly; never first fail at checkout.                                                                        | v1         |
-| D-52 | Delivery shown as an estimated date range (not a promise), from pincode/map pin + warehouse stock.                                             | v1         |
-| D-53 | Each address stores an exact map pin.                                                                                                          | v1         |
-| D-54 | Stock per warehouse; availability and date depend on pincode.                                                                                  | v1         |
-| D-55 | Cart and checkout recheck stock, delivery date and COD eligibility on any address or pin change.                                               | v1         |
-| D-56 | Stock held only once payment starts: 5 min, visible real countdown. Applies to all products. Not held in cart.                                 | v1         |
-| D-57 | Hold expiry: item returns to stock; we say so.                                                                                                 | v1         |
-| D-58 | Payment gateway session timeout = 5 min.                                                                                                       | v1 (mock)  |
-| D-59 | Payment succeeds after hold expiry: allocate if a unit is free; else auto-refund + clear message (in-account notice in demo).                  | v1         |
-| D-60 | Scheduled delivery slots (formerly for large appliances). For TVs: undecided.                                                                  | open       |
-| D-61 | Max quantity per line for normal items.                                                                                                        | open       |
-| D-62 | No serviceability row for a pincode × category means not deliverable.                                                                          | assumption |
-| D-63 | Delivery estimate: fastest warehouse with stock and a lane to the pincode (longest pincode-prefix lane wins); calendar days; IST dates.        | assumption |
-| D-64 | Pre-order estimates count from the expected dispatch date.                                                                                     | assumption |
-| D-65 | Pre-orders sell against a per-variant pre-order cap, not warehouse stock; their payment holds reserve against that cap and carry no warehouse. | assumption |
+| ID    | Rule                                                                                                                                               | Status     |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-50  | Pan-India. Serviceability configurable per pincode × category.                                                                                     | v1         |
+| D-51  | PDP shows "not deliverable here" clearly; never first fail at checkout.                                                                            | v1         |
+| D-52  | Delivery shown as an estimated date range (not a promise), from pincode/map pin + warehouse stock.                                                 | v1         |
+| D-53  | Each address stores an exact map pin.                                                                                                              | v1         |
+| D-54  | Stock per warehouse; availability and date depend on pincode.                                                                                      | v1         |
+| D-55  | Cart and checkout recheck stock, delivery date and COD eligibility on any address or pin change.                                                   | v1         |
+| D-56  | Stock held only once payment starts: 5 min, visible real countdown. Applies to all products. Not held in cart.                                     | v1         |
+| D-57  | Hold expiry: item returns to stock; we say so.                                                                                                     | v1         |
+| D-58  | Payment gateway session timeout = 5 min.                                                                                                           | v1 (mock)  |
+| D-59  | Payment succeeds after hold expiry: allocate if a unit is free; else auto-refund + clear message (in-account notice in demo).                      | v1         |
+| D-60  | Scheduled delivery slots (formerly for large appliances). For TVs: undecided.                                                                      | open       |
+| D-61  | Max quantity per line for normal items.                                                                                                            | open       |
+| D-62  | No serviceability row for a pincode × category means not deliverable.                                                                              | assumption |
+| D-63  | Delivery estimate: fastest warehouse with stock and a lane to the pincode (longest pincode-prefix lane wins); calendar days; IST dates.            | assumption |
+| D-64  | Pre-order estimates count from the expected dispatch date.                                                                                         | assumption |
+| D-65  | Pre-orders sell against a per-variant pre-order cap, not warehouse stock; their payment holds reserve against that cap and carry no warehouse.     | assumption |
+| D-184 | A map pin resolves to the nearest known pincode centre within 15 km; farther away, the customer types the pincode. Centres live in `pincode_area`. | assumption |
+| D-185 | The PDP remembers the last checked pincode in this browser only. A signed-in default address takes over in Phase I.                                | assumption |
+| D-186 | PDP COD line = pincode × category COD, minus pre-orders (D-146) and live flash sales (D-71). The order-value cap (D-72) applies at checkout.       | assumption |
+| D-187 | Map tiles come from the public OpenStreetMap tile server in the demo. Production needs a tile provider under its usage policy.                     | blocker    |
 
 ## Payments
 
@@ -204,7 +208,7 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 | D-163 | Demo adapters: NotificationAdapter, PaymentGateway (mock), Analytics (console + log).                                                                                                                      | v1         |
 | D-164 | Business rules are pure functions with unit tests, never in UI.                                                                                                                                            | v1         |
 | D-165 | One `DEMO_MODE` flag gates every demo behaviour; production start refuses `DEMO_MODE=true`.                                                                                                                | assumption |
-| D-166 | Courier tracking, serviceability, bot protection are adapters (mocked in demo).                                                                                                                            | assumption |
+| D-166 | Courier tracking and bot protection are adapters (mocked in demo). Serviceability, lanes and pincode centres are Postgres config (D-50); a courier feed would load those tables.                           | assumption |
 | D-167 | Light theme only in v1; tokens ready for dark.                                                                                                                                                             | assumption |
 | D-168 | TypeScript pinned to 6.0.x until typescript-eslint supports 7.                                                                                                                                             | v1         |
 | D-169 | Local MinIO from `cgr.dev/chainguard/minio` (dev only).                                                                                                                                                    | v1         |
@@ -230,31 +234,32 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 
 ## Production blockers
 
-D-74 payment gateway · D-94 verified email · D-104 email provider · D-141 verified flash identity · D-144 bot protection · D-165 demo-mode guard · real courier/serviceability data (D-166) · analytics provider (D-163).
+D-74 payment gateway · D-94 verified email · D-104 email provider · D-141 verified flash identity · D-144 bot protection · D-165 demo-mode guard · real courier/serviceability data and a full pincode directory (D-166, D-184) · map tile provider (D-187) · analytics provider (D-163).
 
 ## Resolved conflicts (latest wins)
 
-| #   | Earlier                                                                            | Final                                                                                      |
-| --- | ---------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
-| 1   | Guest checkout allowed; guest orders linked by email                               | No guest checkout anywhere (D-90)                                                          |
-| 2   | Big appliances in launch list; large-appliance slots; no return after installation | Big appliances dropped (D-11); slot rule moot; TV slots open (D-60)                        |
-| 3   | TVs listed under TVs and home appliances                                           | TVs only (D-12)                                                                            |
-| 4   | Verified email for every purchase / flash sales                                    | Relaxed in demo (D-93); production blocker (D-94)                                          |
-| 5   | Flash limit checked on phone, address/pin, payment instrument                      | Email only + disposable-domain block, bot protection, rate limit (D-142, D-143)            |
-| 6   | Proposed 12-month ownership age for upgrade badge                                  | No age rule; hidden during return window only (D-132)                                      |
-| 7   | Transactional email set proposed                                                   | No email in demo; NotificationAdapter (D-100, D-101)                                       |
-| 8   | "Notify me"                                                                        | Renamed Watch, on-site only (D-147)                                                        |
-| 9   | Review request after delivery (email)                                              | In-account prompt only (D-151)                                                             |
-| 10  | Cross-sell in post-delivery email                                                  | Removed from v1 (D-125)                                                                    |
-| 11  | Mobile compare "2 or 3"                                                            | 3 max, 2 visible (D-122)                                                                   |
-| 12  | "Show everything in app"                                                           | No native app; means in the web account (D-161)                                            |
-| 13  | Installation info for appliances/TVs (proposed concession)                         | Appliances dropped; no TV installation info (D-171)                                        |
-| 14  | Stock hold for flash sales only                                                    | All products (D-56)                                                                        |
-| 15  | Vite SPA, SEO deferred as production blocker (ADR-0001)                            | TanStack Start with SSR, SEO in v1 (ADR-0008, D-162)                                       |
-| 16  | TypeScript latest (7.x, native)                                                    | Pinned 6.0.x: TS 7 has no JS API; typescript-eslint and dependency-cruiser need it (D-168) |
-| 17  | MinIO image `minio/minio`                                                          | `cgr.dev/chainguard/minio`: official community images are no longer published (D-169)      |
-| 18  | Phase C = shared rules (ROADMAP)                                                   | Phase C = agent tooling + validator proof + design system; later phases shift one letter   |
-| 19  | Token `accent` #B85C2E (DESIGN)                                                    | `offer` #9c4a1e (D-178)                                                                    |
-| 20  | Hook names Query/Result/Form only                                                  | + `use<Action>Mutation` (D-174)                                                            |
-| 21  | Return policy looked up from hardcoded category keys (first Phase D draft)         | Per-category config (D-89)                                                                 |
-| 22  | No-cost EMI could appear as an "effective price" (first Phase D draft)             | Never; customer repays the full price (D-45)                                               |
+| #   | Earlier                                                                            | Final                                                                                               |
+| --- | ---------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| 1   | Guest checkout allowed; guest orders linked by email                               | No guest checkout anywhere (D-90)                                                                   |
+| 2   | Big appliances in launch list; large-appliance slots; no return after installation | Big appliances dropped (D-11); slot rule moot; TV slots open (D-60)                                 |
+| 3   | TVs listed under TVs and home appliances                                           | TVs only (D-12)                                                                                     |
+| 4   | Verified email for every purchase / flash sales                                    | Relaxed in demo (D-93); production blocker (D-94)                                                   |
+| 5   | Flash limit checked on phone, address/pin, payment instrument                      | Email only + disposable-domain block, bot protection, rate limit (D-142, D-143)                     |
+| 6   | Proposed 12-month ownership age for upgrade badge                                  | No age rule; hidden during return window only (D-132)                                               |
+| 7   | Transactional email set proposed                                                   | No email in demo; NotificationAdapter (D-100, D-101)                                                |
+| 8   | "Notify me"                                                                        | Renamed Watch, on-site only (D-147)                                                                 |
+| 9   | Review request after delivery (email)                                              | In-account prompt only (D-151)                                                                      |
+| 10  | Cross-sell in post-delivery email                                                  | Removed from v1 (D-125)                                                                             |
+| 11  | Mobile compare "2 or 3"                                                            | 3 max, 2 visible (D-122)                                                                            |
+| 12  | "Show everything in app"                                                           | No native app; means in the web account (D-161)                                                     |
+| 13  | Installation info for appliances/TVs (proposed concession)                         | Appliances dropped; no TV installation info (D-171)                                                 |
+| 14  | Stock hold for flash sales only                                                    | All products (D-56)                                                                                 |
+| 15  | Vite SPA, SEO deferred as production blocker (ADR-0001)                            | TanStack Start with SSR, SEO in v1 (ADR-0008, D-162)                                                |
+| 16  | TypeScript latest (7.x, native)                                                    | Pinned 6.0.x: TS 7 has no JS API; typescript-eslint and dependency-cruiser need it (D-168)          |
+| 17  | MinIO image `minio/minio`                                                          | `cgr.dev/chainguard/minio`: official community images are no longer published (D-169)               |
+| 18  | Phase C = shared rules (ROADMAP)                                                   | Phase C = agent tooling + validator proof + design system; later phases shift one letter            |
+| 19  | Token `accent` #B85C2E (DESIGN)                                                    | `offer` #9c4a1e (D-178)                                                                             |
+| 20  | Hook names Query/Result/Form only                                                  | + `use<Action>Mutation` (D-174)                                                                     |
+| 21  | Return policy looked up from hardcoded category keys (first Phase D draft)         | Per-category config (D-89)                                                                          |
+| 22  | No-cost EMI could appear as an "effective price" (first Phase D draft)             | Never; customer repays the full price (D-45)                                                        |
+| 23  | Serviceability behind an adapter (D-166, Phase B)                                  | Serviceability is DB config; only courier tracking and bot protection are adapters (D-166, Phase H) |

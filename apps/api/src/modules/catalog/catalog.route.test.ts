@@ -8,7 +8,7 @@ import {
 import { describe, expect, it } from 'vitest';
 import { buildApp } from '../../app';
 import { seedData } from '../../db/seed/index';
-import { catalogService, searchService } from '../../services';
+import { catalogService, searchService, deliveryService } from '../../services';
 import { TEST_NOW, useTestDb } from '../../test/db';
 import { createHealthService } from '../health/index';
 
@@ -18,6 +18,7 @@ const app = buildApp({
   health: createHealthService({ demoMode: false, pingDatabase: async () => true }),
   catalog,
   search: searchService(db, catalog),
+  delivery: deliveryService(db, () => TEST_NOW.getTime()),
 });
 const get = (url: string) => app.inject({ method: 'GET', url });
 

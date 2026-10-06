@@ -45,6 +45,49 @@ describe('DeliveryChecker', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('D-186: says why COD is off when the reason is known', () => {
+    renderWith({
+      status: 'deliverable',
+      from: '2026-10-28T06:00:00Z',
+      to: '2026-11-05T06:00:00Z',
+      cod: false,
+      codNote: 'Pre-orders are paid online; no cash on delivery',
+    });
+    expect(screen.getByText('Pre-orders are paid online; no cash on delivery')).toBeTruthy();
+  });
+
+  it('shows the place and a failed check', async () => {
+    const { container } = render(
+      <DeliveryChecker
+        pincode="560001"
+        onPincodeChange={() => {}}
+        onCheck={() => {}}
+        state={{ status: 'error' }}
+        place="Bengaluru, Karnataka"
+      />,
+    );
+    expect(screen.getByText('Bengaluru, Karnataka')).toBeTruthy();
+    expect(screen.getByText('Couldn’t check delivery. Try again.')).toBeTruthy();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('D-52: offers a map only when asked, as a plain button', () => {
+    const onChooseOnMap = vi.fn();
+    const { rerender } = renderWith({ status: 'idle' });
+    expect(screen.queryByRole('button', { name: 'Choose on map' })).toBeNull();
+    rerender(
+      <DeliveryChecker
+        pincode=""
+        onPincodeChange={() => {}}
+        onCheck={() => {}}
+        state={{ status: 'idle' }}
+        onChooseOnMap={onChooseOnMap}
+      />,
+    );
+    fireEvent.click(screen.getByRole('button', { name: 'Choose on map' }));
+    expect(onChooseOnMap).toHaveBeenCalledOnce();
+  });
+
   it('checking state shows a busy button', async () => {
     const { container } = renderWith({ status: 'checking' });
     expect(screen.getByRole('button', { name: 'Check' }).getAttribute('aria-busy')).toBe('true');

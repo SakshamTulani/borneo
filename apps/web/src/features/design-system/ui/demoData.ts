@@ -97,12 +97,18 @@ export const demoStorage: VariantOption[] = [
   { value: '512', label: '512 GB', available: false },
 ];
 
-export const demoDelivery: { state: string; pincode: string; result: DeliveryState }[] = [
+export const demoDelivery: {
+  state: string;
+  pincode: string;
+  result: DeliveryState;
+  place?: string;
+}[] = [
   { state: 'Idle', pincode: '', result: { status: 'idle' } },
   { state: 'Checking', pincode: '560001', result: { status: 'checking' } },
   {
     state: 'Deliverable, COD available',
     pincode: '560001',
+    place: 'Bengaluru, Karnataka',
     result: {
       status: 'deliverable',
       from: '2026-10-09T06:00:00Z',
@@ -120,6 +126,18 @@ export const demoDelivery: { state: string; pincode: string; result: DeliverySta
       cod: false,
     },
   },
+  {
+    state: 'Pre-order, no COD',
+    pincode: '560001',
+    place: 'Bengaluru, Karnataka',
+    result: {
+      status: 'deliverable',
+      from: '2026-10-28T06:00:00Z',
+      to: '2026-11-05T06:00:00Z',
+      cod: false,
+      codNote: 'Pre-orders are paid online; no cash on delivery',
+    },
+  },
   { state: 'Not deliverable', pincode: '744101', result: { status: 'notDeliverable' } },
   { state: 'Out of stock here', pincode: '110001', result: { status: 'outOfStockHere' } },
   {
@@ -127,6 +145,7 @@ export const demoDelivery: { state: string; pincode: string; result: DeliverySta
     pincode: '5600',
     result: { status: 'invalid', message: 'Enter a 6-digit pincode' },
   },
+  { state: 'Check failed', pincode: '560001', result: { status: 'error' } },
 ];
 
 /** A real, fixed deadline: 31 Dec 2026, 11:59:59 pm IST. It never resets. */

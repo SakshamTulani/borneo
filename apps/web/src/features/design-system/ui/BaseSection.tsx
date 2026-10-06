@@ -1,6 +1,14 @@
 import { Badge } from '@/shared/ui/base/badge';
 import { Button } from '@/shared/ui/base/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/base/card';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogTrigger,
+} from '@/shared/ui/base/dialog';
 import { Input } from '@/shared/ui/base/input';
 import { Label } from '@/shared/ui/base/label';
 import { Select } from '@/shared/ui/base/select';
@@ -127,6 +135,26 @@ export function BaseSection() {
             <CardContent className="text-sm">Card body</CardContent>
           </Card>
         </State>
+      </Specimen>
+
+      <Specimen
+        title="Dialog"
+        note="Bottom sheet on phones, centred on larger screens. Focus is trapped; Escape closes."
+      >
+        <Dialog>
+          <DialogTrigger asChild>
+            <Button variant="outline">Open dialog</Button>
+          </DialogTrigger>
+          <DialogContent>
+            <DialogTitle>Choose delivery location</DialogTitle>
+            <DialogDescription>
+              Demo content. Dialogs hold one task and end in one primary action.
+            </DialogDescription>
+            <DialogClose asChild>
+              <Button>Done</Button>
+            </DialogClose>
+          </DialogContent>
+        </Dialog>
       </Specimen>
 
       <Specimen title="Feedback states">

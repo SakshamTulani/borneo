@@ -14,6 +14,16 @@ import {
   loadRelationsFrom,
   loadVariantStates,
 } from './modules/catalog/index';
+import {
+  createDeliveryService,
+  findDeliveryTarget,
+  findPincodeArea,
+  listDeliveryLanes,
+  loadFlashSales,
+  loadServiceability,
+  loadWarehouseStock,
+  pincodeAreasNear,
+} from './modules/delivery/index';
 import { loadOfferBook } from './modules/offers/index';
 import {
   createSearchService,
@@ -64,5 +74,18 @@ export function searchService(db: Db, catalog: ReturnType<typeof catalogService>
     searchProducts: (query) => searchProducts(db, query),
     findExactCandidates: (query) => findExactCandidates(db, query),
     summarize: (rows) => catalog.summarize(rows),
+  });
+}
+
+export function deliveryService(db: Db, now: () => number = Date.now) {
+  return createDeliveryService({
+    now,
+    findTarget: (sku) => findDeliveryTarget(db, sku),
+    findArea: (pincode) => findPincodeArea(db, pincode),
+    areasNear: (pin, km) => pincodeAreasNear(db, pin, km),
+    loadServiceability: (pincode, categoryId) => loadServiceability(db, pincode, categoryId),
+    loadStock: (variantId) => loadWarehouseStock(db, variantId),
+    listLanes: () => listDeliveryLanes(db),
+    loadFlashSales: (variantId) => loadFlashSales(db, variantId),
   });
 }

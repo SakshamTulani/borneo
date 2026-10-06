@@ -1,6 +1,7 @@
 import { randomUUID } from 'node:crypto';
 import { toCustomerId, type CustomerId } from '@borneo/shared';
 import type { CatalogDeps } from '../modules/catalog/catalog.service';
+import type { DeliveryDeps } from '../modules/delivery/delivery.service';
 import type { SearchDeps } from '../modules/search/search.service';
 
 // Test data factories. Grows per phase (products, orders, ...).
@@ -43,6 +44,21 @@ export function emptySearchDeps(over: Partial<SearchDeps> = {}): SearchDeps {
     searchProducts: async () => [],
     findExactCandidates: async () => [],
     summarize: async () => [],
+    ...over,
+  };
+}
+
+/** Delivery service deps that know nothing; override what a test needs. */
+export function emptyDeliveryDeps(over: Partial<DeliveryDeps> = {}): DeliveryDeps {
+  return {
+    now: () => 0,
+    findTarget: async () => undefined,
+    findArea: async () => undefined,
+    areasNear: async () => [],
+    loadServiceability: async () => [],
+    loadStock: async () => [],
+    listLanes: async () => [],
+    loadFlashSales: async () => [],
     ...over,
   };
 }

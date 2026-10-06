@@ -1,6 +1,8 @@
+import type { z } from 'zod';
+import type { codBlockSchema } from '../contracts/delivery';
 import type { Paise } from '../money';
 
-export type CodBlock = 'PINCODE' | 'PREORDER' | 'FLASH_SALE' | 'ORDER_VALUE';
+export type CodBlock = z.infer<typeof codBlockSchema>;
 
 /**
  * COD only for eligible pincodes (D-70), never for pre-orders or flash sales (D-71).

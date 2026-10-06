@@ -1,3 +1,4 @@
+import { ProductDelivery } from '@/features/delivery';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
 import { useProductQuery } from '../hooks/useProductQuery';
@@ -27,11 +28,13 @@ export function ProductPage({ slug, sku, onSkuChange }: Props) {
       <EmptyState title="Product not found" className="mx-4 my-10 sm:mx-6" />
     );
   }
+  const variant = selectedVariant(query.data, sku);
   return (
     <ProductView
       product={query.data}
-      variant={selectedVariant(query.data, sku)}
+      variant={variant}
       onVariantChange={onSkuChange}
+      delivery={<ProductDelivery sku={variant.sku} />}
     />
   );
 }

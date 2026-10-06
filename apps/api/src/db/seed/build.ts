@@ -9,7 +9,7 @@ import type * as schema from '../schema/index';
 import { categories, type SeedCategory } from './categories';
 import * as commerce from './commerce';
 import { inr, seedId } from './ids';
-import { deliveryLanes, servicePincodes, warehouses } from './logistics';
+import { deliveryLanes, servicePincodes, unservedPincodes, warehouses } from './logistics';
 import { productPhotos } from './media';
 import { DEFAULT_STOCK, lines, products, type SeedProduct } from './products';
 import { relationOverrides, relationRules } from './relations';
@@ -28,6 +28,8 @@ export type SeedData = {
   emiPlans: typeof commerce.emiPlans;
   /** Photo URLs per product slug, lead first (D-180). */
   photos: Record<string, string[]>;
+  servicePincodes: typeof servicePincodes;
+  unservedPincodes: typeof unservedPincodes;
 };
 
 export const seedData: SeedData = {
@@ -41,6 +43,8 @@ export const seedData: SeedData = {
   paymentOffers: commerce.paymentOffers,
   emiPlans: commerce.emiPlans,
   photos: productPhotos,
+  servicePincodes,
+  unservedPincodes,
 };
 
 const DAY_MS = 86_400_000;
@@ -223,6 +227,17 @@ export function seedIssues(data: SeedData): string[] {
     if (f.cap > totalStock(hit.p, f.sku))
       issues.push(`flash ${f.key}: cap exceeds stock on hand (D-140)`);
   }
+
+  // Every pincode has one area row (D-184); overrides name real categories (D-50).
+  unique(
+    'pincode',
+    [...data.servicePincodes, ...data.unservedPincodes].map((p) => p.pincode),
+  );
+  for (const s of data.servicePincodes) {
+    for (const slug of Object.keys(s.except ?? {})) {
+      if (!cats.has(slug)) issues.push(`pincode ${s.pincode}: unknown category "${slug}" (D-50)`);
+    }
+  }
   return issues;
 }
 
@@ -246,6 +261,7 @@ export type SeedRows = {
   warehouse: Insert<typeof schema.warehouse>;
   inventory: Insert<typeof schema.inventory>;
   serviceability: Insert<typeof schema.serviceability>;
+  pincodeArea: Insert<typeof schema.pincodeArea>;
   deliveryLane: Insert<typeof schema.deliveryLane>;
 };
 
@@ -467,12 +483,15 @@ export function buildSeed(now: Date, data: SeedData = seedData): SeedRows {
         })),
       ),
     ),
-    serviceability: servicePincodes.flatMap((s) =>
+    serviceability: data.servicePincodes.flatMap((s) =>
       data.categories.map((c) => ({
         pincode: s.pincode,
         categoryId: catId(c.slug),
         ...(s.except?.[c.slug] ?? { deliverable: true, codAllowed: true }),
       })),
+    ),
+    pincodeArea: [...data.servicePincodes, ...data.unservedPincodes].map(
+      ({ pincode, city, state, lat, lng }) => ({ pincode, city, state, lat, lng }),
     ),
     deliveryLane: deliveryLanes.map((l) => ({
       warehouseId: warehouseId(l.warehouse),

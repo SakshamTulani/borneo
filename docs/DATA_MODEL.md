@@ -49,6 +49,7 @@ Types: `accessory, compatible, complementary, replacement, consumable, upgrade, 
 | `stock_hold`     | id, order_id, warehouse_id? (null = pre-order, D-65), variant_id, qty, expires_at, status (`active`/`converted`/`expired`) | 5 min                           |
 | `serviceability` | pincode, category_id, deliverable, cod_allowed                                                                             | per pincode × category          |
 | `delivery_lane`  | warehouse_id, pincode_prefix (`""` = all), min_days, max_days                                                              | date range source               |
+| `pincode_area`   | pincode (pk), city, state, lat, lng                                                                                        | map pin → pincode (D-184)       |
 
 ## Customers
 
@@ -76,7 +77,7 @@ Types: `accessory, compatible, complementary, replacement, consumable, upgrade, 
 
 ## Seed (`pnpm db:reset`)
 
-`apps/api/src/db/seed/`: plain data files plus `buildSeed(now)`, which validates everything first (`seedIssues`: attributes vs category schema, config keys, prices ≤ MRP, bundles cheaper than members, flash cap ≤ stock, offers parsed with shared contracts, no override conflicts). Ids are stable name-based uuids (`seedId(kind, key)`). Offers, flash sales and pre-order dates are relative to seeding time. Seeded: 7 categories, 16 lines, 45 products, 56 variants, 3 warehouses, 24 demo pincodes, 2 bundles, 5 offers, 10 EMI plans, 2 flash sales (one live, one upcoming), no reviews (D-150), 76 sample photos (every product, D-180).
+`apps/api/src/db/seed/`: plain data files plus `buildSeed(now)`, which validates everything first (`seedIssues`: attributes vs category schema, config keys, prices ≤ MRP, bundles cheaper than members, flash cap ≤ stock, offers parsed with shared contracts, no override conflicts). Ids are stable name-based uuids (`seedId(kind, key)`). Offers, flash sales and pre-order dates are relative to seeding time. Seeded: 7 categories, 16 lines, 45 products, 56 variants, 3 warehouses, 24 demo pincodes (+2 known but unserved, all with centres for map pins), 2 bundles, 5 offers, 10 EMI plans, 2 flash sales (one live, one upcoming), no reviews (D-150), 76 sample photos (every product, D-180).
 
 ## Views
 
