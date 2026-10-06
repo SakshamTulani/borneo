@@ -131,3 +131,10 @@
     }
   }
 }
+
+/* Home offers ticker (D-191): one copy scrolls out as the second scrolls in. */
+@keyframes borneo-ticker {
+  to {
+    transform: translateX(-50%);
+  }
+}

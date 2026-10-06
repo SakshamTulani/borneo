@@ -29,6 +29,21 @@ describe('navigation', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('D-214: every page opens with the shipping line above the header', async () => {
+    const { container } = await renderWithRouter(
+      <AppShell>
+        <h1>Page</h1>
+      </AppShell>,
+    );
+    const line = screen.getByText(/Free delivery on every order/);
+    expect(line.textContent).toBe(
+      'Free delivery on every order·Cash on delivery where available·7-day returns or replacement',
+    );
+    expect(line.compareDocumentPosition(container.querySelector('header')!)).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
   it('breadcrumbs mark the current page', async () => {
     const { container } = await renderWithRouter(
       <Breadcrumbs

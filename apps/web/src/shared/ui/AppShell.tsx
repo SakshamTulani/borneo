@@ -6,7 +6,7 @@ import { BottomNav } from './navigation/BottomNav';
 import { CartLink } from './navigation/CartLink';
 
 /**
- * Page frame: skip link, frosted header (logo, `search`, `account` and cart on desktop; `nav` on a second desktop row), full-width main (pages use
+ * Page frame: skip link, shipping line, frosted header (logo, `search`, `account` and cart on desktop; `nav` on a second desktop row), full-width main (pages use
  * `Container`; full-bleed tiles don't), parchment footer, and the mobile bottom nav.
  * `nav`, `search` and `account` are composed by the root route (they come from features).
  */
@@ -33,6 +33,20 @@ export function AppShell({
       >
         Skip to content
       </a>
+      {/* Shipping line (owner request): true of every order; it scrolls away with the page. */}
+      <p className="bg-brand px-4 py-2 text-center text-xs font-medium text-brand-ink sm:text-sm">
+        Free delivery on every order
+        <span className="hidden sm:inline">
+          <span aria-hidden className="mx-2 text-brand-soft">
+            ·
+          </span>
+          Cash on delivery where available
+          <span aria-hidden className="mx-2 text-brand-soft">
+            ·
+          </span>
+          7-day returns or replacement
+        </span>
+      </p>
       <header className="sticky top-0 z-20 border-b border-line/70 bg-surface/80 backdrop-blur-xl backdrop-saturate-150">
         <Container className="flex h-16 items-center gap-4 lg:gap-8">
           <Link to="/" aria-label="Borneo home" className="inline-flex shrink-0 rounded-sm">

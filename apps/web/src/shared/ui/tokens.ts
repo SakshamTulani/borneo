@@ -52,6 +52,11 @@ export const contrastPairs: { fg: string; bg: string; min: number }[] = [
   { fg: 'line-strong', bg: 'surface', min: 3 },
   { fg: 'brand', bg: 'canvas', min: 4.5 },
   { fg: 'ink-muted', bg: 'brand-soft', min: 4.5 },
+  // Home offers ticker and the shipping line (owner request, Phase K).
+  { fg: 'surface', bg: 'offer', min: 4.5 },
+  { fg: 'ink', bg: 'offer-soft', min: 4.5 },
+  { fg: 'ink-muted', bg: 'offer-soft', min: 4.5 },
+  { fg: 'brand-soft', bg: 'brand', min: 4.5 },
   { fg: 'on-tile', bg: 'tile', min: 4.5 },
   { fg: 'on-tile-muted', bg: 'tile', min: 4.5 },
   { fg: 'brand-on-tile', bg: 'tile', min: 4.5 },
