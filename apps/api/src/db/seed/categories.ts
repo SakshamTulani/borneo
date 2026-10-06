@@ -123,7 +123,7 @@ export const categories: SeedCategory[] = [
       {
         question: 'Is there a charger in the box?',
         answer:
-          'Apex phones include a 1 m USB-C cable. Chargers are sold separately for every Borneo phone.',
+          'No. Chargers are sold separately for every Borneo phone. Any USB-C charger works; the wired charging speed in Specs is the most the phone takes.',
       },
     ],
   },
@@ -197,13 +197,13 @@ export const categories: SeedCategory[] = [
     },
     faqs: [
       {
-        question: 'Do Borneo earbuds work with iPhone?',
+        question: 'Do Borneo audio products work with iPhone?',
         answer:
-          'Yes. Every Borneo earbud and headphone pairs over standard Bluetooth with Android and iPhone.',
+          'Yes. Every Borneo earbud, neckband, headphone and speaker pairs over Bluetooth with Android phones and iPhone. LDAC hi-res audio needs an Android phone that supports LDAC.',
       },
       {
-        question: 'Can I return earbuds?',
-        answer: 'Yes, within 7 days of delivery for any reason, in the original packaging.',
+        question: 'Can I return audio products?',
+        answer: 'Yes, within 7 days of delivery, for any reason.',
       },
     ],
   },
@@ -255,8 +255,7 @@ export const categories: SeedCategory[] = [
     faqs: [
       {
         question: 'Do I need a Borneo phone?',
-        answer:
-          'No. Borneo wearables work with any Android phone or iPhone through the Borneo Fit app.',
+        answer: 'No. Every Borneo band and watch works with Android phones and iPhone.',
       },
     ],
   },
@@ -314,8 +313,9 @@ export const categories: SeedCategory[] = [
     },
     faqs: [
       {
-        question: 'Will a Borneo charger work with other phones?',
-        answer: 'Yes. Borneo chargers use USB-C Power Delivery and charge any USB-C device.',
+        question: 'Do Borneo accessories fit other brands?',
+        answer:
+          'Chargers and cables are USB-C and work with any USB-C phone or earbuds. Straps fit any watch with the same strap width. Cases, screen glass, ear tips and the Sweep care kit fit only the Borneo models listed under Fits.',
       },
     ],
   },
@@ -351,7 +351,7 @@ export const categories: SeedCategory[] = [
       {
         question: 'Do I need the Home Hub?',
         answer:
-          'No. Plugs, bulbs and cameras connect straight to 2.4 GHz Wi-Fi. The hub adds routines that run offline.',
+          'No. The smart plug, smart bulb and indoor camera connect straight to 2.4 GHz Wi-Fi without a hub.',
       },
     ],
   },
@@ -436,7 +436,8 @@ export const categories: SeedCategory[] = [
     faqs: [
       {
         question: 'How often do brushes and filters need replacing?',
-        answer: 'About every 3 months with daily use. The Sweep care kit has a full set.',
+        answer:
+          'About every 3 months with daily use. The Sweep care kit has a full set and fits every Sweep.',
       },
     ],
   },

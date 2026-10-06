@@ -169,12 +169,16 @@ const smartphones: SeedProduct[] = [
     ],
     faqs: [
       {
-        question: 'Does Pulse 4 support dual SIM?',
-        answer: 'Yes, two nano SIMs with 5G on both.',
+        question: 'Can I pay by tapping Pulse 4?',
+        answer: 'Yes. Pulse 4 has NFC for tap-to-pay.',
       },
       {
-        question: 'How many Android updates will Pulse 4 get?',
-        answer: 'Three major Android updates and four years of security updates.',
+        question: 'Does Pulse 4 support eSIM?',
+        answer: 'No, it takes a physical SIM. Nova 3 and newer, and every Apex, support eSIM.',
+      },
+      {
+        question: 'How long will Pulse 4 get updates?',
+        answer: 'Three years of updates, starting from Android 15.',
       },
     ],
   },
@@ -289,7 +293,8 @@ const smartphones: SeedProduct[] = [
     faqs: [
       {
         question: 'Does Nova 3 support wireless charging?',
-        answer: 'Yes, Qi wireless charging up to 15 W, plus 67 W wired.',
+        answer:
+          'Yes. It charges on any Qi pad, including the Borneo 15 W pad, and at up to 67 W wired.',
       },
     ],
   },
@@ -441,7 +446,7 @@ const smartphones: SeedProduct[] = [
     faqs: [
       {
         question: 'Is a USB-C cable included with Apex 2?',
-        answer: 'Yes, a 1 m USB-C cable. The charger is sold separately.',
+        answer: 'Yes. The charger is sold separately; Apex 2 takes up to 90 W wired.',
       },
     ],
   },
@@ -980,6 +985,7 @@ const home = (
   attributes: Record<string, unknown>,
   mrp: number,
   price: number,
+  faqs?: SeedProduct['faqs'],
 ): SeedProduct => ({
   slug,
   name,
@@ -992,6 +998,7 @@ const home = (
   status: 'live',
   attributes,
   variants: [one(modelNumber, mrp, price)],
+  ...(faqs ? { faqs } : {}),
 });
 
 const smartHome: SeedProduct[] = [
@@ -1046,6 +1053,12 @@ const smartHome: SeedProduct[] = [
     },
     3999,
     2999,
+    [
+      {
+        question: 'Does the Indoor Camera work with Google Home?',
+        answer: 'No. It works with Alexa. The Borneo smart plug and bulb work with both.',
+      },
+    ],
   ),
 ];
 
