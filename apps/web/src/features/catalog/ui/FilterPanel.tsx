@@ -1,5 +1,5 @@
-import { useId } from 'react';
-import { cn } from '@/shared/lib/utils';
+import { useId, type ReactNode } from 'react';
+import { Select } from '@/shared/ui/base/select';
 import { toggleOption } from '../mappers/listingSearch';
 import type { FilterControl, ListingSearch } from '../model';
 
@@ -10,10 +10,12 @@ type Props = {
   onSearchChange: (next: ListingSearch) => void;
 };
 
-const fieldset = 'space-y-1 border-t border-line pt-4 first:border-t-0 first:pt-0';
-const legend = 'mb-2 font-heading text-sm font-semibold';
-const select =
-  'h-11 w-full rounded-md border border-line-strong bg-surface px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-brand';
+const heading = 'mb-2 block text-sm font-semibold';
+
+/** One filter group. The divider is on this wrapper, never on a fieldset (its legend would cut the line). */
+function Group({ children }: { children: ReactNode }) {
+  return <div className="border-t border-line py-4 first:border-t-0 first:pt-0">{children}</div>;
+}
 
 function Check({
   label,
@@ -25,12 +27,12 @@ function Check({
   onChange: () => void;
 }) {
   return (
-    <label className="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-1 text-sm hover:bg-muted">
+    <label className="-mx-2 flex min-h-11 cursor-pointer items-center gap-3 rounded-sm px-2 text-[15px] hover:bg-canvas">
       <input
         type="checkbox"
         checked={checked}
         onChange={onChange}
-        className="size-5 shrink-0 accent-brand"
+        className="size-[18px] shrink-0 cursor-pointer rounded accent-brand"
       />
       {label}
     </label>
@@ -41,15 +43,14 @@ function Check({
 export function FilterPanel({ controls, priceOptions, search, onSearchChange }: Props) {
   const id = useId();
   return (
-    <div className="space-y-4">
+    <div>
       {priceOptions.length ? (
-        <div className={fieldset}>
-          <label htmlFor={`${id}-price`} className={cn(legend, 'block')}>
+        <Group>
+          <label htmlFor={`${id}-price`} className={heading}>
             Price
           </label>
-          <select
+          <Select
             id={`${id}-price`}
-            className={select}
             value={search.maxPrice ? String(search.maxPrice) : ''}
             onChange={(e) =>
               onSearchChange({
@@ -64,28 +65,30 @@ export function FilterPanel({ controls, priceOptions, search, onSearchChange }: 
                 {o.label}
               </option>
             ))}
-          </select>
-        </div>
+          </Select>
+        </Group>
       ) : null}
       {controls.map((c) => {
         switch (c.kind) {
           case 'anyOf':
             return (
-              <fieldset key={c.key} className={fieldset}>
-                <legend className={legend}>{c.label}</legend>
-                {c.options.map((o) => (
-                  <Check
-                    key={o.value}
-                    label={o.label}
-                    checked={o.checked}
-                    onChange={() => onSearchChange(toggleOption(search, c.key, o.value))}
-                  />
-                ))}
-              </fieldset>
+              <Group key={c.key}>
+                <fieldset>
+                  <legend className={heading}>{c.label}</legend>
+                  {c.options.map((o) => (
+                    <Check
+                      key={o.value}
+                      label={o.label}
+                      checked={o.checked}
+                      onChange={() => onSearchChange(toggleOption(search, c.key, o.value))}
+                    />
+                  ))}
+                </fieldset>
+              </Group>
             );
           case 'isTrue':
             return (
-              <div key={c.key} className={fieldset}>
+              <Group key={c.key}>
                 <Check
                   label={c.label}
                   checked={c.checked}
@@ -93,17 +96,16 @@ export function FilterPanel({ controls, priceOptions, search, onSearchChange }: 
                     onSearchChange({ ...search, [c.key]: c.checked ? undefined : true })
                   }
                 />
-              </div>
+              </Group>
             );
           case 'atLeast':
             return (
-              <div key={c.key} className={fieldset}>
-                <label htmlFor={`${id}-${c.key}`} className={cn(legend, 'block')}>
+              <Group key={c.key}>
+                <label htmlFor={`${id}-${c.key}`} className={heading}>
                   {c.label}
                 </label>
-                <select
+                <Select
                   id={`${id}-${c.key}`}
-                  className={select}
                   value={c.value}
                   onChange={(e) =>
                     onSearchChange({
@@ -118,8 +120,8 @@ export function FilterPanel({ controls, priceOptions, search, onSearchChange }: 
                       {o.label}
                     </option>
                   ))}
-                </select>
-              </div>
+                </Select>
+              </Group>
             );
         }
       })}

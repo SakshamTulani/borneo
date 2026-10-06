@@ -32,7 +32,7 @@ export function CommerceSection() {
 
   return (
     <section aria-labelledby="commerce" className="space-y-4">
-      <h2 id="commerce" className="text-2xl font-bold">
+      <h2 id="commerce" className="text-headline">
         Commerce components
       </h2>
 

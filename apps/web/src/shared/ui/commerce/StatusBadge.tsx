@@ -56,7 +56,7 @@ function spec(props: StatusBadgeProps): { tone: Tone; icon: ReactNode; label: st
 export function StatusBadge(props: StatusBadgeProps) {
   const { tone, icon, label } = spec(props);
   return (
-    <Badge variant={tone} className="[&>svg]:size-3.5">
+    <Badge variant={tone} className="[&_svg]:size-3.5">
       <span aria-hidden className="contents">
         {icon}
       </span>

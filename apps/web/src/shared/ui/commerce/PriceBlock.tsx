@@ -10,7 +10,8 @@ export type PriceBlockProps = {
   /** Only when the offer applies to everyone paying that way (D-32). Never the headline (D-30). */
   effective?: { paise: Paise; offerName: string };
   emiFromPaise?: Paise;
-  size?: 'md' | 'lg';
+  /** `sm` is the compact card form: price, MRP, savings % and EMI on two lines. */
+  size?: 'sm' | 'md' | 'lg';
   unavailable?: boolean;
   className?: string;
 };
@@ -27,17 +28,41 @@ export function PriceBlock(props: PriceBlockProps) {
     className,
   } = props;
   if (unavailable) {
+    return <p className={cn('text-sm text-ink-muted', className)}>Currently unavailable</p>;
+  }
+  if (size === 'sm') {
     return (
-      <p className={cn('text-sm font-medium text-ink-muted', className)}>Currently unavailable</p>
+      <div className={cn('space-y-0.5', className)}>
+        <p className="flex flex-wrap items-baseline gap-x-2">
+          <span className="text-base font-semibold tabular-nums">
+            <span className="sr-only">Price </span>
+            {formatInr(sellingPaise)}
+          </span>
+          {mrpPaise ? (
+            <span className="text-sm text-ink-muted">
+              <span className="sr-only">MRP </span>
+              <del className="tabular-nums">{formatInr(mrpPaise)}</del>
+            </span>
+          ) : null}
+          {savings ? (
+            <span className="text-sm font-semibold text-offer">{savings.percent}% off</span>
+          ) : null}
+        </p>
+        {emiFromPaise ? (
+          <p className="text-sm text-ink-muted">
+            EMI from <span className="tabular-nums">{formatInr(emiFromPaise)}</span>/mo
+          </p>
+        ) : null}
+      </div>
     );
   }
   return (
-    <div className={cn('space-y-1', className)}>
-      <p className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+    <div className={cn('space-y-1.5', className)}>
+      <p className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
         <span
           className={cn(
-            'font-heading font-bold tabular-nums',
-            size === 'lg' ? 'text-3xl' : 'text-xl',
+            'font-heading font-semibold tracking-tight tabular-nums',
+            size === 'lg' ? 'text-headline' : 'text-tagline',
           )}
         >
           <span className="sr-only">Price </span>

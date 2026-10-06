@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './card';
 import { Input } from './input';
 import { Label } from './label';
 import { RadioGroup, RadioGroupItem } from './radio-group';
+import { Select } from './select';
 import { Separator } from './separator';
 import { Skeleton } from './skeleton';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './table';
@@ -117,6 +118,22 @@ describe('base components', () => {
       </Table>,
     );
     expect(screen.getByRole('table')).toBeTruthy();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('Select is a labelled native select with a decorative chevron', async () => {
+    const { container } = render(
+      <>
+        <Label htmlFor="sort">Sort by</Label>
+        <Select id="sort" defaultValue="b">
+          <option value="a">A</option>
+          <option value="b">B</option>
+        </Select>
+      </>,
+    );
+    const select = screen.getByRole('combobox', { name: 'Sort by' }) as HTMLSelectElement;
+    expect(select.value).toBe('b');
+    expect(container.querySelector('svg')?.getAttribute('aria-hidden')).toBe('true');
     expect(await axe(container)).toHaveNoViolations();
   });
 });

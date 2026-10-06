@@ -1,5 +1,12 @@
 import { Link } from '@tanstack/react-router';
-import { CheckIcon, ImageIcon, InfoIcon, RotateCcwIcon } from 'lucide-react';
+import {
+  CheckIcon,
+  ChevronDownIcon,
+  ImageIcon,
+  InfoIcon,
+  RotateCcwIcon,
+  XIcon,
+} from 'lucide-react';
 import { toCatalogCard, toPriceBlock } from '@/features/catalog';
 import { formatDateRange } from '@/shared/lib/format';
 import { Countdown } from '@/shared/ui/commerce/Countdown';
@@ -10,6 +17,7 @@ import { Rating } from '@/shared/ui/commerce/Rating';
 import { SpecTable } from '@/shared/ui/commerce/SpecTable';
 import { StatusBadge, type StatusBadgeProps } from '@/shared/ui/commerce/StatusBadge';
 import { VariantSelector } from '@/shared/ui/commerce/VariantSelector';
+import { Container } from '@/shared/ui/layout/Container';
 import { Breadcrumbs } from '@/shared/ui/navigation/Breadcrumbs';
 import { toOfferCards } from '../mappers/toOfferCards';
 import { optionGroups, variantFor } from '../mappers/variantSelection';
@@ -32,7 +40,7 @@ function variantBadges(product: ProductDetail, v: ProductVariant): StatusBadgePr
   return badges;
 }
 
-const h2 = 'font-heading text-2xl font-semibold';
+const h2 = 'font-heading text-headline tracking-tight';
 
 /** Product page template (D-13, D-14): the same for every category, driven by data. */
 export function ProductView({ product, variant, onVariantChange }: Props) {
@@ -42,8 +50,8 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
   const discontinued = product.status === 'discontinued';
 
   return (
-    <div className="space-y-12 py-4">
-      <div className="space-y-6">
+    <Container className="space-y-16 pt-2 pb-8">
+      <div className="space-y-4">
         <Breadcrumbs
           items={[
             { key: 'home', node: <Link to="/">Home</Link> },
@@ -59,15 +67,17 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
           ]}
         />
 
-        <div className="grid gap-8 lg:grid-cols-2">
-          <div className="flex aspect-square items-center justify-center rounded-xl bg-muted lg:sticky lg:top-24 lg:self-start">
-            <ImageIcon className="size-16 text-ink-muted" aria-hidden />
+        <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
+          <div className="flex aspect-square items-center justify-center rounded-xl bg-surface lg:sticky lg:top-20 lg:self-start">
+            <ImageIcon className="size-16 text-line-strong" strokeWidth={1.25} aria-hidden />
           </div>
 
-          <div className="space-y-6">
+          <div className="space-y-7">
             <div className="space-y-2">
-              <p className="text-sm font-medium text-ink-muted">{product.lineName}</p>
-              <h1 className="font-heading text-3xl font-bold">{product.name}</h1>
+              <p className="text-sm text-ink-muted">{product.lineName}</p>
+              <h1 className="font-heading text-[2rem] leading-tight tracking-tight sm:text-title">
+                {product.name}
+              </h1>
               <Rating
                 {...(product.rating.average !== null ? { value: product.rating.average } : {})}
                 count={product.rating.count}
@@ -75,10 +85,7 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
             </div>
 
             {discontinued ? (
-              <div
-                role="note"
-                className="flex gap-3 rounded-xl border border-line bg-surface p-4 text-sm"
-              >
+              <div role="note" className="flex gap-3 rounded-xl bg-surface p-5 text-sm">
                 <InfoIcon className="size-5 shrink-0 text-info" aria-hidden />
                 <p>
                   We no longer sell the {product.name}. Accessories and support continue.
@@ -145,14 +152,14 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
               </div>
             ) : null}
 
-            <div className="flex gap-3 rounded-xl border border-line bg-surface p-4 text-sm">
+            <div className="flex gap-3 rounded-xl bg-surface p-5 text-sm">
               <RotateCcwIcon className="size-5 shrink-0 text-ink-muted" aria-hidden />
               <p>{product.returnPolicy}</p>
             </div>
 
             {product.compatibility.length ? (
               <section aria-labelledby="pdp-compat" className="space-y-2">
-                <h2 id="pdp-compat" className="font-heading text-base font-semibold">
+                <h2 id="pdp-compat" className="text-sm font-semibold">
                   Compatibility
                 </h2>
                 <ul className="space-y-1 text-sm">
@@ -196,18 +203,28 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
           <h2 id="pdp-about" className={h2}>
             About the {product.name}
           </h2>
-          {product.explainer ? <p className="max-w-3xl">{product.explainer}</p> : null}
+          {product.explainer ? (
+            <p className="max-w-3xl text-lg leading-relaxed sm:text-tagline sm:leading-snug sm:font-normal">
+              {product.explainer}
+            </p>
+          ) : null}
           <div className="grid gap-4 md:grid-cols-2">
             {product.whoFor ? (
-              <div className="rounded-xl bg-success-soft p-4">
-                <h3 className="font-heading font-semibold text-success">Who it's for</h3>
-                <p className="mt-1 text-sm">{product.whoFor}</p>
+              <div className="rounded-xl bg-surface p-6">
+                <h3 className="flex items-center gap-2 font-heading text-tagline tracking-tight">
+                  <CheckIcon className="size-5 text-success" aria-hidden />
+                  Who it's for
+                </h3>
+                <p className="mt-2 text-ink-muted">{product.whoFor}</p>
               </div>
             ) : null}
             {product.notFor ? (
-              <div className="rounded-xl bg-muted p-4">
-                <h3 className="font-heading font-semibold">Who it's not for</h3>
-                <p className="mt-1 text-sm">{product.notFor}</p>
+              <div className="rounded-xl bg-surface p-6">
+                <h3 className="flex items-center gap-2 font-heading text-tagline tracking-tight">
+                  <XIcon className="size-5 text-ink-muted" aria-hidden />
+                  Who it's not for
+                </h3>
+                <p className="mt-2 text-ink-muted">{product.notFor}</p>
               </div>
             ) : null}
           </div>
@@ -218,7 +235,7 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
         <h2 id="pdp-specs" className={h2}>
           Specifications
         </h2>
-        <div className="max-w-3xl">
+        <div className="max-w-3xl rounded-xl bg-surface p-6 sm:p-8">
           <SpecTable groups={product.specs} />
         </div>
       </section>
@@ -228,13 +245,17 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
           <h2 id="pdp-faqs" className={h2}>
             Questions
           </h2>
-          <div className="max-w-3xl divide-y divide-line rounded-xl border border-line bg-surface">
+          <div className="max-w-3xl divide-y divide-line rounded-xl bg-surface">
             {product.faqs.map((f) => (
               <details key={f.question} className="group">
-                <summary className="flex min-h-11 cursor-pointer items-center px-4 py-3 font-medium outline-none focus-visible:ring-2 focus-visible:ring-brand focus-visible:ring-inset">
+                <summary className="flex min-h-14 cursor-pointer list-none items-center justify-between gap-4 px-6 py-4 font-semibold outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand [&::-webkit-details-marker]:hidden">
                   {f.question}
+                  <ChevronDownIcon
+                    className="size-4 shrink-0 text-ink-muted transition-transform group-open:rotate-180"
+                    aria-hidden
+                  />
                 </summary>
-                <p className="px-4 pb-4 text-sm text-ink-muted">{f.answer}</p>
+                <p className="px-6 pb-5 text-ink-muted">{f.answer}</p>
               </details>
             ))}
           </div>
@@ -257,7 +278,7 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
           <h2 id="pdp-suggestions" className={h2}>
             Goes well with
           </h2>
-          <ul className="grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
+          <ul className="grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4">
             {product.suggestions.map(({ product: p, reason }) => {
               const { id, slug, ...card } = toCatalogCard(p);
               return (
@@ -267,13 +288,13 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
                     link={{ to: '/products/$slug', params: { slug } }}
                     className="flex-1"
                   />
-                  <p className="text-sm text-ink-muted">{reason}</p>
+                  <p className="px-1 text-sm text-ink-muted">{reason}</p>
                 </li>
               );
             })}
           </ul>
         </section>
       ) : null}
-    </div>
+    </Container>
   );
 }

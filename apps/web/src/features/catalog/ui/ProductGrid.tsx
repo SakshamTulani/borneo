@@ -2,7 +2,7 @@ import { ProductCard } from '@/shared/ui/commerce/ProductCard';
 import { ProductCardSkeleton } from '@/shared/ui/commerce/ProductCardSkeleton';
 import type { CatalogCard } from '../model';
 
-const grid = 'grid grid-cols-2 gap-3 sm:gap-4 md:grid-cols-3 xl:grid-cols-4';
+const grid = 'grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4';
 
 export function ProductGrid({ cards }: { cards: CatalogCard[] }) {
   return (

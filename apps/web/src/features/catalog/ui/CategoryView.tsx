@@ -4,6 +4,8 @@ import { useId, useState } from 'react';
 import type { ProductSort } from '@borneo/shared';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/base/button';
+import { Select } from '@/shared/ui/base/select';
+import { Container } from '@/shared/ui/layout/Container';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
 import { Breadcrumbs } from '@/shared/ui/navigation/Breadcrumbs';
@@ -45,82 +47,91 @@ export function CategoryView(props: CategoryViewProps) {
   const hasFilters = controls.length > 0 || priceOptions.length > 0;
 
   return (
-    <div className="space-y-4 py-4">
+    <Container className="space-y-5 pt-2 pb-8">
       <Breadcrumbs
         items={[
           { key: 'home', node: <Link to="/">Home</Link> },
           { key: category.slug, node: category.name },
         ]}
       />
-      <h1 className="font-heading text-3xl font-bold">{category.name}</h1>
+      <h1 className="font-heading text-title tracking-tight">{category.name}</h1>
 
-      <div className="flex flex-wrap items-end justify-between gap-3">
-        {hasFilters ? (
-          <Button
-            variant="outline"
-            className="lg:hidden"
-            aria-expanded={filtersOpen}
-            aria-controls={panelId}
-            onClick={() => setFiltersOpen((o) => !o)}
-          >
-            <SlidersHorizontalIcon aria-hidden />
-            Filters{activeFilters.length ? ` (${activeFilters.length})` : ''}
-          </Button>
-        ) : null}
-        <div className="ml-auto flex items-center gap-2">
-          <label htmlFor={sortId} className="text-sm text-ink-muted">
-            Sort by
-          </label>
-          <select
-            id={sortId}
-            value={search.sort ?? 'newest'}
-            onChange={(e) =>
-              onSearchChange({
-                ...search,
-                sort: e.target.value === 'newest' ? undefined : (e.target.value as ProductSort),
-              })
-            }
-            className="h-11 rounded-md border border-line-strong bg-surface px-3 text-sm outline-none focus-visible:ring-2 focus-visible:ring-brand"
-          >
-            {SORTS.map((s) => (
-              <option key={s.value} value={s.value}>
-                {s.label}
-              </option>
-            ))}
-          </select>
-        </div>
-      </div>
-
-      {activeFilters.length ? (
-        <ul className="flex flex-wrap gap-2" aria-label="Applied filters">
-          {activeFilters.map((f) => (
-            <li key={f.key}>
+      <div className="lg:grid lg:grid-cols-[15rem_1fr] lg:grid-rows-[auto_1fr] lg:gap-x-10">
+        <div className="mb-4 space-y-3 lg:col-start-2 lg:row-start-1">
+          <div className="flex flex-wrap items-center gap-3">
+            {hasFilters ? (
               <Button
                 variant="secondary"
-                className="h-11 rounded-full"
-                onClick={() => onSearchChange(f.remove)}
-                aria-label={`Remove filter ${f.label}`}
+                className="lg:hidden"
+                aria-expanded={filtersOpen}
+                aria-controls={panelId}
+                onClick={() => setFiltersOpen((o) => !o)}
               >
-                {f.label}
-                <XIcon aria-hidden />
+                <SlidersHorizontalIcon aria-hidden />
+                Filters{activeFilters.length ? ` (${activeFilters.length})` : ''}
               </Button>
-            </li>
-          ))}
-          <li>
-            <Button variant="link" onClick={() => onSearchChange(clearFilters(search))}>
-              Clear all
-            </Button>
-          </li>
-        </ul>
-      ) : null}
-
-      <div className="lg:grid lg:grid-cols-[16rem_1fr] lg:gap-8">
+            ) : null}
+            {list.status === 'success' && list.cards.length ? (
+              <p role="status" className="sr-only text-sm text-ink-muted sm:not-sr-only">
+                Showing {list.cards.length} product{list.cards.length === 1 ? '' : 's'}
+              </p>
+            ) : null}
+            <div className="ml-auto flex items-center gap-3">
+              <span
+                aria-hidden
+                className="hidden text-sm whitespace-nowrap text-ink-muted sm:block"
+              >
+                Sort by
+              </span>
+              <Select
+                id={sortId}
+                aria-label="Sort by"
+                className="w-48"
+                value={search.sort ?? 'newest'}
+                onChange={(e) =>
+                  onSearchChange({
+                    ...search,
+                    sort: e.target.value === 'newest' ? undefined : (e.target.value as ProductSort),
+                  })
+                }
+              >
+                {SORTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </Select>
+            </div>
+          </div>
+          {activeFilters.length ? (
+            <ul className="flex flex-wrap items-center gap-2" aria-label="Applied filters">
+              {activeFilters.map((f) => (
+                <li key={f.key}>
+                  <Button
+                    variant="secondary"
+                    className="px-4 text-sm"
+                    onClick={() => onSearchChange(f.remove)}
+                    aria-label={`Remove filter ${f.label}`}
+                  >
+                    {f.label}
+                    <XIcon aria-hidden />
+                  </Button>
+                </li>
+              ))}
+              <li>
+                <Button variant="link" onClick={() => onSearchChange(clearFilters(search))}>
+                  Clear all
+                </Button>
+              </li>
+            </ul>
+          ) : null}
+        </div>
         {hasFilters ? (
           <section
             id={panelId}
             aria-labelledby={`${panelId}-h`}
             className={cn(
-              'mb-4 rounded-xl border border-line bg-surface p-4 lg:mb-0 lg:block lg:self-start',
+              'mb-4 rounded-xl bg-surface p-5 lg:sticky lg:top-20 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mb-0 lg:block lg:self-start lg:bg-transparent lg:p-0',
               filtersOpen ? 'block' : 'hidden',
             )}
           >
@@ -135,7 +146,10 @@ export function CategoryView(props: CategoryViewProps) {
             />
           </section>
         ) : null}
-        <section aria-labelledby={`${panelId}-products`} className="min-w-0 lg:col-start-2">
+        <section
+          aria-labelledby={`${panelId}-products`}
+          className="min-w-0 lg:col-start-2 lg:row-start-2"
+        >
           <h2 id={`${panelId}-products`} className="sr-only">
             Products
           </h2>
@@ -146,7 +160,7 @@ export function CategoryView(props: CategoryViewProps) {
           />
         </section>
       </div>
-    </div>
+    </Container>
   );
 }
 
@@ -181,13 +195,10 @@ function Results({
     );
   }
   return (
-    <div className="space-y-6">
-      <p role="status" className="text-sm text-ink-muted">
-        Showing {list.cards.length} product{list.cards.length === 1 ? '' : 's'}
-      </p>
+    <div className="space-y-4">
       <ProductGrid cards={list.cards} />
       {list.hasMore ? (
-        <div className="flex justify-center">
+        <div className="flex justify-center pt-4">
           <Button variant="outline" loading={list.loadingMore} onClick={list.onLoadMore}>
             Show more products
           </Button>

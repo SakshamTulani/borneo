@@ -16,8 +16,9 @@ export function VariantSelector({ legend, options, value, onValueChange }: Props
   const selected = options.find((o) => o.value === value);
   return (
     <div className="space-y-2">
-      <p id={legendId} className="text-sm font-medium">
-        {legend}: <span className="text-ink-muted">{selected?.label ?? 'Choose one'}</span>
+      <p id={legendId} className="text-sm">
+        <span className="font-semibold">{legend}</span>{' '}
+        <span className="text-ink-muted">{selected?.label ?? 'Choose one'}</span>
       </p>
       <RadioGroup.Root
         aria-labelledby={legendId}
@@ -32,9 +33,11 @@ export function VariantSelector({ legend, options, value, onValueChange }: Props
             disabled={!o.available}
             aria-label={o.available ? o.label : `${o.label}, out of stock`}
             className={cn(
-              'inline-flex min-h-11 items-center gap-2 rounded-md border border-line-strong bg-surface px-3 text-sm',
-              'data-[state=checked]:border-brand data-[state=checked]:bg-brand-soft data-[state=checked]:font-semibold data-[state=checked]:text-brand',
-              'disabled:cursor-not-allowed disabled:border-dashed disabled:bg-muted disabled:text-ink-muted',
+              'inline-flex min-h-11 items-center gap-2 rounded-full border border-line-strong bg-surface px-4 text-sm transition-transform outline-none active:scale-[0.97]',
+              'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-brand',
+              // Selected: a 2px brand ring, same shape (configurator chip).
+              'data-[state=checked]:border-brand data-[state=checked]:font-semibold data-[state=checked]:shadow-[inset_0_0_0_1px_var(--brand)]',
+              'disabled:cursor-not-allowed disabled:border-dashed disabled:bg-canvas disabled:text-ink-muted disabled:active:scale-100',
             )}
           >
             {o.swatch ? (

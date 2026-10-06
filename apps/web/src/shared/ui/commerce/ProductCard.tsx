@@ -45,40 +45,54 @@ export function ProductCard(props: ProductCardProps) {
   return (
     <article
       className={cn(
-        'relative flex flex-col gap-3 rounded-xl border border-line bg-surface p-3',
+        'group relative flex flex-col gap-3 rounded-xl border border-line bg-surface p-3 transition-colors hover:border-line-strong sm:p-4',
         className,
       )}
     >
-      <div className="flex aspect-square items-center justify-center overflow-hidden rounded-md bg-muted">
+      <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[12px] bg-canvas">
         {image ? (
-          <img src={image.src} alt={image.alt} className="size-full object-cover" />
+          <img
+            src={image.src}
+            alt={image.alt}
+            loading="lazy"
+            className="size-4/5 object-contain drop-shadow-[3px_5px_15px_rgba(0,0,0,0.18)]"
+          />
         ) : (
-          <ImageIcon className="size-10 text-ink-muted" aria-hidden />
+          <ImageIcon className="size-10 text-line-strong" aria-hidden />
         )}
+        {badges.length ? (
+          <ul
+            className="absolute top-2.5 left-2.5 flex flex-wrap gap-1"
+            aria-label="Product status"
+          >
+            {badges.map((b, i) => (
+              <li key={i}>
+                <StatusBadge {...b} />
+              </li>
+            ))}
+          </ul>
+        ) : null}
       </div>
-      {badges.length ? (
-        <ul className="flex flex-wrap gap-1" aria-label="Product status">
-          {badges.map((b, i) => (
-            <li key={i}>
-              <StatusBadge {...b} />
-            </li>
-          ))}
-        </ul>
-      ) : null}
-      <div>
-        {familyLabel ? <p className="text-xs font-medium text-ink-muted">{familyLabel}</p> : null}
-        <h3 className="font-heading text-base font-semibold">
+      <div className="flex flex-1 flex-col gap-1">
+        {familyLabel ? <p className="text-xs text-ink-muted">{familyLabel}</p> : null}
+        <h3 className="font-heading text-base leading-snug font-semibold">
           {/* Stretched link: the whole card opens the product; the Watch button sits above it. */}
           <Link
             {...link}
-            className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-brand"
+            className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-brand"
           >
             {name}
           </Link>
         </h3>
+        {/* Cards show a rating only once verified reviews exist; the PDP says "No reviews yet" (D-150). */}
+        {rating.count > 0 ? <Rating {...rating} /> : null}
+        <PriceBlock
+          {...price}
+          size="sm"
+          unavailable={availability === 'outOfStock'}
+          className="mt-auto pt-2"
+        />
       </div>
-      <Rating {...rating} />
-      <PriceBlock {...price} unavailable={availability === 'outOfStock'} />
       {availability === 'outOfStock' && onWatchToggle ? (
         <Button
           variant={watching ? 'secondary' : 'outline'}

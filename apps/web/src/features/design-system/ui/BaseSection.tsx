@@ -3,6 +3,7 @@ import { Button } from '@/shared/ui/base/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/base/card';
 import { Input } from '@/shared/ui/base/input';
 import { Label } from '@/shared/ui/base/label';
+import { Select } from '@/shared/ui/base/select';
 import { Skeleton } from '@/shared/ui/base/skeleton';
 import { DemoBox } from '@/shared/ui/feedback/DemoBox';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
@@ -14,7 +15,7 @@ const noop = () => {};
 export function BaseSection() {
   return (
     <section aria-labelledby="base" className="space-y-4">
-      <h2 id="base" className="text-2xl font-bold">
+      <h2 id="base" className="text-headline">
         Base components
       </h2>
 
@@ -26,6 +27,12 @@ export function BaseSection() {
             <Button variant="outline">Outline</Button>
             <Button variant="ghost">Ghost</Button>
             <Button variant="link">Link</Button>
+          </div>
+        </State>
+        <State label="On a dark tile">
+          <div className="flex flex-wrap gap-2 rounded-xl bg-tile p-4">
+            <Button>Primary</Button>
+            <Button variant="onTile">Secondary</Button>
           </div>
         </State>
         <State label="Disabled, loading, destructive">
@@ -86,6 +93,26 @@ export function BaseSection() {
               <Label htmlFor="ds-disabled">Phone</Label>
               <Input id="ds-disabled" disabled defaultValue="+91 98xxxxxx10" />
             </div>
+          </div>
+        </State>
+      </Specimen>
+
+      <Specimen title="Select" note="Native select; the chevron sits inside the padding.">
+        <State label="Default">
+          <div className="space-y-2">
+            <Label htmlFor="ds-sort">Sort by</Label>
+            <Select id="ds-sort" defaultValue="newest">
+              <option value="newest">Newest first</option>
+              <option value="price_asc">Price: low to high</option>
+            </Select>
+          </div>
+        </State>
+        <State label="Disabled">
+          <div className="space-y-2">
+            <Label htmlFor="ds-sort-off">RAM</Label>
+            <Select id="ds-sort-off" disabled defaultValue="">
+              <option value="">Any</option>
+            </Select>
           </div>
         </State>
       </Specimen>

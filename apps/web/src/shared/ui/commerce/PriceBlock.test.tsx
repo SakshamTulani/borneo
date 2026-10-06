@@ -15,7 +15,7 @@ describe('PriceBlock', () => {
         size="lg"
       />,
     );
-    expect(container.querySelector('.text-3xl')?.textContent).toBe('Price ₹24,999');
+    expect(container.querySelector('p > span')?.textContent).toBe('Price ₹24,999');
     expect(screen.getByText('₹29,999').tagName).toBe('DEL');
     expect(screen.getByText('Save ₹5,000 (17%)')).toBeTruthy();
     expect(screen.getByText(/effective with Demo Bank card offer/)).toBeTruthy();
@@ -27,6 +27,23 @@ describe('PriceBlock', () => {
     const { container } = render(<PriceBlock sellingPaise={99_900} />);
     expect(screen.queryByText(/MRP/)).toBeNull();
     expect(screen.queryByText(/Save/)).toBeNull();
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('D-33: compact card form keeps price, genuine MRP, savings and EMI from', async () => {
+    const { container } = render(
+      <PriceBlock
+        sellingPaise={2_499_900}
+        mrpPaise={2_999_900}
+        savings={{ paise: 500_000, percent: 17 }}
+        emiFromPaise={208_325}
+        size="sm"
+      />,
+    );
+    expect(container.querySelector('p > span')?.textContent).toBe('Price ₹24,999');
+    expect(screen.getByText('₹29,999').tagName).toBe('DEL');
+    expect(screen.getByText('17% off')).toBeTruthy();
+    expect(screen.getByText('₹2,083.25')).toBeTruthy();
     expect(await axe(container)).toHaveNoViolations();
   });
 

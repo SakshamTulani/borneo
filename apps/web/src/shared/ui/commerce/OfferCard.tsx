@@ -40,8 +40,8 @@ export function OfferCard({ kind, title, description, code, status, reason, onAp
   return (
     <div
       className={cn(
-        'flex gap-3 rounded-xl border p-4',
-        status === 'notApplicable' ? 'border-line bg-muted' : 'border-offer/30 bg-offer-soft',
+        'flex h-full gap-4 rounded-xl border border-line p-5',
+        status === 'notApplicable' ? 'bg-canvas' : 'bg-surface',
       )}
     >
       <Icon
@@ -52,15 +52,15 @@ export function OfferCard({ kind, title, description, code, status, reason, onAp
         aria-hidden
       />
       <div className="flex-1 space-y-1">
-        <p className="text-xs font-medium tracking-wide text-ink-muted uppercase">
-          {kindLabel[kind]}
-        </p>
-        <p className="font-semibold">{title}</p>
-        <p className="text-sm text-ink">{description}</p>
+        <p className="text-xs font-semibold text-offer">{kindLabel[kind]}</p>
+        <p className="leading-snug font-semibold">{title}</p>
+        <p className="text-sm text-ink-muted">{description}</p>
         {code ? (
           <p className="text-sm">
             Code{' '}
-            <code className="rounded bg-surface px-1.5 py-0.5 font-mono font-semibold">{code}</code>
+            <code className="rounded-sm border border-line bg-canvas px-2 py-0.5 font-mono text-[13px] font-semibold">
+              {code}
+            </code>
           </p>
         ) : null}
         {status === 'notApplicable' && reason ? (

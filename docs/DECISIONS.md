@@ -196,23 +196,24 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 
 ## Platform & tech (details in ARCHITECTURE.md / ADRs)
 
-| ID    | Rule                                                                                                                                   | Status     |
-| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| D-160 | Responsive web, mobile-first. Same features on both. Mobile: sticky purchase bar, bottom nav.                                          | v1         |
-| D-161 | No native apps, no PWA, no push.                                                                                                       | v1         |
-| D-162 | TanStack Start with SSR; SEO in v1 (ADR-0008). Fastify remains the only backend.                                                       | v1         |
-| D-163 | Demo adapters: NotificationAdapter, PaymentGateway (mock), Analytics (console + log).                                                  | v1         |
-| D-164 | Business rules are pure functions with unit tests, never in UI.                                                                        | v1         |
-| D-165 | One `DEMO_MODE` flag gates every demo behaviour; production start refuses `DEMO_MODE=true`.                                            | assumption |
-| D-166 | Courier tracking, serviceability, bot protection are adapters (mocked in demo).                                                        | assumption |
-| D-167 | Light theme only in v1; tokens ready for dark.                                                                                         | assumption |
-| D-168 | TypeScript pinned to 6.0.x until typescript-eslint supports 7.                                                                         | v1         |
-| D-169 | Local MinIO from `cgr.dev/chainguard/minio` (dev only).                                                                                | v1         |
-| D-174 | Hook names: `use<Name>Query`, `use<Feature>Result`, `use<Feature>Form`, `use<Action>Mutation`. One per file.                           | v1         |
-| D-175 | Production HTTP host for the Start server bundle (Nitro, srvx or a Node adapter). Build output is a fetch handler today.               | open       |
-| D-176 | `dark:` variants only apply under a `.dark` class, never from the OS colour scheme (v1 is light only).                                 | v1         |
-| D-177 | shadcn components live in `apps/web/src/shared/ui/base` (`@/` alias), restyled to Borneo tokens. Commerce components are display-only. | v1         |
-| D-178 | Offer colour is `#9c4a1e` (was `#B85C2E`): the old value failed 4.5:1 on `offer-soft`. Token renamed `accent` → `offer`.               | v1         |
+| ID    | Rule                                                                                                                                                                                    | Status     |
+| ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-160 | Responsive web, mobile-first. Same features on both. Mobile: sticky purchase bar, bottom nav.                                                                                           | v1         |
+| D-161 | No native apps, no PWA, no push.                                                                                                                                                        | v1         |
+| D-162 | TanStack Start with SSR; SEO in v1 (ADR-0008). Fastify remains the only backend.                                                                                                        | v1         |
+| D-163 | Demo adapters: NotificationAdapter, PaymentGateway (mock), Analytics (console + log).                                                                                                   | v1         |
+| D-164 | Business rules are pure functions with unit tests, never in UI.                                                                                                                         | v1         |
+| D-165 | One `DEMO_MODE` flag gates every demo behaviour; production start refuses `DEMO_MODE=true`.                                                                                             | assumption |
+| D-166 | Courier tracking, serviceability, bot protection are adapters (mocked in demo).                                                                                                         | assumption |
+| D-167 | Light theme only in v1; tokens ready for dark.                                                                                                                                          | assumption |
+| D-168 | TypeScript pinned to 6.0.x until typescript-eslint supports 7.                                                                                                                          | v1         |
+| D-169 | Local MinIO from `cgr.dev/chainguard/minio` (dev only).                                                                                                                                 | v1         |
+| D-174 | Hook names: `use<Name>Query`, `use<Feature>Result`, `use<Feature>Form`, `use<Action>Mutation`. One per file.                                                                            | v1         |
+| D-175 | Production HTTP host for the Start server bundle (Nitro, srvx or a Node adapter). Build output is a fetch handler today.                                                                | open       |
+| D-176 | `dark:` variants only apply under a `.dark` class, never from the OS colour scheme (v1 is light only).                                                                                  | v1         |
+| D-177 | shadcn components live in `apps/web/src/shared/ui/base` (`@/` alias), restyled to Borneo tokens. Commerce components are display-only.                                                  | v1         |
+| D-178 | Offer colour is `#9c4a1e` (was `#B85C2E`): the old value failed 4.5:1 on `offer-soft`. Token renamed `accent` → `offer`.                                                                | v1         |
+| D-179 | Visual language follows the Apple store reference (parchment/white surfaces, pill actions, 18px hairline cards, 17px body, product-only shadow) with Borneo green as the single accent. | v1         |
 
 ## Services & tax
 

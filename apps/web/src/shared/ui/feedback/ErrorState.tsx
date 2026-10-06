@@ -9,15 +9,15 @@ export function ErrorState({ title, body, onRetry, className }: Props) {
     <div
       role="alert"
       className={cn(
-        'flex flex-col items-center gap-2 rounded-xl bg-danger-soft px-6 py-10 text-center',
+        'flex flex-col items-center gap-2 rounded-xl bg-danger-soft px-6 py-14 text-center',
         className,
       )}
     >
       <AlertTriangleIcon className="size-8 text-danger" aria-hidden />
-      <p className="font-heading text-lg font-semibold text-danger">{title}</p>
+      <p className="font-heading text-tagline font-semibold tracking-tight text-danger">{title}</p>
       {body ? <p className="max-w-sm text-sm text-ink">{body}</p> : null}
       {onRetry ? (
-        <Button variant="outline" onClick={onRetry} className="mt-2">
+        <Button variant="outline" onClick={onRetry} className="mt-3">
           <RotateCwIcon aria-hidden />
           Try again
         </Button>

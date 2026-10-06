@@ -1,4 +1,5 @@
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
+import { Container } from '@/shared/ui/layout/Container';
 import { useCategoriesQuery } from '../hooks/useCategoriesQuery';
 import { CategoryGrid } from './CategoryGrid';
 
@@ -6,13 +7,13 @@ import { CategoryGrid } from './CategoryGrid';
 export function CategoriesPage() {
   const categories = useCategoriesQuery();
   return (
-    <div className="space-y-4 py-6">
-      <h1 className="font-heading text-3xl font-bold">Categories</h1>
+    <Container className="space-y-6 py-8">
+      <h1 className="font-heading text-title tracking-tight">Categories</h1>
       {categories.isError ? (
         <ErrorState title="Couldn't load categories" onRetry={() => void categories.refetch()} />
       ) : (
         <CategoryGrid categories={categories.data ?? []} />
       )}
-    </div>
+    </Container>
   );
 }

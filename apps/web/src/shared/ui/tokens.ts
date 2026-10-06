@@ -3,18 +3,22 @@
 export type ColorToken = { name: string; hex: string; use: string };
 
 export const colors: ColorToken[] = [
-  { name: 'canvas', hex: '#faf8f5', use: 'Page background' },
-  { name: 'surface', hex: '#ffffff', use: 'Cards, sheets' },
-  { name: 'muted', hex: '#f2eee8', use: 'Skeletons, hover, quiet fills' },
-  { name: 'ink', hex: '#1d1b19', use: 'Primary text' },
-  { name: 'ink-muted', hex: '#5e5953', use: 'Secondary text' },
-  { name: 'line', hex: '#e7e2db', use: 'Dividers, card borders' },
-  { name: 'line-strong', hex: '#8c857c', use: 'Input and control borders (≥ 3:1)' },
-  { name: 'brand', hex: '#0f5b4e', use: 'Primary actions, links, focus' },
+  { name: 'canvas', hex: '#f5f5f7', use: 'Page background (parchment)' },
+  { name: 'surface', hex: '#ffffff', use: 'Cards, sheets, header' },
+  { name: 'muted', hex: '#ececf0', use: 'Skeletons, hover, image wells, quiet fills' },
+  { name: 'ink', hex: '#1d1d1f', use: 'Primary text' },
+  { name: 'ink-muted', hex: '#636366', use: 'Secondary text' },
+  { name: 'line', hex: '#e3e3e8', use: 'Hairlines, card borders' },
+  { name: 'line-strong', hex: '#86868b', use: 'Input and control borders (≥ 3:1)' },
+  { name: 'brand', hex: '#0f5b4e', use: 'The one accent: actions, links, focus, selection' },
   { name: 'brand-ink', hex: '#ffffff', use: 'Text on brand' },
-  { name: 'brand-soft', hex: '#e3f0ec', use: 'Selected, highlights' },
-  { name: 'offer', hex: '#9c4a1e', use: 'Offers, savings (never alarm red)' },
-  { name: 'offer-soft', hex: '#f7e8df', use: 'Offer chips and cards' },
+  { name: 'brand-soft', hex: '#e6f2ee', use: 'Selected, highlights' },
+  { name: 'tile', hex: '#1d1d1f', use: 'Dark section tiles (home hero)' },
+  { name: 'on-tile', hex: '#f5f5f7', use: 'Text on dark tiles' },
+  { name: 'on-tile-muted', hex: '#a1a1a6', use: 'Secondary text on dark tiles' },
+  { name: 'brand-on-tile', hex: '#5cc9aa', use: 'Links on dark tiles' },
+  { name: 'offer', hex: '#9c4a1e', use: 'Savings text (never alarm red)' },
+  { name: 'offer-soft', hex: '#f7e8df', use: 'Offer chips' },
   { name: 'success', hex: '#1f7a44', use: 'In stock, delivered' },
   { name: 'success-soft', hex: '#e4f2ea', use: 'Success fills' },
   { name: 'warning', hex: '#9a6200', use: 'Real low stock, delays' },
@@ -46,24 +50,33 @@ export const contrastPairs: { fg: string; bg: string; min: number }[] = [
   { fg: 'info', bg: 'info-soft', min: 4.5 },
   { fg: 'demo', bg: 'demo-soft', min: 4.5 },
   { fg: 'line-strong', bg: 'surface', min: 3 },
+  { fg: 'brand', bg: 'canvas', min: 4.5 },
+  { fg: 'ink-muted', bg: 'brand-soft', min: 4.5 },
+  { fg: 'on-tile', bg: 'tile', min: 4.5 },
+  { fg: 'on-tile-muted', bg: 'tile', min: 4.5 },
+  { fg: 'brand-on-tile', bg: 'tile', min: 4.5 },
+  { fg: 'offer', bg: 'canvas', min: 4.5 },
 ];
 
+/** Display sizes carry tight tracking and weight 600; body is 17px / 1.47 (Apple reference). */
 export const typeScale = [
-  { name: 'xs', px: 12 },
-  { name: 'sm', px: 14 },
-  { name: 'base', px: 16 },
-  { name: 'lg', px: 18 },
-  { name: 'xl', px: 20 },
-  { name: '2xl', px: 24 },
-  { name: '3xl', px: 30 },
-  { name: '4xl', px: 36 },
-  { name: '5xl', px: 48 },
+  { name: 'xs', px: 12, use: 'Fine print' },
+  { name: 'sm', px: 14, use: 'Captions, controls' },
+  { name: 'base', px: 17, use: 'Body' },
+  { name: 'tagline', px: 21, use: 'Card titles, sub-heads' },
+  { name: 'headline', px: 28, use: 'Section heads' },
+  { name: 'title', px: 40, use: 'Page titles' },
+  { name: 'display', px: 56, use: 'Home hero' },
 ];
 
-export const spacing = [4, 8, 12, 16, 24, 32, 48, 64];
+export const spacing = [4, 8, 12, 16, 24, 32, 48, 64, 80];
 
 export const radii = [
-  { name: 'md', px: 6, use: 'Inputs, buttons' },
-  { name: 'xl', px: 12, use: 'Cards' },
-  { name: 'full', px: 999, use: 'Chips, badges' },
+  { name: 'sm', px: 8, use: 'Compact utility controls, inline images' },
+  { name: 'md', px: 11, use: 'Inputs, selects' },
+  { name: 'xl', px: 18, use: 'Cards, image wells' },
+  { name: 'full', px: 9999, use: 'Buttons (pills), chips, badges' },
 ];
+
+/** The only shadow: under product imagery resting on a surface. Never on cards, buttons or text. */
+export const productShadow = '3px 5px 30px rgba(0, 0, 0, 0.22)';

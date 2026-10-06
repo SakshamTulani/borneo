@@ -1,10 +1,12 @@
 import { Link } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { Logo } from './brand/Logo';
+import { Container } from './layout/Container';
 import { BottomNav } from './navigation/BottomNav';
 
 /**
- * Page frame: skip link, header (logo + `nav` on desktop), main, footer, and the mobile bottom nav.
+ * Page frame: skip link, frosted header (logo + `nav` on desktop), full-width main (pages use
+ * `Container`; full-bleed tiles don't), parchment footer, and the mobile bottom nav.
  * `nav` is composed by the root route (category links come from the catalog feature).
  */
 export function AppShell({ children, nav }: { children: ReactNode; nav?: ReactNode }) {
@@ -12,25 +14,26 @@ export function AppShell({ children, nav }: { children: ReactNode; nav?: ReactNo
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
       <a
         href="#main"
-        className="sr-only z-30 rounded-md bg-surface px-4 py-3 font-medium text-brand focus:not-sr-only focus:absolute focus:top-2 focus:left-2"
+        className="sr-only z-30 rounded-full bg-surface px-5 py-3 font-semibold text-brand focus:not-sr-only focus:absolute focus:top-2 focus:left-2"
       >
         Skip to content
       </a>
-      <header className="sticky top-0 z-20 border-b border-line bg-canvas/95 backdrop-blur">
-        <div className="mx-auto flex h-16 max-w-7xl items-center gap-8 px-4">
-          <Link to="/" aria-label="Borneo home" className="inline-flex shrink-0 rounded-md">
+      <header className="sticky top-0 z-20 border-b border-line/70 bg-surface/80 backdrop-blur-xl backdrop-saturate-150">
+        <Container className="flex h-14 items-center gap-8">
+          <Link to="/" aria-label="Borneo home" className="inline-flex shrink-0 rounded-sm">
             <Logo />
           </Link>
           {nav ? <div className="hidden min-w-0 lg:block">{nav}</div> : null}
-        </div>
+        </Container>
       </header>
-      <main id="main" tabIndex={-1} className="mx-auto w-full max-w-7xl flex-1 px-4 pb-24 lg:pb-12">
+      <main id="main" tabIndex={-1} className="w-full flex-1 pb-24 outline-none lg:pb-16">
         {children}
       </main>
-      <footer className="border-t border-line pb-20 lg:pb-0">
-        <div className="mx-auto max-w-7xl px-4 py-6 text-sm text-ink-muted">
-          Prices include GST. Delivery across India.
-        </div>
+      <footer className="border-t border-line bg-canvas pb-20 lg:pb-0">
+        <Container className="flex flex-col gap-1 py-8 text-xs text-ink-muted sm:flex-row sm:justify-between">
+          <p>Prices include GST. Delivery across India.</p>
+          <p>© Borneo. Demo store.</p>
+        </Container>
       </footer>
       <BottomNav />
     </div>

@@ -14,14 +14,14 @@ export function EmptyState({ title, body, action, icon, className }: Props) {
   return (
     <div
       className={cn(
-        'flex flex-col items-center gap-2 rounded-xl border border-dashed border-line px-6 py-10 text-center',
+        'flex flex-col items-center gap-2 rounded-xl bg-surface px-6 py-14 text-center',
         className,
       )}
     >
-      <span className="text-ink-muted" aria-hidden>
-        {icon ?? <InboxIcon className="size-8" />}
+      <span className="mb-1 text-line-strong" aria-hidden>
+        {icon ?? <InboxIcon className="size-9" strokeWidth={1.5} />}
       </span>
-      <p className="font-heading text-lg font-semibold">{title}</p>
+      <p className="font-heading text-tagline font-semibold tracking-tight">{title}</p>
       {body ? <p className="max-w-sm text-sm text-ink-muted">{body}</p> : null}
       {action ? <div className="pt-2">{action}</div> : null}
     </div>

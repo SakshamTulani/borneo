@@ -20,16 +20,16 @@ export function SpecTable({ groups }: { groups: SpecGroup[] }) {
     );
   }
   return (
-    <div className="space-y-6">
+    <div className="space-y-10">
       {groups.map((g) => (
         <Table key={g.title}>
-          <TableCaption className="mt-0 mb-2 text-left font-heading text-base font-semibold text-ink [caption-side:top]">
+          <TableCaption className="mt-0 mb-1 border-b border-ink/80 pb-3 text-left font-heading text-tagline font-semibold text-ink [caption-side:top]">
             {g.title}
           </TableCaption>
           <TableBody>
             {g.rows.map((r) => (
               <TableRow key={r.label}>
-                <TableHead scope="row" className="w-2/5 font-normal text-ink-muted">
+                <TableHead scope="row" className="w-2/5 whitespace-normal text-ink-muted">
                   {r.label}
                 </TableHead>
                 <TableCell className={r.value ? 'text-ink' : 'text-ink-muted italic'}>

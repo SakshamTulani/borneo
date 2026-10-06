@@ -2,6 +2,8 @@
 
 Working name **Borneo**. Feel: **clear, confident, warm.** One identity across value, upper-mid and premium.
 
+Visual language (D-179): modelled on the Apple store reference: quiet parchment and white surfaces, near-black ink, one accent (Borneo green), pill-shaped actions, 18px hairline cards, no shadows except under product imagery, and the product does the talking.
+
 ## Principles
 
 1. **Clear** — one primary action per screen; plain words; real numbers (price, date range, policy) up front.
@@ -23,29 +25,31 @@ Source of truth: `apps/web/src/shared/ui/tokens.ts`. `src/index.css` must match 
 
 **Colour** (light only in v1, D-167; `dark:` only applies under a `.dark` class, never from the OS setting)
 
-| Token                      | Hex               | Use                               |
-| -------------------------- | ----------------- | --------------------------------- |
-| `canvas`                   | #faf8f5           | Page background                   |
-| `surface`                  | #ffffff           | Cards, sheets                     |
-| `muted`                    | #f2eee8           | Skeletons, hover, quiet fills     |
-| `ink`                      | #1d1b19           | Primary text                      |
-| `ink-muted`                | #5e5953           | Secondary text                    |
-| `line`                     | #e7e2db           | Dividers, card borders            |
-| `line-strong`              | #8c857c           | Input and control borders (≥ 3:1) |
-| `brand`                    | #0f5b4e           | Primary actions, links, focus     |
-| `brand-ink` / `brand-soft` | #ffffff / #e3f0ec | Text on brand / selected          |
-| `offer` / `offer-soft`     | #9c4a1e / #f7e8df | Offers, savings (never alarm red) |
-| `success` / `success-soft` | #1f7a44 / #e4f2ea | In stock, delivered               |
-| `warning` / `warning-soft` | #9a6200 / #fbf0d9 | Real low stock, delays            |
-| `danger` / `danger-soft`   | #b3261e / #fbe7e5 | Errors, not deliverable           |
-| `info` / `info-soft`       | #2b5c9e / #e6eef8 | Neutral notices                   |
-| `demo` / `demo-soft`       | #6b4fa0 / #efeaf7 | Demo-mode labels only             |
+| Token                                | Hex                         | Use                                              |
+| ------------------------------------ | --------------------------- | ------------------------------------------------ |
+| `canvas`                             | #f5f5f7                     | Page background (parchment)                      |
+| `surface`                            | #ffffff                     | Cards, sheets, header                            |
+| `muted`                              | #ececf0                     | Skeletons, hover, image wells                    |
+| `ink`                                | #1d1d1f                     | Primary text                                     |
+| `ink-muted`                          | #636366                     | Secondary text                                   |
+| `line`                               | #e3e3e8                     | Hairlines, card borders                          |
+| `line-strong`                        | #86868b                     | Input and control borders (≥ 3:1)                |
+| `brand`                              | #0f5b4e                     | The one accent: actions, links, focus, selection |
+| `brand-ink` / `brand-soft`           | #ffffff / #e6f2ee           | Text on brand / selected                         |
+| `tile` / `on-tile` / `on-tile-muted` | #1d1d1f / #f5f5f7 / #a1a1a6 | Dark section tiles (home hero) and their text    |
+| `brand-on-tile`                      | #5cc9aa                     | Links on dark tiles                              |
+| `offer` / `offer-soft`               | #9c4a1e / #f7e8df           | Savings text, offer chips (never alarm red)      |
+| `success` / `success-soft`           | #1f7a44 / #e4f2ea           | In stock, delivered                              |
+| `warning` / `warning-soft`           | #9a6200 / #fbf0d9           | Real low stock, delays                           |
+| `danger` / `danger-soft`             | #b3261e / #fbe7e5           | Errors, not deliverable                          |
+| `info` / `info-soft`                 | #2b5c9e / #e6eef8           | Neutral notices                                  |
+| `demo` / `demo-soft`                 | #6b4fa0 / #efeaf7           | Demo-mode labels only                            |
 
 shadcn semantic names (`primary`, `secondary`, `muted-foreground`, `destructive`, `border`, `input`, `ring`, …) map onto these in `index.css`, so library components inherit Borneo tokens. The earlier `accent` token is now `offer`, because shadcn reserves `accent` for hover fills.
 
-**Type**: Manrope (headings), Inter (body), both self-hosted variable fonts. Tabular numerals for prices and timers. Scale (px): 12, 14, 16, 18, 20, 24, 30, 36, 48.
+**Type**: system SF Pro on Apple devices, Inter (self-hosted) elsewhere. Headings weight 600 with tight tracking; body 17px / 1.47; no weight 500 in headings. Scale (px): 12, 14, 17 (base), 21 (tagline), 28 (headline), 40 (title), 56 (display). Tabular numerals for prices and timers. `cn()` knows the custom sizes (tailwind-merge config).
 
-**Space**: 4px grid (4–64). **Radius**: 6 (inputs, buttons), 12 (cards), full (chips, badges). **Motion**: short, and off under `prefers-reduced-motion`.
+**Space**: 4px grid (4–80); 48–64px between home sections. **Radius**: 8 (compact utility), 11 (inputs, selects), 18 (cards, image wells), full (buttons are pills, chips, badges). **Elevation**: none on cards, buttons or text; surfaces separate by colour. One shadow, `productShadow`, under product imagery only. **Motion**: short; buttons and chips press to `scale(0.97)`; off under `prefers-reduced-motion`.
 
 **Layout**: mobile-first. Breakpoints 640 / 1024 / 1280. Mobile gets a bottom nav and a sticky purchase bar on product pages (built in later phases).
 
@@ -63,18 +67,18 @@ Every component has a render test and a vitest-axe check per state.
 
 Commerce components only display. They never compute prices, savings, eligibility, serviceability or stock. Those values arrive as props from `@borneo/shared` rules.
 
-| Component       | Must show                                                                                              | States                                                                                                              |
-| --------------- | ------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------- |
-| PriceBlock      | Selling price as the headline; genuine MRP and savings when passed; effective-price line; "from ₹X/mo" | plain, MRP + savings + EMI, effective price, unavailable                                                            |
-| Rating          | Score + verified count                                                                                 | with reviews, "No reviews yet"                                                                                      |
-| StatusBadge     | Text label + icon                                                                                      | in stock, low stock (real count), out of stock, pre-order, flash sale, new, upgrade available, bundle, works with X |
-| ProductCard     | Image, badges, family, name (stretched link), rating, price                                            | in stock, flash, pre-order, out of stock + Watch/Watching, skeleton                                                 |
-| VariantSelector | Legend + current choice; unavailable options stay visible                                              | selected, unavailable                                                                                               |
-| DeliveryChecker | Pincode field, date range, COD                                                                         | idle, checking, deliverable ± COD, not deliverable, out of stock here, invalid                                      |
-| OfferCard       | Kind, title, terms, code                                                                               | available, applied, not applicable (with reason)                                                                    |
-| Countdown       | Real fixed deadline plus its absolute time                                                             | pending (SSR), upcoming, live, urgent (announced once), ended                                                       |
-| SpecTable       | Grouped rows                                                                                           | full, "Not specified", empty                                                                                        |
-| OrderTimeline   | Ordered steps, `aria-current="step"`                                                                   | in transit, cancelled, replacement requested                                                                        |
+| Component       | Must show                                                                                                      | States                                                                                                              |
+| --------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| PriceBlock      | Selling price as the headline; genuine MRP and savings when passed; effective-price line; "from ₹X/mo"         | plain, MRP + savings + EMI, effective price, unavailable                                                            |
+| Rating          | Score + verified count                                                                                         | with reviews, "No reviews yet"                                                                                      |
+| StatusBadge     | Text label + icon                                                                                              | in stock, low stock (real count), out of stock, pre-order, flash sale, new, upgrade available, bundle, works with X |
+| ProductCard     | Image well with badges over it, family, name (stretched router link), rating once reviews exist, compact price | in stock, flash, pre-order, out of stock + Watch/Watching, skeleton                                                 |
+| VariantSelector | Legend + current choice; unavailable options stay visible                                                      | selected, unavailable                                                                                               |
+| DeliveryChecker | Pincode field, date range, COD                                                                                 | idle, checking, deliverable ± COD, not deliverable, out of stock here, invalid                                      |
+| OfferCard       | Kind, title, terms, code                                                                                       | available, applied, not applicable (with reason)                                                                    |
+| Countdown       | Real fixed deadline plus its absolute time                                                                     | pending (SSR), upcoming, live, urgent (announced once), ended                                                       |
+| SpecTable       | Grouped rows                                                                                                   | full, "Not specified", empty                                                                                        |
+| OrderTimeline   | Ordered steps, `aria-current="step"`                                                                           | in transit, cancelled, replacement requested                                                                        |
 
 Still to design, in later phases: payment hold timer, upgrade strip, compare table, finder step, sticky purchase bar (with add to cart, Phase J), product media gallery. Phase F placed the policy summary and suggestion-with-reason inline on the PDP.
 

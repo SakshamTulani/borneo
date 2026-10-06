@@ -1,22 +1,25 @@
 @import 'tailwindcss';
 @import '@fontsource-variable/inter';
-@import '@fontsource-variable/manrope';
 
 /* Light only in v1 (D-167). `dark:` follows a .dark class we never set, not the OS setting. */
 @custom-variant dark (&:where(.dark, .dark *));
 
 /* Tokens: docs/DESIGN.md. Values must match src/shared/ui/tokens.ts (tokens.test.ts). */
 :root {
-  --canvas: #faf8f5;
+  --canvas: #f5f5f7;
   --surface: #ffffff;
-  --muted: #f2eee8;
-  --ink: #1d1b19;
-  --ink-muted: #5e5953;
-  --line: #e7e2db;
-  --line-strong: #8c857c;
+  --muted: #ececf0;
+  --ink: #1d1d1f;
+  --ink-muted: #636366;
+  --line: #e3e3e8;
+  --line-strong: #86868b;
   --brand: #0f5b4e;
   --brand-ink: #ffffff;
-  --brand-soft: #e3f0ec;
+  --brand-soft: #e6f2ee;
+  --tile: #1d1d1f;
+  --on-tile: #f5f5f7;
+  --on-tile-muted: #a1a1a6;
+  --brand-on-tile: #5cc9aa;
   --offer: #9c4a1e;
   --offer-soft: #f7e8df;
   --success: #1f7a44;
@@ -55,6 +58,10 @@
   --color-info-soft: var(--info-soft);
   --color-demo: var(--demo);
   --color-demo-soft: var(--demo-soft);
+  --color-tile: var(--tile);
+  --color-on-tile: var(--on-tile);
+  --color-on-tile-muted: var(--on-tile-muted);
+  --color-brand-on-tile: var(--brand-on-tile);
 
   /* shadcn semantic names mapped onto Borneo tokens */
   --color-background: var(--canvas);
@@ -75,11 +82,27 @@
   --color-input: var(--line-strong);
   --color-ring: var(--brand);
 
-  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
-  --font-heading: 'Manrope Variable', 'Inter Variable', ui-sans-serif, sans-serif;
+  --font-sans:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Text', 'Inter Variable', system-ui, sans-serif;
+  --font-heading:
+    -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter Variable', system-ui, sans-serif;
 
-  --radius-md: 6px;
-  --radius-xl: 12px;
+  /* Type scale (tokens.ts typeScale): body 17px, display sizes tight. */
+  --text-base: 1.0625rem;
+  --text-base--line-height: 1.47;
+  --text-tagline: 1.3125rem;
+  --text-tagline--line-height: 1.19;
+  --text-headline: 1.75rem;
+  --text-headline--line-height: 1.14;
+  --text-title: 2.5rem;
+  --text-title--line-height: 1.1;
+  --text-display: 3.5rem;
+  --text-display--line-height: 1.07;
+
+  --radius-sm: 8px;
+  --radius-md: 11px;
+  --radius-xl: 18px;
+  --shadow-product: 3px 5px 30px rgba(0, 0, 0, 0.22);
 }
 
 @layer base {
@@ -87,13 +110,14 @@
     @apply border-border;
   }
   body {
-    @apply bg-canvas font-sans text-ink antialiased;
+    @apply bg-canvas font-sans text-base text-ink antialiased;
+    letter-spacing: -0.01em;
   }
   h1,
   h2,
   h3,
   h4 {
-    @apply font-heading tracking-tight;
+    @apply font-heading font-semibold tracking-tight;
   }
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-brand;

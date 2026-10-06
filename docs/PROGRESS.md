@@ -37,11 +37,14 @@
 
 **Not done (noted):**
 
-- **No product images.** Media needs an S3 client and a public-read bucket or a media route: a new technical choice, so it needs an ADR you accept first. Cards and PDP show a neutral placeholder.
+- **No product images yet.** Waiting on ADR-0009. Cards and PDP show a neutral placeholder.
 - No add-to-cart or sticky purchase bar (Phase J), delivery checker (Phase H), search in the header (Phase G).
 - Home shows only the two entry points with real destinations (Help me choose, Build your setup), driven by `config.homeEntry`. Deals and Upgrade come with J/M/N.
-- No visual screenshot pass this phase (no browser tooling in the session). Layout is checked by markup and axe only.
 - Card "In stock" means stock in any warehouse; pincode-level availability is Phase H (D-54), so cards don't badge "In stock".
+
+**Design refresh (owner request, D-179):** restyled every token and component toward the Apple store reference, keeping Borneo green as the single accent: parchment canvas, white 18px hairline cards, pill buttons with press scale, 17px body and SF/Inter type (Manrope dropped), dark hero tile on home, frosted header and bottom nav, compact card prices. New `Select` (native, chevron inset; fixes the misplaced arrows) and `Container`. Fixed along the way: fieldset legends cutting through filter dividers, oversized badge icons, tailwind-merge dropping the custom type sizes. Verified each component and page with headless Chrome screenshots (desktop 1280 and real 390px viewports) plus render + axe tests.
+
+**Product images:** ADR-0009 (S3 client + public MinIO prefix + generated renders) written as **proposed**; not built until you accept it.
 
 **New assumptions:** D-18 (filter semantics), D-19 (newest-first default; card shows the lowest price payable now).
 
@@ -180,6 +183,7 @@ Each fault was planted on a green baseline, run through `pnpm check`, then rever
 
 - Review Phase D, especially assumptions D-43, D-45, D-62, D-87.
 - Review Phase E, especially D-17, D-65 and the seeded catalog/offers.
-- Review Phase F, especially D-18, D-19, and decide how product media is served (ADR needed).
+- Review Phase F, especially D-18, D-19, D-179 (design refresh).
+- Accept or reject ADR-0009 (product media in MinIO via the AWS SDK).
 - Decide D-175 (Start production host) before Phase O.
 - Decide **open** items when convenient: D-15, D-60, D-61, D-72 (COD cap is a ready parameter), D-75.

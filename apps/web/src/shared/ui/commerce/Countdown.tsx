@@ -45,7 +45,7 @@ export function Countdown({
   return (
     <div
       className={cn(
-        'inline-flex flex-col rounded-md px-3 py-2',
+        'inline-flex flex-col gap-0.5 rounded-xl px-4 py-3',
         phase === 'urgent'
           ? 'bg-warning-soft text-warning'
           : phase === 'ended'
@@ -53,8 +53,11 @@ export function Countdown({
             : 'bg-offer-soft text-offer',
       )}
     >
-      <span className="text-xs font-medium">{label}</span>
-      <span role="timer" className="font-heading text-lg font-bold tabular-nums">
+      <span className="text-xs font-semibold">{label}</span>
+      <span
+        role="timer"
+        className="font-heading text-tagline font-semibold tracking-tight tabular-nums"
+      >
         {prefix}{' '}
         {phase === 'pending' || phase === 'ended'
           ? formatDateTime(endsAt)

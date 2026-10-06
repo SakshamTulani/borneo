@@ -29,7 +29,7 @@ export function Rating({ value, count, className }: Props) {
           {stars(true)}
         </span>
       </span>
-      <span className="font-medium tabular-nums" aria-hidden>
+      <span className="font-semibold tabular-nums" aria-hidden>
         {value.toFixed(1)}
       </span>
       <span className="text-ink-muted">

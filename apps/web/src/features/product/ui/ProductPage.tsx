@@ -18,12 +18,14 @@ export function ProductPage({ slug, sku, onSkuChange }: Props) {
       <ErrorState
         title="Couldn't load this product"
         onRetry={() => void query.refetch()}
-        className="my-8"
+        className="mx-4 my-10 sm:mx-6"
       />
     );
   }
   if (!query.data) {
-    return query.isPending ? null : <EmptyState title="Product not found" className="my-8" />;
+    return query.isPending ? null : (
+      <EmptyState title="Product not found" className="mx-4 my-10 sm:mx-6" />
+    );
   }
   return (
     <ProductView

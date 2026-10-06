@@ -4,12 +4,12 @@ import { cn } from '@/shared/lib/utils';
 import { Slot } from 'radix-ui';
 
 const badgeVariants = cva(
-  'inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-[color,box-shadow] focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3',
+  'inline-flex w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-full border border-transparent px-2.5 py-0.5 text-xs font-semibold whitespace-nowrap [&>svg]:pointer-events-none [&>svg]:size-3',
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground [a&]:hover:bg-primary/90',
-        outline: 'border-line-strong text-ink',
+        default: 'bg-brand text-brand-ink',
+        outline: 'border-line bg-surface text-ink',
         // Borneo tones (DESIGN.md): soft fill + strong text, contrast-tested in tokens.test.ts
         brand: 'bg-brand-soft text-brand',
         offer: 'bg-offer-soft text-offer',

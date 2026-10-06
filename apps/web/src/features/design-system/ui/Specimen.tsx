@@ -6,9 +6,9 @@ type SpecimenProps = { title: string; note?: string; columns?: 2 | 4; children: 
 
 export function Specimen({ title, note, columns = 2, children }: SpecimenProps) {
   return (
-    <section className="space-y-3 rounded-xl border border-line bg-surface p-4">
+    <section className="space-y-4 rounded-xl bg-surface p-6">
       <header className="flex flex-wrap items-center gap-2">
-        <h3 className="text-lg font-semibold">{title}</h3>
+        <h3 className="text-tagline">{title}</h3>
         <Badge variant="demo">Demo data</Badge>
       </header>
       {note ? <p className="text-sm text-ink-muted">{note}</p> : null}
@@ -36,9 +36,7 @@ export function State({
 }) {
   return (
     <figure className={wide ? 'space-y-2 sm:col-span-2' : 'space-y-2'}>
-      <figcaption className="text-xs font-medium tracking-wide text-ink-muted uppercase">
-        {label}
-      </figcaption>
+      <figcaption className="text-xs font-semibold text-ink-muted">{label}</figcaption>
       <div>{children}</div>
     </figure>
   );

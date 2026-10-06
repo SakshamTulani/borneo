@@ -44,7 +44,7 @@ export function DeliveryChecker({ pincode, onPincodeChange, onCheck, state }: Pr
           aria-describedby={invalid ? errorId : undefined}
           className="max-w-40 tabular-nums"
         />
-        <Button type="submit" variant="outline" loading={state.status === 'checking'}>
+        <Button type="submit" variant="secondary" loading={state.status === 'checking'}>
           Check
         </Button>
       </div>

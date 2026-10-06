@@ -1,10 +1,14 @@
 import { Link } from '@tanstack/react-router';
-import { CompassIcon, PlugZapIcon } from 'lucide-react';
+import { ArrowRightIcon, CompassIcon, PlugZapIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { cn } from '@/shared/lib/utils';
+import { Button } from '@/shared/ui/base/button';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
+import { Container } from '@/shared/ui/layout/Container';
 import { useCategoriesQuery } from '../hooks/useCategoriesQuery';
 import { useNewestProductsQuery } from '../hooks/useNewestProductsQuery';
+import type { CategoryLink } from '../model';
 import { CategoryGrid } from './CategoryGrid';
 import { ProductGrid, ProductGridSkeleton } from './ProductGrid';
 
@@ -26,57 +30,113 @@ const ENTRY_POINTS = [
   },
 ] as const;
 
-const entryLink =
-  'inline-flex min-h-11 items-center rounded-md px-3 font-medium text-brand underline-offset-4 outline-none hover:underline focus-visible:ring-2 focus-visible:ring-brand';
+const sectionTitle = 'font-heading text-headline tracking-tight';
+
+function Section({
+  id,
+  title,
+  tone = 'canvas',
+  children,
+}: {
+  id: string;
+  title: string;
+  tone?: 'canvas' | 'surface';
+  children: ReactNode;
+}) {
+  return (
+    <section
+      aria-labelledby={id}
+      className={cn('py-12 sm:py-16', tone === 'surface' ? 'bg-surface' : 'bg-canvas')}
+    >
+      <Container className="space-y-6">
+        <h2 id={id} className={sectionTitle}>
+          {title}
+        </h2>
+        {children}
+      </Container>
+    </section>
+  );
+}
 
 function EntryPoint({
   icon,
   title,
   body,
-  children,
+  categories,
 }: {
   icon: ReactNode;
   title: string;
   body: string;
-  children: ReactNode;
+  categories: CategoryLink[];
 }) {
   return (
-    <li className="flex gap-4 rounded-xl border border-line bg-surface p-5">
-      <span className="flex size-11 shrink-0 items-center justify-center rounded-full bg-brand-soft text-brand">
+    <li className="flex flex-col gap-4 rounded-xl bg-canvas p-6 sm:p-8">
+      <span className="flex size-11 items-center justify-center rounded-full bg-brand-soft text-brand">
         {icon}
       </span>
       <div className="space-y-1">
-        <h3 className="font-heading text-lg font-semibold">{title}</h3>
-        <p className="text-sm text-ink-muted">{body}</p>
-        <p className="-ml-3 flex flex-wrap">{children}</p>
+        <h3 className="font-heading text-tagline tracking-tight">{title}</h3>
+        <p className="text-ink-muted">{body}</p>
       </div>
+      <p className="-ml-3 flex flex-wrap">
+        {categories.map((c) => (
+          <Link
+            key={c.slug}
+            to="/categories/$slug"
+            params={{ slug: c.slug }}
+            className="group inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-brand outline-none hover:underline focus-visible:outline-2 focus-visible:outline-brand"
+          >
+            {c.name}
+            <ArrowRightIcon className="size-3.5" aria-hidden />
+          </Link>
+        ))}
+      </p>
     </li>
   );
 }
 
 /**
- * Hybrid home (D-120): categories, mindset entry points and new launches. Same for everyone;
- * the upgrade strip for signed-in customers arrives with accounts (D-121).
+ * Hybrid home (D-120): a dark hero tile, categories, mindset entry points and new launches,
+ * alternating surfaces instead of borders. Same for everyone; the upgrade strip for signed-in
+ * customers arrives with accounts (D-121).
  */
 export function HomePage() {
   const categories = useCategoriesQuery();
   const newest = useNewestProductsQuery(HOME_NEWEST);
+  const entries = ENTRY_POINTS.map((e) => ({
+    ...e,
+    categories: (categories.data ?? []).filter((c) => c.homeEntry === e.key),
+  })).filter((e) => e.categories.length > 0);
+  const heroCategories = (categories.data ?? []).filter((c) => c.homeEntry === 'helpMeChoose');
 
   return (
-    <div className="space-y-12 py-8">
-      <section className="space-y-3">
-        <h1 className="max-w-2xl font-heading text-4xl font-bold tracking-tight">
-          Electronics that work together, straight from Borneo.
-        </h1>
-        <p className="max-w-xl text-lg text-ink-muted">
-          Real prices, real delivery dates and plain-language policies. Choose what fits you.
-        </p>
+    <>
+      <section aria-labelledby="home-hero" className="bg-tile text-on-tile">
+        <Container className="flex flex-col items-center gap-5 py-20 text-center sm:py-28">
+          <h1
+            id="home-hero"
+            className="max-w-3xl font-heading text-[2.25rem] leading-[1.07] font-semibold tracking-[-0.03em] sm:text-display"
+          >
+            Electronics that work together.
+          </h1>
+          <p className="max-w-xl text-lg text-on-tile-muted sm:text-tagline sm:leading-snug">
+            Straight from Borneo. Real prices, real delivery dates, plain-language policies.
+          </p>
+          {heroCategories.length ? (
+            <div className="flex flex-wrap justify-center gap-3 pt-2">
+              {heroCategories.map((c, i) => (
+                <Button key={c.slug} asChild variant={i === 0 ? 'default' : 'onTile'}>
+                  <Link to="/categories/$slug" params={{ slug: c.slug }}>
+                    Shop {c.name.toLowerCase()}
+                  </Link>
+                </Button>
+              ))}
+            </div>
+          ) : null}
+        </Container>
       </section>
 
-      <section aria-labelledby="home-categories" className="space-y-4">
-        <h2 id="home-categories" className="font-heading text-2xl font-semibold">
-          Shop by category
-        </h2>
+      <Section id="home-categories" title="Shop by category">
         {categories.isError ? (
           <ErrorState title="Couldn't load categories" onRetry={() => void categories.refetch()} />
         ) : categories.isPending ? (
@@ -84,39 +144,25 @@ export function HomePage() {
         ) : (
           <CategoryGrid categories={categories.data} />
         )}
-      </section>
+      </Section>
 
-      {categories.data?.some((c) => c.homeEntry) ? (
-        <section aria-labelledby="home-start" className="space-y-4">
-          <h2 id="home-start" className="font-heading text-2xl font-semibold">
-            Where to start
-          </h2>
-          <ul className="grid gap-4 md:grid-cols-2">
-            {ENTRY_POINTS.map((e) => {
-              const listed = (categories.data ?? []).filter((c) => c.homeEntry === e.key);
-              return listed.length ? (
-                <EntryPoint key={e.key} icon={e.icon} title={e.title} body={e.body}>
-                  {listed.map((c) => (
-                    <Link
-                      key={c.slug}
-                      to="/categories/$slug"
-                      params={{ slug: c.slug }}
-                      className={entryLink}
-                    >
-                      {c.name}
-                    </Link>
-                  ))}
-                </EntryPoint>
-              ) : null;
-            })}
+      {entries.length ? (
+        <Section id="home-start" title="Where to start" tone="surface">
+          <ul className="grid gap-5 md:grid-cols-2">
+            {entries.map((e) => (
+              <EntryPoint
+                key={e.key}
+                icon={e.icon}
+                title={e.title}
+                body={e.body}
+                categories={e.categories}
+              />
+            ))}
           </ul>
-        </section>
+        </Section>
       ) : null}
 
-      <section aria-labelledby="home-new" className="space-y-4">
-        <h2 id="home-new" className="font-heading text-2xl font-semibold">
-          New launches
-        </h2>
+      <Section id="home-new" title="New launches">
         {newest.isPending ? (
           <ProductGridSkeleton count={HOME_NEWEST} />
         ) : newest.isError ? (
@@ -126,7 +172,7 @@ export function HomePage() {
         ) : (
           <EmptyState title="New launches are on their way" />
         )}
-      </section>
-    </div>
+      </Section>
+    </>
   );
 }

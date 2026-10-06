@@ -34,13 +34,13 @@ export function CategoryPage({ slug, search, onSearchChange }: Props) {
       <ErrorState
         title="Couldn't load this category"
         onRetry={() => void categoryQuery.refetch()}
-        className="my-8"
+        className="mx-4 my-10 sm:mx-6"
       />
     );
   }
   if (!detail) {
     return categoryQuery.isPending ? null : (
-      <EmptyState title="Category not found" className="my-8" />
+      <EmptyState title="Category not found" className="mx-4 my-10 sm:mx-6" />
     );
   }
 
