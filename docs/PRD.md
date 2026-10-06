@@ -1,6 +1,6 @@
 # Borneo — Product Requirements (v1 / demo)
 
-Rules are numbered in [DECISIONS.md](DECISIONS.md) (`D-xx`). This doc says *what and why*; DECISIONS says *the exact rule*.
+Rules are numbered in [DECISIONS.md](DECISIONS.md) (`D-xx`). This doc says _what and why_; DECISIONS says _the exact rule_.
 
 ## 1. Product
 
@@ -14,28 +14,28 @@ Direct-to-consumer, single-brand store for Borneo consumer electronics and smart
 
 ## 2. Scope
 
-| In v1 | Out of v1 |
-|---|---|
-| Responsive web, mobile-first | Native apps, PWA, push |
+| In v1                                                                                  | Out of v1                                                                                             |
+| -------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------- |
+| Responsive web, mobile-first, server-rendered (SEO)                                    | Native apps, PWA, push                                                                                |
 | Categories: smartphones, audio, wearables, accessories, smart home, TVs, robot vacuums | Large home appliances (AC, washer, fridge), tablets, laptops, projectors (catalog stays configurable) |
-| Full depth: smartphones, audio | Services (installation, warranty, trade-in, repair, subscriptions) |
-| Template depth: all other categories | Marketing/retention messages, any outbound email/SMS/WhatsApp |
-| Rules + curation recommendations | Behavioural recs ("bought together") |
-| Fixed bundles | Build-your-own bundles |
-| | GSTIN capture, guest checkout, self-declared devices, SEO |
+| Full depth: smartphones, audio                                                         | Services (installation, warranty, trade-in, repair, subscriptions)                                    |
+| Template depth: all other categories                                                   | Marketing/retention messages, any outbound email/SMS/WhatsApp                                         |
+| Rules + curation recommendations                                                       | Behavioural recs ("bought together")                                                                  |
+| Fixed bundles                                                                          | Build-your-own bundles                                                                                |
+|                                                                                        | GSTIN capture, guest checkout, self-declared devices                                                  |
 
 ## 3. Shopping mindsets → page modules
 
 Mindsets are **modules on shared pages**, not separate funnels.
 
-| # | Mindset | Primary entry | Key modules |
-|---|---|---|---|
-| 1 | Knows the product | Search | Exact-match jump to PDP, instant suggestions, sticky buy bar, fast checkout |
-| 2 | Knows the category | Category nav | Config-driven filters, compare (4 desktop / 3 mobile), spec comparison, reviews, FAQs |
-| 3 | Unsure what's right | Home "Help me choose" | Guided finder (phones, audio), explainers, "who it's for / not for" |
-| 4 | Wants the best deal | Home "Deals" | Real offers, bundles, payment offers, EMI, flash sales |
-| 5 | Upgrading | Home "Upgrade", upgrade strip | Upgrade badge, "what you gain" comparison (phones, audio PDP) |
-| 6 | Building an ecosystem | Home "Build your setup" | Compatibility filters, ecosystem pages, accessories, bundles |
+| #   | Mindset               | Primary entry                 | Key modules                                                                           |
+| --- | --------------------- | ----------------------------- | ------------------------------------------------------------------------------------- |
+| 1   | Knows the product     | Search                        | Exact-match jump to PDP, instant suggestions, sticky buy bar, fast checkout           |
+| 2   | Knows the category    | Category nav                  | Config-driven filters, compare (4 desktop / 3 mobile), spec comparison, reviews, FAQs |
+| 3   | Unsure what's right   | Home "Help me choose"         | Guided finder (phones, audio), explainers, "who it's for / not for"                   |
+| 4   | Wants the best deal   | Home "Deals"                  | Real offers, bundles, payment offers, EMI, flash sales                                |
+| 5   | Upgrading             | Home "Upgrade", upgrade strip | Upgrade badge, "what you gain" comparison (phones, audio PDP)                         |
+| 6   | Building an ecosystem | Home "Build your setup"       | Compatibility filters, ecosystem pages, accessories, bundles                          |
 
 Mindsets 5 & 6 for new customers rely on compatibility filters and ecosystem pages (no self-declared devices).
 

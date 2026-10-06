@@ -1,0 +1,43 @@
+# Backend architecture (apps/api)
+
+Fastify + Zod type provider + Drizzle/Postgres. Fastify is the only backend (ADR-0008). Enforced by `pnpm depcruise` and `pnpm check:rules`.
+
+## Layout
+
+```
+src/main.ts             loads env, creates db, wires services, listens
+src/app.ts              buildApp(deps): composition root, registers module routes
+src/env.ts              Zod env; refuses DEMO_MODE in production (D-165)
+src/modules/<m>/
+  <m>.route.ts          HTTP: Zod schemas, auth guard, reads session, calls service
+  <m>.service.ts        orchestration: shared rules + repositories + adapters
+  <m>.repository.ts     Drizzle queries only
+  <m>.schema.ts         request/response Zod (leaf)
+  index.ts              public exports
+src/db/                 client, schema (Drizzle), seed
+src/session/            the only code that reads the session (Better Auth in Phase H)
+src/adapters/<port>/    interface + demo impl (+ real impl later) (ADR-0003)
+src/jobs/               pg-boss workers; thin, call services (ADR-0004)
+src/test/factories.ts   test data factories
+drizzle/                generated migrations; commit them
+```
+
+Reference module: `src/modules/health`.
+
+## Rules (enforced)
+
+- `route → service → repository → db`. Routes never import repositories or `db/`. Only repositories import `db/`.
+- Services never import routes; repositories never import services/routes; schemas import no layer.
+- Other modules: only via `modules/<x>/index.ts`.
+- Services and repositories never import `src/session/`. Routes resolve `customerId` and pass it down.
+- A repository mentioning `customerId`/`customer_id` is customer-scoped: every exported function takes `customerId: CustomerId` first, and the module has `<m>.cross-customer.test.ts`.
+- Module folders contain only route/service/repository/schema/index files (plus tests).
+
+## Rules (review)
+
+- Dependencies are injected: services get repository functions/adapters via a `create<M>Service(deps)` factory; `main.ts` wires real ones, tests wire fakes.
+- No business rules in routes or repositories; call `@borneo/shared` rules from services.
+- Money: integer paise end to end (ADR-0006). No floats, no `numeric` → JS number conversions without the money helper.
+- Stock changes use one conditional `UPDATE … WHERE available >= qty` (no read-then-write).
+- External effects (email, payment, analytics, courier, bot check) only through adapters. Demo adapters selected by `DEMO_MODE`.
+- Migrations: change `src/db/schema`, run `pnpm db:generate`, commit SQL + meta. Never edit applied migrations.

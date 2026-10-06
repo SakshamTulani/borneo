@@ -1,29 +1,29 @@
 # Architecture
 
-Status: proposed. Choices marked *(ADR-NNNN)* wait for acceptance before code depends on them.
+Status: proposed. Choices marked _(ADR-NNNN)_ wait for acceptance before code depends on them.
 
 ## Stack (and why)
 
-| Area | Choice | Why |
-|---|---|---|
-| Web | React + TypeScript + Vite SPA | Fast dev loop, simplest deploy; SEO deferred *(ADR-0001)* |
-| Routing / data | TanStack Router + Query | Type-safe routes and search params (filters live in URL); cache + invalidation without global store |
-| UI | Tailwind + shadcn/ui | Tokens in one place; owned, accessible primitives (Radix) we can restyle to our identity |
-| Forms | React Hook Form + Zod | Same Zod schemas as the API; one validation source |
-| Maps | Leaflet + OpenStreetMap | Map pin per address without paid API keys |
-| API | Node + Fastify + fastify-type-provider-zod | Fast, plugin-based; Zod schemas type routes end to end |
-| DB | PostgreSQL + Drizzle + drizzle-kit | Relational data (orders, stock, offers) with SQL-first, typed queries and migrations |
-| Search | Postgres pg_trgm + synonyms table | Typo tolerance without another service *(ADR-0002)* |
-| Auth | Better Auth (email + password) | Self-hosted, Drizzle adapter; verification switchable on for production |
-| Jobs | pg-boss | Hold expiry, late payments, timers on the DB we already run *(ADR-0004)* |
-| Files | MinIO (S3 API) | Product media, return photos, invoices; swap to any S3 later |
-| Shared | `packages/shared` | Zod schemas, money (paise), pure business rules *(ADR-0006)* |
-| Tooling | pnpm workspaces, Vitest, RTL, vitest-axe, ESLint, Prettier, dependency-cruiser, lefthook, Docker Compose | One repo, one gate: `pnpm check` (lint, typecheck, tests, boundaries) |
+| Area           | Choice                                                                                                   | Why                                                                                                 |
+| -------------- | -------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| Web            | React + TypeScript + TanStack Start (SSR on Vite)                                                        | SEO and link previews in v1; same Router/Query APIs _(ADR-0008, supersedes 0001)_                   |
+| Routing / data | TanStack Router (file-based, via Start) + Query                                                          | Type-safe routes and search params (filters live in URL); cache + invalidation without global store |
+| UI             | Tailwind + shadcn/ui                                                                                     | Tokens in one place; owned, accessible primitives (Radix) we can restyle to our identity            |
+| Forms          | React Hook Form + Zod                                                                                    | Same Zod schemas as the API; one validation source                                                  |
+| Maps           | Leaflet + OpenStreetMap                                                                                  | Map pin per address without paid API keys                                                           |
+| API            | Node + Fastify + fastify-type-provider-zod                                                               | Fast, plugin-based; Zod schemas type routes end to end                                              |
+| DB             | PostgreSQL + Drizzle + drizzle-kit                                                                       | Relational data (orders, stock, offers) with SQL-first, typed queries and migrations                |
+| Search         | Postgres pg_trgm + synonyms table                                                                        | Typo tolerance without another service _(ADR-0002)_                                                 |
+| Auth           | Better Auth (email + password)                                                                           | Self-hosted, Drizzle adapter; verification switchable on for production                             |
+| Jobs           | pg-boss                                                                                                  | Hold expiry, late payments, timers on the DB we already run _(ADR-0004)_                            |
+| Files          | MinIO (S3 API)                                                                                           | Product media, return photos, invoices; swap to any S3 later                                        |
+| Shared         | `packages/shared`                                                                                        | Zod schemas, money (paise), pure business rules _(ADR-0006)_                                        |
+| Tooling        | pnpm workspaces, Vitest, RTL, vitest-axe, ESLint, Prettier, dependency-cruiser, lefthook, Docker Compose | One repo, one gate: `pnpm check` (lint, typecheck, tests, boundaries)                               |
 
 ## Repo layout
 
 ```
-apps/web        React SPA
+apps/web        TanStack Start app (SSR web server; renders only, no business logic)
 apps/api        Fastify API
 packages/shared Zod schemas, money, rules (no I/O, no framework)
 docs/           PRD, DECISIONS, ADRs, ...
@@ -34,17 +34,20 @@ docs/           PRD, DECISIONS, ADRs, ...
 ## Principles
 
 - **Rules are pure.** Pricing, offer stacking, 5-min hold, serviceability, COD, returns, upgrade badge, compatibility live in `packages/shared/rules` as pure functions with unit tests. UI and API only call them. Why: one source of truth, testable, same result on both sides.
-- **Money is integer paise** *(ADR-0006)*. Why: no float rounding; GST-inclusive INR.
-- **Adapters for the outside world** *(ADR-0003)*: `NotificationAdapter`, `PaymentGateway`, `Analytics`, plus `CourierTracking`, `BotProtection`. Demo implementations: on-screen box + log + inbox, mock gateway (success / fail / late success), console + log. Why: swap for real providers without touching pages.
-- **Single brand, no tenancy** *(ADR-0005)*. Every customer-owned row has `customerId`; repositories require it. Why: simple, and still prevents cross-customer leaks.
+- **Money is integer paise** _(ADR-0006)_. Why: no float rounding; GST-inclusive INR.
+- **Adapters for the outside world** _(ADR-0003)_: `NotificationAdapter`, `PaymentGateway`, `Analytics`, plus `CourierTracking`, `BotProtection`. Demo implementations: on-screen box + log + inbox, mock gateway (success / fail / late success), console + log. Why: swap for real providers without touching pages.
+- **Single brand, no tenancy** _(ADR-0005)_. Every customer-owned row has `customerId`; repositories require it. Why: simple, and still prevents cross-customer leaks.
 - **Demo mode**: one `DEMO_MODE` flag picks demo adapters and relaxes verification. API refuses to start with `DEMO_MODE=true` when `NODE_ENV=production`.
-- **Layered slices with enforced boundaries** *(ADR-0007)*, checked by dependency-cruiser in `pnpm check`.
+- **Layered slices with enforced boundaries** _(ADR-0007)_, checked by dependency-cruiser in `pnpm check`.
+- **One backend** _(ADR-0008)_: Fastify owns all business logic and data. The Start server only renders and fetches from Fastify (forwarding the session cookie on SSR). No Start server functions with business logic, no DB access from web.
+- **SSR-safe UI**: no `window`/`localStorage` during render; Leaflet and timers mount client-only.
 
 ## Frontend structure
 
 ```
 apps/web/src/
-  routes/                      thin: parse params, compose feature UI
+  routes/                      thin, file-based (Start): params, loader, head(), compose feature UI
+  routeTree.gen.ts             generated; excluded from lint/format/boundaries
   features/<feature>/
     api/          raw HTTP only (fetch + Zod parse)
     mappers/      DTO -> model
@@ -58,6 +61,7 @@ apps/web/src/
 ```
 
 Import direction (downward only): `routes → ui → hooks → repository → mappers/api → model`. `@borneo/shared` usable from any layer.
+
 - Cross-feature imports only via `features/<x>/index.ts`.
 - No feature imports `routes`.
 - Business rules never re-implemented in UI; call `@borneo/shared/rules`.
@@ -91,15 +95,14 @@ Direction: `route → service → repository → db`. Services may use adapters 
 
 ## Testing
 
-Vitest everywhere. Rules: unit tests (required, high coverage). API: service tests + route tests against a Docker Postgres. Web: RTL + vitest-axe per component. `pnpm check` = lint + typecheck + test + depcruise. Run by lefthook pre-push. No CI.
+Vitest everywhere. Rules: unit tests (required, high coverage). API: service tests + route tests against a Docker Postgres. Web: RTL + vitest-axe per component. `pnpm check` = lint + typecheck + test + depcruise. Run by lefthook pre-commit. No CI.
 
-## SEO later
+## SEO
 
-Production blocker (D-162). Kept cheap: one URL per product/category, title/meta set in one place (route `head` helper), semantic HTML, no content behind client-only state.
+In v1 via SSR _(ADR-0008)_. Rules:
 
-| Option | What | Cost |
-|---|---|---|
-| Prerender | Build-time/static HTML for product + category URLs (e.g. a crawler-prerender step or static generation from API) | Low. Stale between builds; fine for catalog pages |
-| SSR | Move to a server-rendered framework (e.g. TanStack Start) | Higher. New runtime, hosting, data-loading rework; best freshness |
-
-Recommendation when needed: prerender first.
+- One canonical URL per product, category and ecosystem page.
+- Title, description, canonical, Open Graph set via each route's `head()` through one helper.
+- Route loaders prefetch via Query; data is dehydrated to the client (no double fetch).
+- Semantic HTML; primary content never behind client-only state.
+- Later: sitemap.xml and structured data (Product, Offer, AggregateRating once real reviews exist).

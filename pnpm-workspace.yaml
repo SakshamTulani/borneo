@@ -1,0 +1,8 @@
+packages:
+  - apps/*
+  - packages/*
+  - tooling
+
+allowBuilds:
+  lefthook: true
+  esbuild: true

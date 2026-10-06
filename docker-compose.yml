@@ -1,0 +1,26 @@
+services:
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_USER: borneo
+      POSTGRES_PASSWORD: borneo
+      POSTGRES_DB: borneo
+    ports: ['5432:5432']
+    volumes: ['pgdata:/var/lib/postgresql/data']
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U borneo']
+      interval: 2s
+      retries: 20
+
+  minio:
+    image: cgr.dev/chainguard/minio:latest # official minio images are no longer published
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: borneo
+      MINIO_ROOT_PASSWORD: borneo-secret
+    ports: ['9000:9000', '9001:9001']
+    volumes: ['miniodata:/data']
+
+volumes:
+  pgdata:
+  miniodata:

@@ -1,0 +1,11 @@
+@import 'tailwindcss';
+
+/* Full token set lands in Phase E (docs/DESIGN.md). */
+@theme {
+  --color-canvas: #faf8f5;
+  --color-ink: #1d1b19;
+  --color-ink-muted: #5e5953;
+  --color-brand: #0f5b4e;
+  --color-success: #1f7a44;
+  --color-danger: #b3261e;
+}
