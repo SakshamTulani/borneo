@@ -18,6 +18,7 @@
     "check:rules": "node tooling/src/cli.ts",
     "db:generate": "pnpm --filter @borneo/api db:generate",
     "db:migrate": "pnpm --filter @borneo/api db:migrate",
+    "db:reset": "pnpm --filter @borneo/api db:reset",
     "prepare": "lefthook install"
   },
   "devDependencies": {

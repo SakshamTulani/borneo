@@ -1,2 +1,7 @@
-// Drizzle tables are exported from here. Empty until Phase D.
-export {};
+// Drizzle tables, by area (DATA_MODEL.md).
+export * from './catalog';
+export * from './relations';
+export * from './offers';
+export * from './inventory';
+export * from './customers';
+export * from './orders';

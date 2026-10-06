@@ -10,3 +10,19 @@ export const idSchema = z.string().min(1);
 export function isValidPincode(value: string): boolean {
   return pincodeSchema.safeParse(value).success;
 }
+
+/** Cursor-paginated list response (`?cursor=&limit=`, max 50). */
+export const MAX_PAGE_LIMIT = 50;
+export function pageSchema<T extends z.ZodType>(item: T) {
+  return z.object({ items: z.array(item), nextCursor: z.string().nullable() });
+}
+
+/** Every API error: `{ error: { code, message, details? } }` with a stable code. */
+export const errorResponseSchema = z.object({
+  error: z.object({
+    code: z.string().min(1),
+    message: z.string(),
+    details: z.unknown().optional(),
+  }),
+});
+export type ErrorResponse = z.infer<typeof errorResponseSchema>;

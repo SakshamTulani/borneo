@@ -6,23 +6,28 @@ Fastify + Zod type provider + Drizzle/Postgres. Fastify is the only backend (ADR
 
 ```
 src/main.ts             loads env, creates db, wires services, listens
-src/app.ts              buildApp(deps): composition root, registers module routes
+src/app.ts              buildApp(deps): composition root, registers module routes + error handler
+src/services.ts         binds repositories to a db (used by main, reset, integration tests)
 src/env.ts              Zod env; refuses DEMO_MODE in production (D-165)
+src/errors.ts           AppError(status, code, message); services throw these
+src/plugins/errors.ts   renders every error as { error: { code, message, details? } }
+src/reset.ts            resetDatabase: drop, migrate, seed, materialise relations (refused in production)
+src/db-reset.ts         `pnpm db:reset` entry
 src/modules/<m>/
   <m>.route.ts          HTTP: Zod schemas, auth guard, reads session, calls service
   <m>.service.ts        orchestration: shared rules + repositories + adapters
   <m>.repository.ts     Drizzle queries only
   <m>.schema.ts         request/response Zod (leaf)
   index.ts              public exports
-src/db/                 client, schema (Drizzle), seed
+src/db/                 client, schema/ (Drizzle, one file per area), seed/ (data + buildSeed)
 src/session/            the only code that reads the session (Better Auth in Phase H)
 src/adapters/<port>/    interface + demo impl (+ real impl later) (ADR-0003)
 src/jobs/               pg-boss workers; thin, call services (ADR-0004)
-src/test/factories.ts   test data factories
+src/test/               factories, globalSetup (seeded test DB), useTestDb()
 drizzle/                generated migrations; commit them
 ```
 
-Reference module: `src/modules/health`.
+Reference modules: `src/modules/health` (minimal), `src/modules/catalog` (DB-backed, paginated, error codes). `src/modules/relations` has no routes; the reset script and (later) jobs call it.
 
 ## Rules (enforced)
 
@@ -60,3 +65,5 @@ Rules take `now` as a parameter: services pass the clock, so rules stay pure and
 - Stock changes use one conditional `UPDATE … WHERE available >= qty` (no read-then-write).
 - External effects (email, payment, analytics, courier, bot check) only through adapters. Demo adapters selected by `DEMO_MODE`.
 - Migrations: change `src/db/schema`, run `pnpm db:generate`, commit SQL + meta. Never edit applied migrations.
+- Seed data is validated before insert (`seedIssues`). Add a check there when a new invariant appears; the planted-fault tests in `seed.test.ts` prove each check.
+- Relations are never edited by hand: change rules/overrides, then rematerialise (`relations` service).

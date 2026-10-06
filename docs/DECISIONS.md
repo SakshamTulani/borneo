@@ -17,14 +17,16 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 
 ## Catalog
 
-| ID   | Rule                                                                                                                                        | Status |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------ |
-| D-10 | Launch categories: smartphones, audio, wearables, accessories, smart home, TVs, robot vacuums. Catalog configurable; no category hardcoded. | v1     |
-| D-11 | Large home appliances (AC, washer, fridge) dropped.                                                                                         | later  |
-| D-12 | TVs sit under TVs only (not appliances).                                                                                                    | v1     |
-| D-13 | Full depth (guided finder, category compare, rich explainers): smartphones, audio. Others: standard template via per-category config.       | v1     |
-| D-14 | Structured specs per category + rich media.                                                                                                 | v1     |
-| D-15 | Catalog size unknown. Demo uses a seeded catalog.                                                                                           | open   |
+| ID   | Rule                                                                                                                                        | Status     |
+| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-10 | Launch categories: smartphones, audio, wearables, accessories, smart home, TVs, robot vacuums. Catalog configurable; no category hardcoded. | v1         |
+| D-11 | Large home appliances (AC, washer, fridge) dropped.                                                                                         | later      |
+| D-12 | TVs sit under TVs only (not appliances).                                                                                                    | v1         |
+| D-13 | Full depth (guided finder, category compare, rich explainers): smartphones, audio. Others: standard template via per-category config.       | v1         |
+| D-14 | Structured specs per category + rich media.                                                                                                 | v1         |
+| D-15 | Catalog size unknown. Demo uses a seeded catalog.                                                                                           | open       |
+| D-16 | Product attributes must match their category's attribute definitions (type, listed options). Unknown keys are rejected; any may be missing. | assumption |
+| D-17 | Discontinued products leave category listings but keep their PDP and relations (owners still need accessories and support).                 | assumption |
 
 ## Relationships & compatibility
 
@@ -63,23 +65,24 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 
 ## Delivery, stock, serviceability
 
-| ID   | Rule                                                                                                                                    | Status     |
-| ---- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| D-50 | Pan-India. Serviceability configurable per pincode × category.                                                                          | v1         |
-| D-51 | PDP shows "not deliverable here" clearly; never first fail at checkout.                                                                 | v1         |
-| D-52 | Delivery shown as an estimated date range (not a promise), from pincode/map pin + warehouse stock.                                      | v1         |
-| D-53 | Each address stores an exact map pin.                                                                                                   | v1         |
-| D-54 | Stock per warehouse; availability and date depend on pincode.                                                                           | v1         |
-| D-55 | Cart and checkout recheck stock, delivery date and COD eligibility on any address or pin change.                                        | v1         |
-| D-56 | Stock held only once payment starts: 5 min, visible real countdown. Applies to all products. Not held in cart.                          | v1         |
-| D-57 | Hold expiry: item returns to stock; we say so.                                                                                          | v1         |
-| D-58 | Payment gateway session timeout = 5 min.                                                                                                | v1 (mock)  |
-| D-59 | Payment succeeds after hold expiry: allocate if a unit is free; else auto-refund + clear message (in-account notice in demo).           | v1         |
-| D-60 | Scheduled delivery slots (formerly for large appliances). For TVs: undecided.                                                           | open       |
-| D-61 | Max quantity per line for normal items.                                                                                                 | open       |
-| D-62 | No serviceability row for a pincode × category means not deliverable.                                                                   | assumption |
-| D-63 | Delivery estimate: fastest warehouse with stock and a lane to the pincode (longest pincode-prefix lane wins); calendar days; IST dates. | assumption |
-| D-64 | Pre-order estimates count from the expected dispatch date.                                                                              | assumption |
+| ID   | Rule                                                                                                                                           | Status     |
+| ---- | ---------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-50 | Pan-India. Serviceability configurable per pincode × category.                                                                                 | v1         |
+| D-51 | PDP shows "not deliverable here" clearly; never first fail at checkout.                                                                        | v1         |
+| D-52 | Delivery shown as an estimated date range (not a promise), from pincode/map pin + warehouse stock.                                             | v1         |
+| D-53 | Each address stores an exact map pin.                                                                                                          | v1         |
+| D-54 | Stock per warehouse; availability and date depend on pincode.                                                                                  | v1         |
+| D-55 | Cart and checkout recheck stock, delivery date and COD eligibility on any address or pin change.                                               | v1         |
+| D-56 | Stock held only once payment starts: 5 min, visible real countdown. Applies to all products. Not held in cart.                                 | v1         |
+| D-57 | Hold expiry: item returns to stock; we say so.                                                                                                 | v1         |
+| D-58 | Payment gateway session timeout = 5 min.                                                                                                       | v1 (mock)  |
+| D-59 | Payment succeeds after hold expiry: allocate if a unit is free; else auto-refund + clear message (in-account notice in demo).                  | v1         |
+| D-60 | Scheduled delivery slots (formerly for large appliances). For TVs: undecided.                                                                  | open       |
+| D-61 | Max quantity per line for normal items.                                                                                                        | open       |
+| D-62 | No serviceability row for a pincode × category means not deliverable.                                                                          | assumption |
+| D-63 | Delivery estimate: fastest warehouse with stock and a lane to the pincode (longest pincode-prefix lane wins); calendar days; IST dates.        | assumption |
+| D-64 | Pre-order estimates count from the expected dispatch date.                                                                                     | assumption |
+| D-65 | Pre-orders sell against a per-variant pre-order cap, not warehouse stock; their payment holds reserve against that cap and carry no warehouse. | assumption |
 
 ## Payments
 

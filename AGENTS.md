@@ -15,6 +15,7 @@ Node ≥ 24, pnpm 11. Never npm or yarn.
 | `pnpm check`                           | The only gate: format, lint, typecheck, depcruise, rules, tests                    |
 | `pnpm test`                            | All Vitest suites                                                                  |
 | `pnpm db:generate` / `pnpm db:migrate` | Drizzle migrations (`apps/api/drizzle/`)                                           |
+| `pnpm db:reset`                        | Drop, migrate, seed, materialise relations (dev DB; refused in production)         |
 | `pnpm check:rules`                     | ADR, hook naming, customer scoping, boundary anchors, rule IDs ↔ tests ↔ DECISIONS |
 
 ## Read before changing code

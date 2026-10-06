@@ -4,3 +4,4 @@ coverage/
 dist/
 apps/web/src/routeTree.gen.ts
 .output/
+conversations/

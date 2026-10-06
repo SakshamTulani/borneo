@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { cartLineSchema } from './cart';
+import { attributeDefSchema, attributesSchemaFor, type AttributeDef } from './catalog';
 import { isValidPincode, paiseSchema } from './common';
 import { deliveryLaneSchema } from './delivery';
 import { flashSaleSchema } from './offers';
@@ -56,5 +57,49 @@ describe('contracts', () => {
         maxDays: 2,
       }).success,
     ).toBe(false);
+  });
+
+  describe('attributesSchemaFor', () => {
+    const defs: AttributeDef[] = [
+      { key: 'connector', label: 'Connector', type: 'enum', options: ['usb_c'], compat: true },
+      { key: 'battery_mah', label: 'Battery', type: 'number', unit: 'mAh', compat: false },
+      { key: 'nfc', label: 'NFC', type: 'bool', compat: false },
+      { key: 'works_with', label: 'Works with', type: 'list', options: ['android'], compat: true },
+      { key: 'notes', label: 'Notes', type: 'text', compat: false },
+    ];
+    const schema = attributesSchemaFor(defs);
+
+    it('D-16: attributes must match their definition type and listed options', () => {
+      expect(
+        schema.safeParse({
+          connector: 'usb_c',
+          battery_mah: 5000,
+          nfc: true,
+          works_with: ['android'],
+          notes: 'x',
+        }).success,
+      ).toBe(true);
+      expect(schema.safeParse({ connector: 'lightning' }).success).toBe(false);
+      expect(schema.safeParse({ battery_mah: '5000' }).success).toBe(false);
+      expect(schema.safeParse({ nfc: 'yes' }).success).toBe(false);
+      expect(schema.safeParse({ works_with: ['iphone'] }).success).toBe(false);
+    });
+
+    it('D-16: enum and list definitions must list their options', () => {
+      const def = { key: 'chip', label: 'Chip', compat: false };
+      expect(attributeDefSchema.safeParse({ ...def, type: 'enum' }).success).toBe(false);
+      expect(attributeDefSchema.safeParse({ ...def, type: 'list' }).success).toBe(false);
+      expect(attributeDefSchema.safeParse({ ...def, type: 'enum', options: ['A'] }).success).toBe(
+        true,
+      );
+    });
+
+    it('D-16: unknown attribute keys are rejected', () => {
+      expect(schema.safeParse({ colour: 'Forest' }).success).toBe(false);
+    });
+
+    it('D-22: every attribute may be missing', () => {
+      expect(schema.safeParse({}).success).toBe(true);
+    });
   });
 });
