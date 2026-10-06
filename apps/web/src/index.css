@@ -1,11 +1,109 @@
 @import 'tailwindcss';
+@import '@fontsource-variable/inter';
+@import '@fontsource-variable/manrope';
 
-/* Full token set lands in Phase E (docs/DESIGN.md). */
-@theme {
-  --color-canvas: #faf8f5;
-  --color-ink: #1d1b19;
-  --color-ink-muted: #5e5953;
-  --color-brand: #0f5b4e;
-  --color-success: #1f7a44;
-  --color-danger: #b3261e;
+/* Light only in v1 (D-167). `dark:` follows a .dark class we never set, not the OS setting. */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Tokens: docs/DESIGN.md. Values must match src/shared/ui/tokens.ts (tokens.test.ts). */
+:root {
+  --canvas: #faf8f5;
+  --surface: #ffffff;
+  --muted: #f2eee8;
+  --ink: #1d1b19;
+  --ink-muted: #5e5953;
+  --line: #e7e2db;
+  --line-strong: #8c857c;
+  --brand: #0f5b4e;
+  --brand-ink: #ffffff;
+  --brand-soft: #e3f0ec;
+  --offer: #9c4a1e;
+  --offer-soft: #f7e8df;
+  --success: #1f7a44;
+  --success-soft: #e4f2ea;
+  --warning: #9a6200;
+  --warning-soft: #fbf0d9;
+  --danger: #b3261e;
+  --danger-soft: #fbe7e5;
+  --info: #2b5c9e;
+  --info-soft: #e6eef8;
+  --demo: #6b4fa0;
+  --demo-soft: #efeaf7;
+}
+
+@theme inline {
+  /* Borneo tokens */
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-line: var(--line);
+  --color-line-strong: var(--line-strong);
+  --color-brand: var(--brand);
+  --color-brand-ink: var(--brand-ink);
+  --color-brand-soft: var(--brand-soft);
+  --color-offer: var(--offer);
+  --color-offer-soft: var(--offer-soft);
+  --color-success: var(--success);
+  --color-success-soft: var(--success-soft);
+  --color-warning: var(--warning);
+  --color-warning-soft: var(--warning-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
+  --color-info: var(--info);
+  --color-info-soft: var(--info-soft);
+  --color-demo: var(--demo);
+  --color-demo-soft: var(--demo-soft);
+
+  /* shadcn semantic names mapped onto Borneo tokens */
+  --color-background: var(--canvas);
+  --color-foreground: var(--ink);
+  --color-card: var(--surface);
+  --color-card-foreground: var(--ink);
+  --color-popover: var(--surface);
+  --color-popover-foreground: var(--ink);
+  --color-primary: var(--brand);
+  --color-primary-foreground: var(--brand-ink);
+  --color-secondary: var(--brand-soft);
+  --color-secondary-foreground: var(--brand);
+  --color-muted-foreground: var(--ink-muted);
+  --color-accent: var(--muted);
+  --color-accent-foreground: var(--ink);
+  --color-destructive: var(--danger);
+  --color-border: var(--line);
+  --color-input: var(--line-strong);
+  --color-ring: var(--brand);
+
+  --font-sans: 'Inter Variable', ui-sans-serif, system-ui, sans-serif;
+  --font-heading: 'Manrope Variable', 'Inter Variable', ui-sans-serif, sans-serif;
+
+  --radius-md: 6px;
+  --radius-xl: 12px;
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-canvas font-sans text-ink antialiased;
+  }
+  h1,
+  h2,
+  h3,
+  h4 {
+    @apply font-heading tracking-tight;
+  }
+  :focus-visible {
+    @apply outline-2 outline-offset-2 outline-brand;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
 }

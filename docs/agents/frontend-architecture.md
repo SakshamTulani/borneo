@@ -16,10 +16,14 @@ src/features/<f>/
   hooks/                one hook per file
   ui/                   components
   index.ts              public exports only
-src/shared/ui, shared/lib   cross-feature UI and helpers (below features)
+src/shared/ui/base       shadcn components (add with `pnpm dlx shadcn@latest add <name>` in apps/web)
+src/shared/ui/commerce   display-only commerce components
+src/shared/ui/feedback   EmptyState, ErrorState, DemoBox
+src/shared/ui/tokens.ts  design tokens; index.css must match (tokens.test.ts)
+src/shared/lib           http (api/ only), seo pageHead, format, useNow, cn
 ```
 
-Reference slice: `src/features/health`.
+Reference slice: `src/features/health`. Living component reference: `/design-system` (`features/design-system`).
 
 ## Rules (enforced)
 
@@ -28,7 +32,7 @@ Reference slice: `src/features/health`.
 - Features never import `routes/` or `router.tsx`. `shared/` never imports features or routes.
 - Only `features/*/api/` imports `shared/lib/http.ts`.
 - Feature folders contain only the layers above (plus `*.test.ts(x)`).
-- Hooks: only in `hooks/`, one per file, file name = hook name, named `use<Name>Query`, `use<Feature>Result` or `use<Feature>Form`.
+- Hooks: only in `hooks/`, one per file, file name = hook name, named `use<Name>Query`, `use<Feature>Result`, `use<Feature>Form` or `use<Action>Mutation` (D-174).
 
 ## Rules (review)
 
@@ -39,4 +43,7 @@ Reference slice: `src/features/health`.
 - Filters, sort, compare selections live in URL search params (validated with Zod).
 - Money arrives as paise; format only at render with the shared money helper (Phase C).
 - Price block order is fixed by D-30–D-33: selling price headline, never effective price.
-- Styling: Tailwind tokens from `index.css` `@theme` (DESIGN.md). No raw hex in components.
+- Styling: Tailwind token classes only (DESIGN.md). No raw hex in components; product swatch colours are data.
+- Reuse `shared/ui` before writing new UI. New shared components get a `/design-system` specimen and a render + axe test.
+- shadcn CLI: check its output. It once imported `cn` from an unrelated npm package; `cn` must come from `@/shared/lib/utils`.
+- `dark:` classes are inert in v1 (D-176). Don't rely on them.

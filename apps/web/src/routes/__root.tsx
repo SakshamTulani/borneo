@@ -4,6 +4,8 @@ import type { ReactNode } from 'react';
 import appCss from '../index.css?url';
 import { pageHead } from '../shared/lib/seo';
 import { AppShell } from '../shared/ui/AppShell';
+import { EmptyState } from '../shared/ui/feedback/EmptyState';
+import { ErrorState } from '../shared/ui/feedback/ErrorState';
 
 export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()({
   head: () => {
@@ -18,6 +20,23 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     };
   },
   shellComponent: RootDocument,
+  errorComponent: ({ reset }) => (
+    <AppShell>
+      <ErrorState
+        title="Something went wrong"
+        body="Please try again."
+        onRetry={reset}
+        className="my-8"
+      />
+    </AppShell>
+  ),
+  notFoundComponent: () => (
+    <EmptyState
+      title="Page not found"
+      body="The page you're looking for doesn't exist."
+      className="my-8"
+    />
+  ),
   component: () => (
     <AppShell>
       <Outlet />

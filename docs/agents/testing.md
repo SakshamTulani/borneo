@@ -10,6 +10,7 @@ Vitest everywhere. `pnpm check` runs all suites; there is no CI.
 | `apps/api` repositories | SQL                 | Against Docker Postgres (`docker compose up -d`). Data from `src/test/factories.ts`.                                                                        |
 | Customer-scoped modules | Isolation           | `<m>.cross-customer.test.ts`: create data for `owner`, read/update/delete as `other` (`makeTwoCustomers()`), expect nothing/404. Required by `check:rules`. |
 | `apps/web` components   | Behaviour + a11y    | RTL + `expect(await axe(container)).toHaveNoViolations()` for every UI component.                                                                           |
+| `apps/web` tokens       | Contrast + CSS sync | `tokens.test.ts`: every pair in `contrastPairs` meets its ratio; `index.css` matches `tokens.ts`.                                                           |
 | `tooling`               | Guards              | Unit tests per check; depcruise canary plants every rule's violation and expects the exact error. New depcruise rule ⇒ new canary (a test fails otherwise). |
 
 Rules:

@@ -6,6 +6,7 @@ import { defineConfig } from 'vitest/config';
 const isTest = process.env.VITEST === 'true';
 
 export default defineConfig({
+  resolve: { tsconfigPaths: true },
   server: {
     port: 5173,
     proxy: { '/api': { target: 'http://localhost:3000', rewrite: (p) => p.replace(/^\/api/, '') } },

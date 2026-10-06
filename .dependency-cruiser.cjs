@@ -138,6 +138,14 @@ module.exports = {
       },
     },
     {
+      name: 'no-unresolvable',
+      comment:
+        'Every import must resolve (catches broken aliases that would hide imports from the rules above)',
+      severity: 'error',
+      from: { path: '^(apps|packages)/' },
+      to: { couldNotResolve: true, pathNot: ['\\?url$'] },
+    },
+    {
       name: 'no-circular',
       severity: 'error',
       from: {},
@@ -148,8 +156,11 @@ module.exports = {
     doNotFollow: { path: 'node_modules' },
     exclude: { path: ['routeTree\\.gen\\.ts$', '\\.output/', 'dist/'] },
     tsPreCompilationDeps: true,
+    // Resolves the web `@/` alias (tsconfig.depcruise.json mirrors apps/web paths).
+    tsConfig: { fileName: 'tsconfig.depcruise.json' },
     combinedDependencies: true,
     enhancedResolveOptions: {
+      exportsFields: ['exports'],
       extensions: ['.ts', '.tsx', '.js', '.mjs', '.cjs', '.json'],
       conditionNames: ['import', 'require', 'node', 'default', 'types'],
       mainFields: ['module', 'main', 'types'],

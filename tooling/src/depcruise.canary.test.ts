@@ -1,18 +1,30 @@
-import { cruise } from 'dependency-cruiser';
+import { execFileSync } from 'node:child_process';
 import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs';
 import { createRequire } from 'node:module';
 import { tmpdir } from 'node:os';
-import { dirname, join } from 'node:path';
+import { dirname, join, resolve } from 'node:path';
 import { describe, expect, it } from 'vitest';
 
-// Plants each boundary violation in a tiny fake repo and expects exactly that error.
-const config = createRequire(import.meta.url)('../../.dependency-cruiser.cjs');
+// Plants each boundary violation in a tiny fake repo, runs the real depcruise CLI with the
+// real config (same path as `pnpm check`), and expects exactly that error.
+const require = createRequire(import.meta.url);
+const configPath = resolve(import.meta.dirname, '../../.dependency-cruiser.cjs');
+const config = require(configPath);
+const bin = resolve(
+  import.meta.dirname,
+  '../../node_modules/dependency-cruiser/bin/dependency-cruiser.mjs',
+);
 
 const W = 'apps/web/src';
 const F = `${W}/features`;
 const M = 'apps/api/src/modules';
 
 const baseline: Record<string, string> = {
+  // Mirrors tsconfig.depcruise.json: the web `@/` alias.
+  ['tsconfig.depcruise.json']: JSON.stringify({
+    compilerOptions: { paths: { '@/*': ['./apps/web/src/*'] } },
+    include: ['apps/web/src'],
+  }),
   [`${W}/shared/lib/http.ts`]: 'export const getJson = () => 1;',
   [`${W}/shared/ui/Shell.tsx`]: 'export const Shell = 1;',
   [`${F}/alpha/model.ts`]: 'export const model = 1;',
@@ -56,12 +68,18 @@ async function violations(planted: Record<string, string>): Promise<string[]> {
       mkdirSync(dirname(join(dir, path)), { recursive: true });
       writeFileSync(join(dir, path), content);
     }
-    const { output } = await cruise(
-      ['apps', 'packages'],
-      { ...config.options, validate: true, ruleSet: { forbidden: config.forbidden }, baseDir: dir },
-      { extensions: config.options.enhancedResolveOptions.extensions },
-    );
-    if (typeof output === 'string') throw new Error('expected a result object');
+    let out: string;
+    try {
+      out = execFileSync('node', [bin, 'apps', 'packages', '--config', configPath, '-T', 'json'], {
+        cwd: dir,
+        encoding: 'utf8',
+      });
+    } catch (error) {
+      out = (error as { stdout: string }).stdout; // exits non-zero when it finds violations
+    }
+    const output = JSON.parse(out) as {
+      summary: { violations: { rule: { name: string }; from: string; to: string }[] };
+    };
     return output.summary.violations.map((v) => `${v.rule.name}: ${v.from} → ${v.to}`).sort();
   } finally {
     rmSync(dir, { recursive: true, force: true });
@@ -206,6 +224,19 @@ const cases: [string, Record<string, string>, string[]][] = [
     'shared-imports-framework',
     { ['packages/shared/src/planted.ts']: imp('react') },
     ['shared-imports-framework: packages/shared/src/planted.ts → node_modules/react/index.js'],
+  ],
+  [
+    'no-unresolvable',
+    { [`${F}/alpha/ui/Planted.tsx`]: imp('./DoesNotExist') },
+    [`no-unresolvable: ${F}/alpha/ui/Planted.tsx → ./DoesNotExist`],
+  ],
+  [
+    'web-upward-from-repository (via @/ alias)',
+    {
+      [`${F}/alpha/repository/planted.ts`]: imp('@/features/alpha/ui/Planted'),
+      [`${F}/alpha/ui/Planted.tsx`]: leaf,
+    },
+    [`web-upward-from-repository: ${F}/alpha/repository/planted.ts → ${F}/alpha/ui/Planted.tsx`],
   ],
   // depcruise reports one edge per cycle
   [

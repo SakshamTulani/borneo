@@ -1,10 +1,10 @@
 const HOOKS_DIR = /^apps\/web\/src\/features\/[^/]+\/hooks\//;
 const FEATURE = /^apps\/web\/src\/features\//;
-const NAME = /^use[A-Z][A-Za-z0-9]*(Query|Result|Form)$/;
+const NAME = /^use[A-Z][A-Za-z0-9]*(Query|Result|Form|Mutation)$/;
 const DECLARED =
   /^(?:export\s+)?(?:async\s+)?function\s+(use[A-Za-z0-9]*)|^(?:export\s+)?const\s+(use[A-Za-z0-9]*)\s*=/gm;
 
-/** One hook per file in features/*\/hooks, named use<Name>Query | use<Feature>Result | use<Feature>Form. */
+/** One hook per file in features/*\/hooks, named use<Name>Query | use<Feature>Result | use<Feature>Form | use<Action>Mutation. */
 export function checkHookFile(path: string, content: string): string[] {
   if (!FEATURE.test(path) || /\.test\.tsx?$/.test(path)) return [];
   const declared = [...content.matchAll(DECLARED)].map((m) => m[1] ?? m[2]!);
@@ -19,7 +19,7 @@ export function checkHookFile(path: string, content: string): string[] {
   const errors: string[] = [];
   if (!NAME.test(base))
     errors.push(
-      `${path}: file name must be use<Name>Query, use<Feature>Result or use<Feature>Form`,
+      `${path}: file name must be use<Name>Query, use<Feature>Result, use<Feature>Form or use<Action>Mutation`,
     );
   if (declared.length !== 1)
     errors.push(`${path}: must declare exactly one hook, found ${declared.length}`);

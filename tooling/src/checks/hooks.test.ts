@@ -14,11 +14,14 @@ describe('checkHookFile', () => {
     expect(
       checkHookFile(`${hooks}usePriceResult.ts`, 'export const usePriceResult = () => 1;'),
     ).toEqual([]);
+    expect(
+      checkHookFile(`${hooks}useAddToCartMutation.ts`, 'export function useAddToCartMutation() {}'),
+    ).toEqual([]);
   });
 
   it('rejects bad names, mismatches, two hooks and hooks outside hooks/', () => {
     expect(checkHookFile(`${hooks}useCart.ts`, 'export function useCart() {}')).toEqual([
-      `${hooks}useCart.ts: file name must be use<Name>Query, use<Feature>Result or use<Feature>Form`,
+      `${hooks}useCart.ts: file name must be use<Name>Query, use<Feature>Result, use<Feature>Form or use<Action>Mutation`,
     ]);
     expect(checkHookFile(`${hooks}useCartQuery.ts`, 'export function useOtherQuery() {}')).toEqual([
       `${hooks}useCartQuery.ts: hook useOtherQuery must match file name useCartQuery`,

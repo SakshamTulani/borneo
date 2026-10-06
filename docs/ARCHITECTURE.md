@@ -56,11 +56,14 @@ apps/web/src/
     hooks/        one hook per file: use<Name>Query, use<Feature>Result, use<Feature>Form
     ui/           components
     index.ts      public exports only
-  shared/ui/      design-system components (shadcn-based)
-  shared/lib/     generic helpers
+  shared/ui/base       shadcn primitives restyled to tokens (D-177)
+  shared/ui/commerce   display-only commerce components
+  shared/ui/feedback   empty, error, demo box
+  shared/ui/tokens.ts  token source of truth (tested against index.css)
+  shared/lib/          http, seo, format, useNow, cn
 ```
 
-Import direction (downward only): `routes → ui → hooks → repository → mappers/api → model`. `@borneo/shared` usable from any layer.
+Import direction (downward only): `routes → ui → hooks → repository → mappers/api → model`. `@borneo/shared` usable from any layer. `@/` aliases `apps/web/src` (depcruise resolves it via `tsconfig.depcruise.json`; `no-unresolvable` fails on any import it can't see).
 
 - Cross-feature imports only via `features/<x>/index.ts`.
 - No feature imports `routes`.
