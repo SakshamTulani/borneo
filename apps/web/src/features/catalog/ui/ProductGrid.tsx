@@ -4,14 +4,16 @@ import type { CatalogCard } from '../model';
 
 const grid = 'grid grid-cols-2 gap-3 sm:gap-5 md:grid-cols-3 xl:grid-cols-4';
 
-export function ProductGrid({ cards }: { cards: CatalogCard[] }) {
+/** `eager`: how many leading cards are above the fold and load their photos first. */
+export function ProductGrid({ cards, eager = 0 }: { cards: CatalogCard[]; eager?: number }) {
   return (
     <ul className={grid}>
-      {cards.map(({ id, slug, ...card }) => (
+      {cards.map(({ id, slug, ...card }, i) => (
         <li key={id} className="flex">
           <ProductCard
             {...card}
             link={{ to: '/products/$slug', params: { slug } }}
+            priority={i < eager}
             className="w-full"
           />
         </li>

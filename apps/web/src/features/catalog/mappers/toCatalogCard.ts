@@ -1,4 +1,5 @@
 import type { PriceDisplay, ProductSummary } from '@borneo/shared';
+import { imageSource } from '@/shared/lib/image';
 import type { PriceBlockProps } from '@/shared/ui/commerce/PriceBlock';
 import type { StatusBadgeProps } from '@/shared/ui/commerce/StatusBadge';
 import type { CatalogCard } from '../model';
@@ -34,6 +35,7 @@ export function toCatalogCard(p: ProductSummary): CatalogCard {
     slug: p.slug,
     name: p.name,
     familyLabel: p.lineName,
+    ...(p.image ? { image: { ...imageSource(p.image.src, { aspect: 1 }), alt: p.image.alt } } : {}),
     rating: {
       ...(p.rating.average !== null ? { value: p.rating.average } : {}),
       count: p.rating.count,

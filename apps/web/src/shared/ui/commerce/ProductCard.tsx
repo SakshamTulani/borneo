@@ -15,13 +15,16 @@ export type ProductCardProps<
   /** Router link to the product page, e.g. `{ to: '/products/$slug', params: { slug } }`. */
   link: ValidateLinkOptions<TRouter, TOptions>;
   familyLabel?: string;
-  image?: { src: string; alt: string };
+  /** Square photo; `srcSet` from `imageSource`. */
+  image?: { src: string; alt: string; srcSet?: string };
   rating: { value?: number; count: number };
   price: PriceBlockProps;
   badges?: StatusBadgeProps[];
   availability: 'inStock' | 'outOfStock' | 'preorder';
   watching?: boolean;
   onWatchToggle?: () => void;
+  /** Above the fold: load the photo eagerly at high priority. */
+  priority?: boolean;
   className?: string;
 };
 
@@ -40,22 +43,30 @@ export function ProductCard(props: ProductCardProps) {
     availability,
     watching,
     onWatchToggle,
+    priority,
     className,
   } = props;
   return (
     <article
       className={cn(
-        'group relative flex flex-col gap-3 rounded-xl border border-line bg-surface p-3 transition-colors hover:border-line-strong sm:p-4',
+        'group relative flex flex-col gap-3 rounded-xl bg-surface p-3 transition-shadow duration-300 hover:shadow-[0_10px_40px_-12px_rgba(0,0,0,0.18)] sm:p-4',
         className,
       )}
     >
-      <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[12px] bg-canvas">
+      <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[12px] bg-muted">
         {image ? (
           <img
             src={image.src}
+            {...(image.srcSet
+              ? {
+                  srcSet: image.srcSet,
+                  sizes: '(min-width: 1280px) 300px, (min-width: 768px) 30vw, 46vw',
+                }
+              : {})}
             alt={image.alt}
-            loading="lazy"
-            className="size-4/5 object-contain drop-shadow-[3px_5px_15px_rgba(0,0,0,0.18)]"
+            {...(priority ? { fetchPriority: 'high' as const } : { loading: 'lazy' as const })}
+            decoding="async"
+            className="size-full object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
           />
         ) : (
           <ImageIcon className="size-10 text-line-strong" aria-hidden />

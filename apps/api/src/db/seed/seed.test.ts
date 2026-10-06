@@ -218,6 +218,30 @@ describe('seed catalog', () => {
     expect(live.endsAt.getTime()).toBeGreaterThan(NOW.getTime());
   });
 
+  it('D-180: every listed product has an https photo, lead first', () => {
+    const listed = seedData.products.filter((p) => p.status === 'live' || p.status === 'preorder');
+    for (const p of listed) {
+      const id = rows.product.find((r) => r.slug === p.slug)!.id;
+      const photos = rows.media.filter((m) => m.productId === id);
+      expect(photos.length, p.slug).toBeGreaterThan(0);
+      expect(photos.find((m) => m.sort === 0)?.alt).toBe(p.name);
+    }
+    expect(rows.media.every((m) => m.url.startsWith('https://'))).toBe(true);
+  });
+
+  it('D-180: a listed product without a photo, or a bad photo URL, is reported', () => {
+    const issues = seedIssues(
+      plant((d) => {
+        delete d.photos['pulse-4'];
+        d.photos['nova-3'] = ['http://example.com/a.jpg?w=1'];
+        d.photos['no-such-product'] = ['https://example.com/a.jpg'];
+      }),
+    );
+    expect(issues).toContain('product pulse-4: listed products need a photo (D-180)');
+    expect(issues.some((i) => i.startsWith('photo for nova-3'))).toBe(true);
+    expect(issues).toContain('photos for unknown product "no-such-product"');
+  });
+
   it('ids are stable across builds', () => {
     const again = buildSeed(new Date('2030-01-01T00:00:00.000Z'));
     expect(again.product.map((p) => p.id)).toEqual(rows.product.map((p) => p.id));

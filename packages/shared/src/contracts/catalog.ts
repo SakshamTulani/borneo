@@ -196,6 +196,13 @@ export const flashBadgeSchema = z.object({
   lowStockCount: z.number().int().positive().optional(),
 });
 
+/** A product photo: absolute URL plus alt text (D-14). The first one leads cards and the gallery. */
+export const productImageSchema = z.object({
+  src: z.httpUrl(),
+  alt: z.string().min(1),
+});
+export type ProductImage = z.infer<typeof productImageSchema>;
+
 /** Listing order (D-19). */
 export const productSortSchema = z.enum(['newest', 'price_asc', 'price_desc']);
 export type ProductSort = z.infer<typeof productSortSchema>;
@@ -213,6 +220,8 @@ export const productSummarySchema = z.object({
   price: priceDisplaySchema,
   flash: flashBadgeSchema.nullable(),
   rating: ratingSummarySchema,
+  /** Lead photo; null until the product has media. */
+  image: productImageSchema.nullable(),
 });
 export type ProductSummary = z.infer<typeof productSummarySchema>;
 
@@ -293,6 +302,8 @@ export const productDetailSchema = z.object({
   tier: productTierSchema,
   status: productStatusSchema,
   category: z.object({ slug: z.string().min(1), name: z.string().min(1) }),
+  /** Gallery, lead photo first; empty until the product has media. */
+  images: z.array(productImageSchema),
   explainer: z.string().nullable(),
   whoFor: z.string().nullable(),
   notFor: z.string().nullable(),

@@ -16,13 +16,13 @@ Product cards and pages need images (PRD: rich media, D-14). ARCHITECTURE alread
 
 ## Decision
 
-Option 1. Seed images are studio-style SVG renders generated in code per product and variant colour (`db/seed/media`), uploaded by `db:reset` and recorded in `media`. Only the `media/` prefix is anonymous-read; return photos and invoices (later) stay private and use presigned URLs from the same client.
+Revised 2026-10-06 on owner direction (D-180): for now, product photos are hosted sample photos (Unsplash) referenced by absolute URL in `media.url`; nothing is uploaded. The web app requests sized variants (`imageSource`, srcSet).
+
+When we store our own files, Option 1: return photos and invoices go to a private bucket via `@aws-sdk/client-s3` with presigned URLs, and product photos move to a public-read `media/` prefix whose URLs go into the same `media.url` column. That part is still proposed and not built.
 
 ## Consequences
 
-- \+ Standard, maintained client; works unchanged against AWS S3, R2 or MinIO in production.
-- \+ Images follow the architecture (MinIO) and the existing `media` table.
-- \+ Generated renders are honest placeholders: no fake photos of other brands.
-- − Adds a sizeable dependency to the API (tree-shaken per command).
-- − `db:reset` now needs MinIO running as well as Postgres.
-- − Real product photography replaces the renders before launch (listed as a content blocker).
+- \+ Real-looking photos today with no storage work; `db:reset` still needs only Postgres.
+- \+ `media.url` works unchanged for any host (Unsplash now, S3/R2/MinIO public URL later).
+- − Hotlinked third-party images: the site depends on Unsplash availability, and photos are not Borneo products (chosen to avoid visible logos). Launch blocker: replace with Borneo photography.
+- − No private storage yet; return photos (Phase L) and invoices (Phase K) need the S3 client when they arrive.

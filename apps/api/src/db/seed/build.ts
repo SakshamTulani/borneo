@@ -10,6 +10,7 @@ import { categories, type SeedCategory } from './categories';
 import * as commerce from './commerce';
 import { inr, seedId } from './ids';
 import { deliveryLanes, servicePincodes, warehouses } from './logistics';
+import { productPhotos } from './media';
 import { DEFAULT_STOCK, lines, products, type SeedProduct } from './products';
 import { relationOverrides, relationRules } from './relations';
 
@@ -25,6 +26,8 @@ export type SeedData = {
   flashSales: typeof commerce.flashSales;
   paymentOffers: typeof commerce.paymentOffers;
   emiPlans: typeof commerce.emiPlans;
+  /** Photo URLs per product slug, lead first (D-180). */
+  photos: Record<string, string[]>;
 };
 
 export const seedData: SeedData = {
@@ -37,6 +40,7 @@ export const seedData: SeedData = {
   flashSales: commerce.flashSales,
   paymentOffers: commerce.paymentOffers,
   emiPlans: commerce.emiPlans,
+  photos: productPhotos,
 };
 
 const DAY_MS = 86_400_000;
@@ -198,6 +202,16 @@ export function seedIssues(data: SeedData): string[] {
       issues.push(`bundle ${b.slug}: price must be below the members' total (D-06)`);
   }
 
+  for (const p of data.products)
+    if (isSelling(p) && !data.photos[p.slug]?.length)
+      issues.push(`product ${p.slug}: listed products need a photo (D-180)`);
+  for (const [slug, urls] of Object.entries(data.photos)) {
+    if (!bySlug.has(slug)) issues.push(`photos for unknown product "${slug}"`);
+    for (const url of urls)
+      if (!url.startsWith('https://') || url.includes('?'))
+        issues.push(`photo for ${slug}: "${url}" must be https without a query (D-180)`);
+  }
+
   for (const f of data.flashSales) {
     const hit = bySku.get(f.sku);
     if (!hit || hit.p.status !== 'live') {
@@ -218,6 +232,7 @@ export type SeedRows = {
   productLine: Insert<typeof schema.productLine>;
   product: Insert<typeof schema.product>;
   variant: Insert<typeof schema.variant>;
+  media: Insert<typeof schema.media>;
   faq: Insert<typeof schema.faq>;
   searchSynonym: Insert<typeof schema.searchSynonym>;
   relationRule: Insert<typeof schema.relationRule>;
@@ -372,6 +387,16 @@ export function buildSeed(now: Date, data: SeedData = seedData): SeedRows {
         mrpPaise: inr(v.mrp),
         pricePaise: inr(v.price),
         preorderCap: v.preorderCap ?? null,
+      })),
+    ),
+    media: data.products.flatMap((p) =>
+      (data.photos[p.slug] ?? []).map((url, i) => ({
+        id: seedId('media', `${p.slug}#${i}`),
+        productId: productId(p.slug),
+        kind: 'image' as const,
+        url,
+        alt: i === 0 ? p.name : `${p.name}, another view`,
+        sort: i,
       })),
     ),
     faq: [

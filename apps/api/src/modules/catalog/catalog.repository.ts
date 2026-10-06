@@ -6,6 +6,7 @@ import {
   type CategoryDto,
   type FlashSale,
   type ListingFilter,
+  type ProductImage,
   type ProductSort,
   type ProductStatus,
   type RelationEdge,
@@ -17,6 +18,7 @@ import {
   faq,
   flashSale,
   inventory,
+  media,
   product,
   productLine,
   relation,
@@ -283,6 +285,23 @@ export async function loadVariantStates(
         perCustomerLimit: 1 as const,
       })),
   }));
+}
+
+/** Product photos in display order, lead first (D-180). */
+export async function loadImages(
+  db: Db,
+  productIds: string[],
+): Promise<Map<string, ProductImage[]>> {
+  const images = new Map<string, ProductImage[]>();
+  if (productIds.length === 0) return images;
+  const rows = await db
+    .select({ productId: media.productId, src: media.url, alt: media.alt })
+    .from(media)
+    .where(and(inArray(media.productId, productIds), eq(media.kind, 'image')))
+    .orderBy(asc(media.productId), asc(media.sort));
+  for (const { productId, ...image } of rows)
+    images.set(productId, [...(images.get(productId) ?? []), image]);
+  return images;
 }
 
 /** Verified reviews only (D-150): every review row is tied to a delivered order item. */

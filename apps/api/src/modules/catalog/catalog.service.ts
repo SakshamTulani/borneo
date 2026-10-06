@@ -19,6 +19,7 @@ import {
   type FlashSale,
   type ListingFilter,
   type ProductDetail,
+  type ProductImage,
   type ProductSort,
   type ProductSummary,
   type ProductVariant,
@@ -46,6 +47,7 @@ export type CatalogDeps = {
   ) => Promise<{ attributes: Record<string, unknown>; pricePaise: number }[]>;
   loadVariantStates: (productIds: string[], now: number) => Promise<VariantState[]>;
   loadRatings: (productIds: string[]) => Promise<Map<string, { average: number; count: number }>>;
+  loadImages: (productIds: string[]) => Promise<Map<string, ProductImage[]>>;
   loadOfferBook: (now: number) => Promise<OfferBook>;
   findProductBySlug: (slug: string) => Promise<ProductRow | undefined>;
   listAttributeDefs: (categoryId: string) => Promise<CategoryWithDefs['defs']>;
@@ -125,10 +127,11 @@ export function createCatalogService(deps: CatalogDeps) {
   async function summarize(rows: ListingRow[]): Promise<ProductSummary[]> {
     const now = deps.now();
     const ids = rows.map((r) => r.id);
-    const [variants, ratings, book] = await Promise.all([
+    const [variants, ratings, book, images] = await Promise.all([
       deps.loadVariantStates(ids, now),
       deps.loadRatings(ids),
       deps.loadOfferBook(now),
+      deps.loadImages(ids),
     ]);
     return rows.flatMap((row) => {
       const priced = variants
@@ -150,6 +153,7 @@ export function createCatalogService(deps: CatalogDeps) {
           // Badge only the variant the card prices: no flash badge next to a regular price (D-140).
           flash: card.flash,
           rating: ratingOf(ratings, row.id),
+          image: images.get(row.id)?.[0] ?? null,
         },
       ];
     });
@@ -224,13 +228,14 @@ export function createCatalogService(deps: CatalogDeps) {
       if (!product) throw notFound('PRODUCT_NOT_FOUND', `No product "${slug}"`);
       const now = deps.now();
       const categoryId = product.category.id;
-      const [defs, variants, ratings, book, faqs, edges] = await Promise.all([
+      const [defs, variants, ratings, book, faqs, edges, images] = await Promise.all([
         deps.listAttributeDefs(categoryId),
         deps.loadVariantStates([product.id], now),
         deps.loadRatings([product.id]),
         deps.loadOfferBook(now),
         deps.loadFaqs(product.id, categoryId),
         deps.loadRelationsFrom(product.id),
+        deps.loadImages([product.id]),
       ]);
       if (variants.length === 0) throw notFound('PRODUCT_NOT_FOUND', `No product "${slug}"`);
 
@@ -257,6 +262,7 @@ export function createCatalogService(deps: CatalogDeps) {
         tier: product.tier,
         status: product.status,
         category: { slug: product.category.slug, name: product.category.name },
+        images: images.get(product.id) ?? [],
         explainer: product.explainer,
         whoFor: product.whoFor,
         notFor: product.notFor,

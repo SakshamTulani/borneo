@@ -24,6 +24,7 @@ export function emptyCatalogDeps(over: Partial<CatalogDeps> = {}): CatalogDeps {
     listedProductFacts: async () => [],
     loadVariantStates: async () => [],
     loadRatings: async () => new Map(),
+    loadImages: async () => new Map(),
     loadOfferBook: async () => ({ coupons: [], paymentOffers: [], emiPlans: [] }),
     findProductBySlug: async () => undefined,
     listAttributeDefs: async () => [],

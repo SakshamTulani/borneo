@@ -1,12 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import {
-  CheckIcon,
-  ChevronDownIcon,
-  ImageIcon,
-  InfoIcon,
-  RotateCcwIcon,
-  XIcon,
-} from 'lucide-react';
+import { CheckIcon, ChevronDownIcon, InfoIcon, RotateCcwIcon, XIcon } from 'lucide-react';
 import { toCatalogCard, toPriceBlock } from '@/features/catalog';
 import { formatDateRange } from '@/shared/lib/format';
 import { Countdown } from '@/shared/ui/commerce/Countdown';
@@ -22,6 +15,7 @@ import { Breadcrumbs } from '@/shared/ui/navigation/Breadcrumbs';
 import { toOfferCards } from '../mappers/toOfferCards';
 import { optionGroups, variantFor } from '../mappers/variantSelection';
 import type { ProductDetail, ProductVariant } from '../model';
+import { ProductGallery } from './ProductGallery';
 
 type Props = {
   product: ProductDetail;
@@ -68,8 +62,8 @@ export function ProductView({ product, variant, onVariantChange }: Props) {
         />
 
         <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
-          <div className="flex aspect-square items-center justify-center rounded-xl bg-surface lg:sticky lg:top-20 lg:self-start">
-            <ImageIcon className="size-16 text-line-strong" strokeWidth={1.25} aria-hidden />
+          <div className="lg:sticky lg:top-20 lg:self-start">
+            <ProductGallery key={product.id} images={product.images} />
           </div>
 
           <div className="space-y-7">

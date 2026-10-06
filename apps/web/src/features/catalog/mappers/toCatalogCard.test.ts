@@ -19,6 +19,7 @@ const summary: ProductSummary = {
   },
   flash: { endsAt: 1, lowStockCount: 3 },
   rating: { average: null, count: 0 },
+  image: { src: 'https://images.unsplash.com/photo-1', alt: 'Echo Buds 2' },
 };
 
 describe('toCatalogCard', () => {
@@ -30,6 +31,14 @@ describe('toCatalogCard', () => {
       price: { sellingPaise: 279_900, mrpPaise: 499_900, savings: { paise: 220_000, percent: 44 } },
     });
     expect(toCatalogCard(summary).rating).not.toHaveProperty('value');
+  });
+
+  it('D-180: sizes the lead photo square and leaves image out when there is none', () => {
+    const card = toCatalogCard(summary);
+    expect(card.image?.alt).toBe('Echo Buds 2');
+    expect(card.image?.src).toContain('w=1200&h=1200');
+    expect(card.image?.srcSet).toContain('400w');
+    expect(toCatalogCard({ ...summary, image: null })).not.toHaveProperty('image');
   });
 
   it('badges a live flash sale with the real remaining count only (D-148)', () => {

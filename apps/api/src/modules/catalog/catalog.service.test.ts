@@ -247,6 +247,15 @@ describe('catalog service', () => {
     expect(items[0]!.rating).toEqual({ average: 4.3, count: 3 });
   });
 
+  it('D-180: cards lead with the first photo; no photo is null, not a placeholder', async () => {
+    const lead = { src: 'https://images.example.com/a-1', alt: 'A' };
+    const { items } = await setup(['a', 'b'], {
+      loadImages: async () =>
+        new Map([['a', [lead, { src: 'https://images.example.com/a-2', alt: 'A, another view' }]]]),
+    }).service.listProducts({ limit: 5, sort: 'newest', filters: {} });
+    expect(items.map((i) => i.image)).toEqual([lead, null]);
+  });
+
   it('returns 404 PRODUCT_NOT_FOUND for an unknown product', async () => {
     await expect(setup([]).service.getProduct('nope')).rejects.toMatchObject({
       statusCode: 404,

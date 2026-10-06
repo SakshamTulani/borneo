@@ -19,6 +19,7 @@ export const summaryFixture = (over: Partial<ProductSummary> = {}): ProductSumma
   },
   flash: null,
   rating: { average: null, count: 0 },
+  image: { src: 'https://images.example.com/echo-buds-2', alt: 'Echo Buds 2' },
   ...over,
 });
 
@@ -65,6 +66,10 @@ export const productFixture = (over: Partial<ProductDetail> = {}): ProductDetail
   tier: 'value',
   status: 'live',
   category: { slug: 'smartphones', name: 'Smartphones' },
+  images: [
+    { src: 'https://images.example.com/pulse-4-front', alt: 'Borneo Pulse 4' },
+    { src: 'https://images.example.com/pulse-4-back', alt: 'Borneo Pulse 4, another view' },
+  ],
   explainer: 'A 120 Hz screen and a two-day battery.',
   whoFor: 'First smartphone buyers.',
   notFor: 'Mobile gamers.',

@@ -196,7 +196,7 @@ function Results({
   }
   return (
     <div className="space-y-4">
-      <ProductGrid cards={list.cards} />
+      <ProductGrid cards={list.cards} eager={4} />
       {list.hasMore ? (
         <div className="flex justify-center pt-4">
           <Button variant="outline" loading={list.loadingMore} onClick={list.onLoadMore}>

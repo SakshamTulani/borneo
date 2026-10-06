@@ -9,6 +9,7 @@ export {
   listProducts,
   listProductsByIds,
   loadFaqs,
+  loadImages,
   loadRatings,
   loadRelationsFrom,
   loadVariantStates,

@@ -80,7 +80,9 @@ Commerce components only display. They never compute prices, savings, eligibilit
 | SpecTable       | Grouped rows                                                                                                   | full, "Not specified", empty                                                                                        |
 | OrderTimeline   | Ordered steps, `aria-current="step"`                                                                           | in transit, cancelled, replacement requested                                                                        |
 
-Still to design, in later phases: payment hold timer, upgrade strip, compare table, finder step, sticky purchase bar (with add to cart, Phase J), product media gallery. Phase F placed the policy summary and suggestion-with-reason inline on the PDP.
+Still to design, in later phases: payment hold timer, upgrade strip, compare table, finder step, sticky purchase bar (with add to cart, Phase J). Phase F placed the policy summary and suggestion-with-reason inline on the PDP.
+
+Home (D-181): product hero (newest launch), launches grid, photo banners per category, category tiles with artwork. PDP: square gallery with thumbnail buttons (`aria-pressed`). Photos come sized from `imageSource` (srcSet).
 
 Global states for every data view: loading (skeleton), empty, error (with retry).
 

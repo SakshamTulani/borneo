@@ -17,13 +17,23 @@ function seededClient() {
   ]);
   queryClient.setQueryData(newestProductsQuery(HOME_NEWEST).queryKey, [
     toCatalogCard(summaryFixture()),
+    toCatalogCard(summaryFixture({ id: 'p-max', slug: 'echo-max-2', name: 'Echo Max 2' })),
   ]);
   return queryClient;
 }
 
 describe('HomePage', () => {
-  it('D-120: categories, config-driven entry points and new launches; axe clean', async () => {
+  it('D-120, D-181: product hero, latest launches, categories and entry points; axe clean', async () => {
     const { container } = await renderWithRouter(<HomePage />, { queryClient: seededClient() });
+    // The hero is the newest product, not a slogan (D-181); the next launches follow.
+    const hero = screen.getByRole('region', { name: 'Echo Buds 2' });
+    expect(container.querySelector('section')).toBe(hero);
+    expect(hero.textContent).toContain('Just launched');
+    expect(screen.getByRole('link', { name: 'View details of the Echo Buds 2' })).toBeTruthy();
+    const latest = screen.getByRole('region', { name: 'Latest launches' });
+    expect(latest.textContent).toContain('Echo Max 2');
+    expect(latest.textContent).not.toContain('Echo Buds 2');
+
     const categories = screen.getByRole('region', { name: 'Shop by category' });
     expect(categories.querySelectorAll('a')).toHaveLength(3);
     const start = screen.getByRole('region', { name: 'Where to start' });
@@ -31,7 +41,13 @@ describe('HomePage', () => {
     expect(start.textContent).toContain('Smartphones');
     expect(start.textContent).toContain('Build your setup');
     expect(start.textContent).not.toContain('TVs');
-    expect(screen.getByRole('link', { name: 'Echo Buds 2' })).toBeTruthy();
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('D-180: banners link only to categories that exist', async () => {
+    await renderWithRouter(<HomePage />, { queryClient: seededClient() });
+    const featured = screen.getByRole('region', { name: 'Featured' });
+    const links = [...featured.querySelectorAll('a')].map((a) => a.getAttribute('href'));
+    expect(links).toEqual(['/categories/tvs']);
   });
 });

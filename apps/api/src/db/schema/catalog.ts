@@ -143,17 +143,25 @@ export const variant = pgTable(
   ],
 );
 
-export const media = pgTable('media', {
-  id: id(),
-  productId: uuid('product_id')
-    .notNull()
-    .references(() => product.id, { onDelete: 'cascade' }),
-  variantId: uuid('variant_id').references(() => variant.id, { onDelete: 'cascade' }),
-  kind: mediaKind('kind').notNull(),
-  s3Key: text('s3_key').notNull(),
-  alt: text('alt').notNull(),
-  sort: integer('sort').notNull().default(0),
-});
+/** Product photos by absolute URL (D-180): hosted sample photos now, our own storage later. */
+export const media = pgTable(
+  'media',
+  {
+    id: id(),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => product.id, { onDelete: 'cascade' }),
+    variantId: uuid('variant_id').references(() => variant.id, { onDelete: 'cascade' }),
+    kind: mediaKind('kind').notNull(),
+    url: text('url').notNull(),
+    alt: text('alt').notNull(),
+    sort: integer('sort').notNull().default(0),
+  },
+  (t) => [
+    index('media_product').on(t.productId, t.sort),
+    check('media_url_https', sql`${t.url} like 'https://%'`),
+  ],
+);
 
 export const faq = pgTable(
   'faq',
