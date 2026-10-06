@@ -1,4 +1,6 @@
 import {
+  returnWindowEndsAt,
+  reviewerName,
   attributesSchemaFor,
   couponSchema,
   flashSaleSchema,
@@ -13,6 +15,7 @@ import { deliveryLanes, servicePincodes, unservedPincodes, warehouses } from './
 import { productPhotos } from './media';
 import { DEFAULT_STOCK, lines, products, type SeedProduct } from './products';
 import { relationOverrides, relationRules } from './relations';
+import { REVIEWS_MIN, REVIEWS_SPREAD, reviewers, reviewTemplates } from './reviews';
 
 type Insert<T extends { $inferInsert: unknown }> = T['$inferInsert'][];
 
@@ -238,6 +241,13 @@ export function seedIssues(data: SeedData): string[] {
       if (!cats.has(slug)) issues.push(`pincode ${s.pincode}: unknown category "${slug}" (D-50)`);
     }
   }
+  for (const p of data.products) {
+    if (
+      (p.status === 'live' || p.status === 'discontinued') &&
+      !reviewTemplates[p.category]?.length
+    )
+      issues.push(`product ${p.slug}: no demo review templates for "${p.category}" (D-200)`);
+  }
   return issues;
 }
 
@@ -263,7 +273,96 @@ export type SeedRows = {
   serviceability: Insert<typeof schema.serviceability>;
   pincodeArea: Insert<typeof schema.pincodeArea>;
   deliveryLane: Insert<typeof schema.deliveryLane>;
+  user: Insert<typeof schema.user>;
+  order: Insert<typeof schema.order>;
+  orderItem: Insert<typeof schema.orderItem>;
+  review: Insert<typeof schema.review>;
 };
+
+/** A small stable number from a string (picks how many reviews and which ones). */
+const pick = (key: string) => parseInt(seedId('pick', key).slice(0, 8), 16);
+
+/**
+ * Demo reviews (D-200): each from a demo customer with a delivered demo order of that product, so
+ * every review stays tied to an order item (D-150). Only products people could have received:
+ * pre-orders and drafts get none. Dates fall after launch and before seeding time.
+ */
+function demoReviews(data: SeedData, t: number) {
+  const productId = (slug: string) => seedId('product', slug);
+  const variantId = (sku: string) => seedId('variant', sku);
+  const rows = {
+    user: [] as SeedRows['user'],
+    order: [] as SeedRows['order'],
+    orderItem: [] as SeedRows['orderItem'],
+    review: [] as SeedRows['review'],
+  };
+  rows.user = reviewers.map((name, i) => ({
+    id: seedId('demo-customer', String(i)),
+    name,
+    email: `demo.reviewer${i + 1}@example.com`,
+    emailVerified: false,
+  }));
+  const policy = new Map(data.categories.map((c) => [c.slug, c.returnPolicy]));
+  let n = 0;
+  for (const p of data.products) {
+    if (p.status !== 'live' && p.status !== 'discontinued') continue;
+    const templates = reviewTemplates[p.category] ?? [];
+    const launched = p.launchedAt ? Date.parse(`${p.launchedAt}T00:00:00+05:30`) : t - 365 * DAY_MS;
+    const count = REVIEWS_MIN + (pick(p.slug) % REVIEWS_SPREAD);
+    const offset = pick(`${p.slug}#t`);
+    for (let k = 0; k < count; k++) {
+      // Delivered between a week after launch and three days ago, spread out.
+      const latest = t - 3 * DAY_MS;
+      const earliest = launched + 7 * DAY_MS;
+      if (earliest >= latest) break;
+      const deliveredAt = latest - (((k * 37 + (offset % 29)) * DAY_MS) % (latest - earliest));
+      const template = templates[(offset + k) % templates.length]!;
+      const variant = p.variants[(offset + k) % p.variants.length]!;
+      const customer = rows.user[(offset + k * 5) % rows.user.length]!;
+      const key = `${p.slug}#${k}`;
+      const orderId = seedId('demo-order', key);
+      const itemId = seedId('demo-order-item', key);
+      n++;
+      rows.order.push({
+        id: orderId,
+        customerId: customer.id,
+        number: `BN-DEMO-${String(n).padStart(4, '0')}`,
+        status: 'delivered',
+        address: { name: customer.name, city: 'Bengaluru', state: 'Karnataka', pincode: '560034' },
+        subtotalPaise: inr(variant.price),
+        discountPaise: 0,
+        totalPaise: inr(variant.price),
+        paymentMethod: 'upi',
+        idempotencyKey: `demo-${key}`,
+        placedAt: new Date(deliveredAt - 3 * DAY_MS),
+      });
+      rows.orderItem.push({
+        id: itemId,
+        orderId,
+        variantId: variantId(variant.sku),
+        sku: variant.sku,
+        productName: p.name,
+        returnPolicy: policy.get(p.category)!,
+        qty: 1,
+        mrpPaise: inr(variant.mrp),
+        unitPricePaise: inr(variant.price),
+        returnWindowEndsAt: new Date(returnWindowEndsAt(deliveredAt)),
+      });
+      rows.review.push({
+        id: seedId('demo-review', key),
+        productId: productId(p.slug),
+        customerId: customer.id,
+        orderItemId: itemId,
+        rating: template.rating,
+        authorName: reviewerName(customer.name),
+        title: template.title,
+        body: template.body.replaceAll('{name}', p.name),
+        createdAt: new Date(Math.min(latest, deliveredAt + 2 * DAY_MS)),
+      });
+    }
+  }
+  return rows;
+}
 
 /** Insert-ready rows. Throws if the seed has issues; offers and flash sales are parsed with the shared contracts. */
 export function buildSeed(now: Date, data: SeedData = seedData): SeedRows {
@@ -499,5 +598,6 @@ export function buildSeed(now: Date, data: SeedData = seedData): SeedRows {
       minDays: l.minDays,
       maxDays: l.maxDays,
     })),
+    ...demoReviews(data, t),
   };
 }

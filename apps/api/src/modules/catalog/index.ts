@@ -1,6 +1,12 @@
 export { catalogRoutes } from './catalog.route';
 export { createCatalogService, type CatalogService } from './catalog.service';
-export type { ListingRow } from './catalog.repository';
+export type {
+  BundleRow,
+  CartProductRow,
+  ItemRow,
+  ListingRow,
+  ReviewRow,
+} from './catalog.repository';
 export {
   cheapestVariant,
   findCategoryBySlug,
@@ -11,8 +17,14 @@ export {
   listProducts,
   listProductsByIds,
   loadFaqs,
+  loadCartBundles,
+  loadCartItems,
   loadImages,
+  loadRatingCounts,
   loadRatings,
+  loadReviews,
   loadRelationsFrom,
+  loadRelationsFromMany,
   loadVariantStates,
+  soleVariantSkus,
 } from './catalog.repository';

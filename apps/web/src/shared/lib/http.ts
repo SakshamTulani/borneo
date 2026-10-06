@@ -58,9 +58,9 @@ export async function getJson<T>(path: string, schema: z.ZodType<T>): Promise<T>
   return schema.parse(await (await request('GET', path)).json());
 }
 
-/** A write with a JSON body and a JSON answer. Only feature `api/` folders call this. */
+/** A write with a JSON answer (body optional). Only feature `api/` folders call this. */
 export async function sendJson<T>(
-  method: 'POST' | 'PUT' | 'PATCH',
+  method: 'POST' | 'PUT' | 'PATCH' | 'DELETE',
   path: string,
   body: unknown,
   schema: z.ZodType<T>,

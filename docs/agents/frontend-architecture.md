@@ -27,6 +27,8 @@ Reference slices: `src/features/health` (minimal), `src/features/catalog` (infin
 
 Session (Phase I): `sessionQuery` (`features/auth`) is prefetched by the root route; during SSR `shared/lib/http.ts` forwards the shopper's cookie to Fastify and passes refreshed `Set-Cookie` back (`shared/lib/ssrRequest.ts`, via `createIsomorphicFn`). Customer data uses query keys under `['me', …]`, dropped on sign-in/out. `/account` guards in `beforeLoad` and redirects to `/sign-in?redirect=` (same-site paths only, `safeRedirectPath`). Web tests stub the API with `stubApi` (`src/test/api.ts`). UI tests that render router `Link`s use `renderWithRouter` from `src/test/router.tsx`; API-shaped fixtures live in `src/test/fixtures.ts`. Living component reference: `/design-system` (`features/design-system`).
 
+Cart (Phase J): `features/cart` keeps the signed-out cart in `localStorage` (`repository/browserCart.ts`, lines and coupon only) and prices it with `POST /cart/quote`; signed in, it uses `/me/cart` under `['me','cart',pincode]`. The first account read after sign-in merges the browser cart once (`mergeBrowserCartOnce`). The root layout passes the cart count to `AppShell` (header link + bottom nav). The PDP composes `ProductPurchase` (button, sticky bar, in-cart stepper) and `BundleOffers` through slots on `ProductView`.
+
 ## Rules (enforced)
 
 - Imports go down only: `ui → hooks → repository → mappers → api → model`. A layer never imports its own `index.ts`.

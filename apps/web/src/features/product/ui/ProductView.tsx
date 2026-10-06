@@ -17,6 +17,7 @@ import { toOfferCards } from '../mappers/toOfferCards';
 import { optionGroups, variantFor } from '../mappers/variantSelection';
 import type { ProductDetail, ProductVariant } from '../model';
 import { ProductGallery } from './ProductGallery';
+import { ProductReviews } from './ProductReviews';
 
 type Props = {
   product: ProductDetail;
@@ -24,6 +25,10 @@ type Props = {
   onVariantChange: (sku: string) => void;
   /** Delivery checker for the selected variant; not shown for discontinued products. */
   delivery?: ReactNode;
+  /** Add to cart for the selected variant (and the mobile purchase bar). */
+  purchase?: ReactNode;
+  /** Bundles with this product (D-197). */
+  bundles?: ReactNode;
 };
 
 function variantBadges(product: ProductDetail, v: ProductVariant): StatusBadgeProps[] {
@@ -40,7 +45,14 @@ function variantBadges(product: ProductDetail, v: ProductVariant): StatusBadgePr
 const h2 = 'font-heading text-headline tracking-tight';
 
 /** Product page template (D-13, D-14): the same for every category, driven by data. */
-export function ProductView({ product, variant, onVariantChange, delivery }: Props) {
+export function ProductView({
+  product,
+  variant,
+  onVariantChange,
+  delivery,
+  purchase,
+  bundles,
+}: Props) {
   const groups = optionGroups(product, variant);
   const badges = variantBadges(product, variant);
   const offers = toOfferCards(variant.offers);
@@ -149,6 +161,8 @@ export function ProductView({ product, variant, onVariantChange, delivery }: Pro
               </div>
             ) : null}
 
+            {purchase && !discontinued ? purchase : null}
+
             {delivery && !discontinued ? (
               <div className="rounded-xl bg-surface p-5">{delivery}</div>
             ) : null}
@@ -198,6 +212,8 @@ export function ProductView({ product, variant, onVariantChange, delivery }: Pro
           </ul>
         </section>
       ) : null}
+
+      {bundles && !discontinued ? bundles : null}
 
       {product.explainer || product.whoFor || product.notFor ? (
         <section aria-labelledby="pdp-about" className="space-y-4">
@@ -263,16 +279,7 @@ export function ProductView({ product, variant, onVariantChange, delivery }: Pro
         </section>
       ) : null}
 
-      <section aria-labelledby="pdp-reviews" className="space-y-2">
-        <h2 id="pdp-reviews" className={h2}>
-          Reviews
-        </h2>
-        <p className="text-sm text-ink-muted">
-          {product.rating.count === 0
-            ? 'No reviews yet. Only customers who bought this product can review it.'
-            : `${product.rating.count} verified review${product.rating.count === 1 ? '' : 's'}.`}
-        </p>
-      </section>
+      <ProductReviews product={product} />
 
       {product.suggestions.length ? (
         <section aria-labelledby="pdp-suggestions" className="space-y-4">

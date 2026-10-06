@@ -9,6 +9,7 @@ import {
   productDetailSchema,
   productSortSchema,
   productSummarySchema,
+  reviewPageSchema,
 } from '@borneo/shared';
 
 const slug = z.string().regex(/^[a-z0-9-]+$/);
@@ -46,5 +47,11 @@ export type ProductListResponse = z.infer<typeof productListResponse>;
 
 export const categoryDetailResponse = categoryDetailSchema;
 export const productDetailResponse = productDetailSchema;
+
+export const reviewsQuery = z.object({
+  cursor: z.string().min(1).optional(),
+  limit: z.coerce.number().int().min(1).max(MAX_PAGE_LIMIT).default(10),
+});
+export const reviewPageResponse = reviewPageSchema;
 
 export { errorResponseSchema };

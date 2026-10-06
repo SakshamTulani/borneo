@@ -17,6 +17,7 @@ export * from './contracts/notifications';
 
 export * from './rules/account';
 export * from './rules/addresses';
+export * from './rules/cart';
 export * from './rules/catalog';
 export * from './rules/cod';
 export * from './rules/compatibility';
@@ -28,6 +29,7 @@ export * from './rules/orders';
 export * from './rules/pricing';
 export * from './rules/relations';
 export * from './rules/returns';
+export * from './rules/reviews';
 export * from './rules/serviceability';
 export * from './rules/search';
 export * from './rules/suggestions';

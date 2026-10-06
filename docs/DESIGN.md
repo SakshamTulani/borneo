@@ -51,38 +51,40 @@ shadcn semantic names (`primary`, `secondary`, `muted-foreground`, `destructive`
 
 **Space**: 4px grid (4–80); 48–64px between home sections. **Radius**: 8 (compact utility), 11 (inputs, selects), 18 (cards, image wells), full (buttons are pills, chips, badges). **Elevation**: none on cards, buttons or text; surfaces separate by colour. One shadow, `productShadow`, under product imagery only. **Motion**: short; buttons and chips press to `scale(0.97)`; off under `prefers-reduced-motion`.
 
-**Layout**: mobile-first. Breakpoints 640 / 1024 / 1280. Desktop header: logo, search and account on one row, categories on a second row. Mobile gets a bottom nav (Home, Categories, Search, Account) and a sticky purchase bar on product pages (built in later phases).
+**Layout**: mobile-first. Breakpoints 640 / 1024 / 1280. Desktop header: logo, search and account on one row, categories on a second row. Mobile gets a bottom nav (Home, Categories, Search, Cart with its count, Account) and a sticky purchase bar on product pages; desktop has a cart link in the header.
 
 ## Components
 
 Every component has a render test and a vitest-axe check per state.
 
-| Layer                   | Path                    | Components                                                                                                                                |
-| ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Base (shadcn, restyled) | `shared/ui/base/`       | Button (variants, disabled, loading, ≥ 44px), Badge (9 tones), Card, Dialog, Input, Label, RadioGroup, Separator, Skeleton, Table         |
-| Feedback                | `shared/ui/feedback/`   | EmptyState, ErrorState (retry, `role=alert`), DemoBox                                                                                     |
-| Forms                   | `shared/ui/forms/`      | TextField (label + hint/error wired to the input), PasswordField (show/hide), CheckboxField (never pre-ticked), FormAlert                 |
-| Map                     | `shared/ui/map/`        | LeafletMap (client-only, keyboard pan/zoom), PinPickerDialog (fixed pin over a movable map, "Use my location")                            |
-| Brand                   | `shared/ui/brand/`      | Logo                                                                                                                                      |
-| Navigation              | `shared/ui/navigation/` | BottomNav (mobile, `aria-current`), Breadcrumbs; `AppShell` has a skip link and sticky header                                             |
-| Commerce                | `shared/ui/commerce/`   | PriceBlock, Rating, StatusBadge, ProductCard + skeleton, VariantSelector, DeliveryChecker, OfferCard, Countdown, SpecTable, OrderTimeline |
+| Layer                   | Path                    | Components                                                                                                                                                                    |
+| ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Base (shadcn, restyled) | `shared/ui/base/`       | Button (variants, disabled, loading, ≥ 44px), Badge (9 tones), Card, Dialog, Input, Label, RadioGroup, Separator, Skeleton, Table                                             |
+| Feedback                | `shared/ui/feedback/`   | EmptyState, ErrorState (retry, `role=alert`), DemoBox                                                                                                                         |
+| Forms                   | `shared/ui/forms/`      | TextField (label + hint/error wired to the input), PasswordField (show/hide), CheckboxField (never pre-ticked), FormAlert                                                     |
+| Map                     | `shared/ui/map/`        | LeafletMap (client-only, keyboard pan/zoom), PinPickerDialog (fixed pin over a movable map, "Use my location")                                                                |
+| Brand                   | `shared/ui/brand/`      | Logo                                                                                                                                                                          |
+| Navigation              | `shared/ui/navigation/` | BottomNav (mobile, `aria-current`), Breadcrumbs; `AppShell` has a skip link and sticky header                                                                                 |
+| Commerce                | `shared/ui/commerce/`   | PriceBlock, Rating, StatusBadge, ProductCard + skeleton, VariantSelector, DeliveryChecker, OfferCard, Countdown, SpecTable, OrderTimeline, QuantityStepper, StickyPurchaseBar |
 
 Commerce components only display. They never compute prices, savings, eligibility, serviceability or stock. Those values arrive as props from `@borneo/shared` rules.
 
-| Component       | Must show                                                                                                      | States                                                                                                              |
-| --------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| PriceBlock      | Selling price as the headline; genuine MRP and savings when passed; effective-price line; "from ₹X/mo"         | plain, MRP + savings + EMI, effective price, unavailable                                                            |
-| Rating          | Score + verified count                                                                                         | with reviews, "No reviews yet"                                                                                      |
-| StatusBadge     | Text label + icon                                                                                              | in stock, low stock (real count), out of stock, pre-order, flash sale, new, upgrade available, bundle, works with X |
-| ProductCard     | Image well with badges over it, family, name (stretched router link), rating once reviews exist, compact price | in stock, flash, pre-order, out of stock + Watch/Watching, skeleton                                                 |
-| VariantSelector | Legend + current choice; unavailable options stay visible                                                      | selected, unavailable                                                                                               |
-| DeliveryChecker | Pincode field, date range, COD (with reason), place, optional "Choose on map"                                  | idle, checking, deliverable ± COD, not deliverable, out of stock here, invalid, error                               |
-| OfferCard       | Kind, title, terms, code                                                                                       | available, applied, not applicable (with reason)                                                                    |
-| Countdown       | Real fixed deadline plus its absolute time                                                                     | pending (SSR), upcoming, live, urgent (announced once), ended                                                       |
-| SpecTable       | Grouped rows                                                                                                   | full, "Not specified", empty                                                                                        |
-| OrderTimeline   | Ordered steps, `aria-current="step"`                                                                           | in transit, cancelled, replacement requested                                                                        |
+| Component         | Must show                                                                                                      | States                                                                                                              |
+| ----------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| PriceBlock        | Selling price as the headline; genuine MRP and savings when passed; effective-price line; "from ₹X/mo"         | plain, MRP + savings + EMI, effective price, unavailable                                                            |
+| Rating            | Score + verified count                                                                                         | with reviews, "No reviews yet"                                                                                      |
+| StatusBadge       | Text label + icon                                                                                              | in stock, low stock (real count), out of stock, pre-order, flash sale, new, upgrade available, bundle, works with X |
+| ProductCard       | Image well with badges over it, family, name (stretched router link), rating once reviews exist, compact price | in stock, flash, pre-order, out of stock + Watch/Watching, skeleton                                                 |
+| VariantSelector   | Legend + current choice; unavailable options stay visible                                                      | selected, unavailable                                                                                               |
+| DeliveryChecker   | Pincode field, date range, COD (with reason), place, optional "Choose on map"                                  | idle, checking, deliverable ± COD, not deliverable, out of stock here, invalid, error                               |
+| OfferCard         | Kind, title, terms, code                                                                                       | available, applied, not applicable (with reason)                                                                    |
+| Countdown         | Real fixed deadline plus its absolute time                                                                     | pending (SSR), upcoming, live, urgent (announced once), ended                                                       |
+| SpecTable         | Grouped rows                                                                                                   | full, "Not specified", empty                                                                                        |
+| OrderTimeline     | Ordered steps, `aria-current="step"`                                                                           | in transit, cancelled, replacement requested                                                                        |
+| QuantityStepper   | − n + with 44px targets, labelled with what it counts; limits arrive as props (D-193)                          | adjustable, at the limit, updating                                                                                  |
+| StickyPurchaseBar | Name, selling price, the action (add to cart or the in-cart stepper)                                           | add to cart, already in the cart                                                                                    |
 
-Still to design, in later phases: payment hold timer, upgrade strip, compare table, finder step, sticky purchase bar (with add to cart, Phase J). Phase F placed the policy summary and suggestion-with-reason inline on the PDP.
+Still to design, in later phases: payment hold timer, upgrade strip, compare table, finder step. Phase F placed the policy summary and suggestion-with-reason inline on the PDP.
 
 Home (D-181): product hero (newest launch), launches grid, photo banners per category, category tiles with artwork. PDP: square gallery with thumbnail buttons (`aria-pressed`). Photos come sized from `imageSource` (srcSet).
 

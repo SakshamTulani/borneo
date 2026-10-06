@@ -1,5 +1,7 @@
 import { z } from 'zod';
 import {
+  bundleOffer,
+  ratingCounts,
   cardVariant,
   compatibilityFacts,
   filterFacets,
@@ -23,12 +25,16 @@ import {
   type ProductSort,
   type ProductSummary,
   type ProductVariant,
+  type BundleOffer,
+  type ReviewPage,
   type RelationEdge,
 } from '@borneo/shared';
 import { AppError, notFound } from '../../errors';
 import type { OfferBook } from '../offers/index';
 import type {
+  BundleRow,
   CategoryWithDefs,
+  ReviewRow,
   ListingQuery,
   ListingRow,
   ProductRow,
@@ -56,7 +62,50 @@ export type CatalogDeps = {
     categoryId: string,
   ) => Promise<{ question: string; answer: string }[]>;
   loadRelationsFrom: (productId: string) => Promise<RelationEdge[]>;
+  /** Bundles the product is in, whatever their state; the rule decides what shows (D-197). */
+  loadBundlesFor: (productId: string, now: number) => Promise<BundleRow[]>;
+  loadReviews: (
+    productId: string,
+    page: { limit: number; after?: { createdAt: Date; id: string } },
+  ) => Promise<ReviewRow[]>;
+  loadRatingCounts: (productId: string) => Promise<{ rating: number; count: number }[]>;
 };
+
+/** Reviews shown on the product page before "Show more". */
+export const PDP_REVIEWS = 6;
+
+const reviewCursorSchema = z.tuple([z.number().int().nonnegative(), z.uuid()]);
+
+function decodeReviewCursor(cursor: string): { createdAt: Date; id: string } {
+  try {
+    const [ms, id] = reviewCursorSchema.parse(
+      JSON.parse(Buffer.from(cursor, 'base64url').toString('utf8')),
+    );
+    return { createdAt: new Date(ms), id };
+  } catch {
+    throw new AppError(400, 'INVALID_CURSOR', 'Cursor is invalid');
+  }
+}
+
+/** A page of verified reviews (D-150), newest first; the name is the one stored when written. */
+function reviewPage(rows: ReviewRow[], limit: number): ReviewPage {
+  const page = rows.slice(0, limit);
+  const last = page.at(-1);
+  return {
+    items: page.map((r) => ({
+      id: r.id,
+      rating: r.rating,
+      title: r.title,
+      body: r.body,
+      author: r.authorName,
+      createdAt: r.createdAt.getTime(),
+    })),
+    nextCursor:
+      rows.length > limit && last
+        ? Buffer.from(JSON.stringify([last.createdAt.getTime(), last.id])).toString('base64url')
+        : null,
+  };
+}
 
 const cursorSchema = z.tuple([z.union([z.string(), z.number()]), z.string().regex(/^[a-z0-9-]+$/)]);
 
@@ -169,6 +218,21 @@ export function createCatalogService(deps: CatalogDeps) {
     /** Cards for listing rows, priced and badged by the shared rules; other modules reuse it. */
     summarize,
 
+    /** More reviews after the product page's first ones (D-150). */
+    async listReviews(
+      slug: string,
+      cursor: string | undefined,
+      limit: number,
+    ): Promise<ReviewPage> {
+      const product = await deps.findProductBySlug(slug);
+      if (!product) throw notFound('PRODUCT_NOT_FOUND', `No product "${slug}"`);
+      const after = cursor ? decodeReviewCursor(cursor) : undefined;
+      return reviewPage(
+        await deps.loadReviews(product.id, { limit, ...(after ? { after } : {}) }),
+        limit,
+      );
+    },
+
     async listCategories(): Promise<CategoryListResponse> {
       return { items: await deps.listCategories() };
     },
@@ -231,15 +295,19 @@ export function createCatalogService(deps: CatalogDeps) {
       if (!product) throw notFound('PRODUCT_NOT_FOUND', `No product "${slug}"`);
       const now = deps.now();
       const categoryId = product.category.id;
-      const [defs, variants, ratings, book, faqs, edges, images] = await Promise.all([
-        deps.listAttributeDefs(categoryId),
-        deps.loadVariantStates([product.id], now),
-        deps.loadRatings([product.id]),
-        deps.loadOfferBook(now),
-        deps.loadFaqs(product.id, categoryId),
-        deps.loadRelationsFrom(product.id),
-        deps.loadImages([product.id]),
-      ]);
+      const [defs, variants, ratings, book, faqs, edges, images, bundles, reviews, counts] =
+        await Promise.all([
+          deps.listAttributeDefs(categoryId),
+          deps.loadVariantStates([product.id], now),
+          deps.loadRatings([product.id]),
+          deps.loadOfferBook(now),
+          deps.loadFaqs(product.id, categoryId),
+          deps.loadRelationsFrom(product.id),
+          deps.loadImages([product.id]),
+          deps.loadBundlesFor(product.id, now),
+          deps.loadReviews(product.id, { limit: PDP_REVIEWS }),
+          deps.loadRatingCounts(product.id),
+        ]);
       if (variants.length === 0) throw notFound('PRODUCT_NOT_FOUND', `No product "${slug}"`);
 
       // Only products you can buy are suggested (D-17); each carries its reason (D-124).
@@ -310,6 +378,27 @@ export function createCatalogService(deps: CatalogDeps) {
         successor: next
           ? { slug: buyable.get(next.toProductId)!.slug, name: buyable.get(next.toProductId)!.name }
           : null,
+        reviews: { counts: ratingCounts(counts), page: reviewPage(reviews, PDP_REVIEWS) },
+        bundles: bundles.flatMap((b): BundleOffer[] => {
+          const offer = bundleOffer(b.facts, now);
+          if (!offer) return [];
+          return [
+            {
+              key: b.key,
+              slug: b.slug,
+              name: b.name,
+              ...offer,
+              items: b.members.map((m) => ({
+                name: m.name,
+                slug: m.slug,
+                sku: m.sku,
+                options: m.options,
+                qty: m.qty,
+                image: m.image,
+              })),
+            },
+          ];
+        }),
       };
     },
   };

@@ -31,6 +31,11 @@ export async function seedDatabase(db: Db, now: Date): Promise<void> {
     await tx.insert(schema.serviceability).values(r.serviceability);
     await tx.insert(schema.deliveryLane).values(r.deliveryLane);
     await tx.insert(schema.pincodeArea).values(r.pincodeArea);
+    // Demo reviews and the delivered demo orders behind them (D-200).
+    await tx.insert(schema.user).values(r.user);
+    await tx.insert(schema.order).values(r.order);
+    await tx.insert(schema.orderItem).values(r.orderItem);
+    await tx.insert(schema.review).values(r.review);
   });
   await db.execute(sql`analyze`);
 }

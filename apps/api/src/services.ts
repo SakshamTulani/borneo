@@ -14,6 +14,7 @@ import {
   updateAddress,
 } from './modules/addresses/index';
 import { createAuthService } from './modules/auth/index';
+import { changeCart, createCartService, readCart } from './modules/cart/index';
 import { createHealthService, pingDatabase } from './modules/health/index';
 import {
   countUnread,
@@ -39,11 +40,17 @@ import {
   listedProductFacts,
   listProducts,
   listProductsByIds,
+  loadCartBundles,
+  loadCartItems,
   loadFaqs,
   loadImages,
+  loadRatingCounts,
   loadRatings,
   loadRelationsFrom,
+  loadReviews,
+  loadRelationsFromMany,
   loadVariantStates,
+  soleVariantSkus,
 } from './modules/catalog/index';
 import {
   createDeliveryService,
@@ -87,6 +94,9 @@ export function catalogService(db: Db, now: () => number = Date.now) {
     listAttributeDefs: (categoryId) => listAttributeDefs(db, categoryId),
     loadFaqs: (productId, categoryId) => loadFaqs(db, productId, categoryId),
     loadRelationsFrom: (productId) => loadRelationsFrom(db, productId),
+    loadBundlesFor: (productId, at) => loadCartBundles(db, { productId }, new Date(at)),
+    loadReviews: (productId, page) => loadReviews(db, productId, page),
+    loadRatingCounts: (productId) => loadRatingCounts(db, productId),
   });
 }
 
@@ -159,6 +169,28 @@ export function notificationsService(db: Db, now: () => number = Date.now) {
   });
 }
 
+/** The cart prices like listings (catalog `summarize`) and checks delivery like the PDP. */
+export function cartService(
+  db: Db,
+  catalog: ReturnType<typeof catalogService>,
+  delivery: ReturnType<typeof deliveryService>,
+  now: () => number = Date.now,
+) {
+  return createCartService({
+    now,
+    loadOfferBook: (at) => loadOfferBook(db, new Date(at)),
+    loadItems: (skus, at) => loadCartItems(db, skus, new Date(at)),
+    loadBundles: (slugs, at) => loadCartBundles(db, { slugs }, new Date(at)),
+    readCart: (customerId) => readCart(customerId, db),
+    changeCart: (customerId, change) => changeCart(customerId, db, change),
+    checkDelivery: (sku, pincode, qty) => delivery.check(sku, pincode, qty),
+    loadEdges: (ids) => loadRelationsFromMany(db, ids),
+    listBuyable: (ids) => listProductsByIds(db, ids),
+    summarize: (rows) => catalog.summarize(rows),
+    soleVariantSkus: (ids) => soleVariantSkus(db, ids),
+  });
+}
+
 export type AppConfig = {
   demoMode: boolean;
   auth: AuthConfig;
@@ -179,6 +211,7 @@ const consoleLog: NotifierDeps['log'] = {
 export function appDeps(db: Db, config: AppConfig): AppDeps {
   const now = config.now ?? Date.now;
   const catalog = catalogService(db, now);
+  const delivery = deliveryService(db, now);
   const betterAuth = createBetterAuth(db, config.auth);
   return {
     health: createHealthService({
@@ -187,7 +220,7 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
     }),
     catalog,
     search: searchService(db, catalog),
-    delivery: deliveryService(db, now),
+    delivery,
     offers: offersService(db, now),
     auth: createAuthService({
       identity: betterAuthIdentity(betterAuth),
@@ -195,6 +228,7 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
     }),
     addresses: addressesService(db),
     notifications: notificationsService(db, now),
+    cart: cartService(db, catalog, delivery, now),
     session: betterAuthSession(betterAuth),
     rateLimiter: createRateLimiter(),
     allowedOrigins: [config.webOrigin],

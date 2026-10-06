@@ -17,6 +17,18 @@ describe('navigation', () => {
     expect(await axe(container)).toHaveNoViolations();
   });
 
+  it('D-160: the bottom nav and header carry the cart with its count', async () => {
+    const { container } = await renderWithRouter(
+      <AppShell cartCount={3}>
+        <h1>Page</h1>
+      </AppShell>,
+    );
+    const links = screen.getAllByRole('link', { name: 'Cart, 3 items' });
+    expect(links).toHaveLength(2);
+    for (const l of links) expect(l.getAttribute('href')).toBe('/cart');
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
   it('breadcrumbs mark the current page', async () => {
     const { container } = await renderWithRouter(
       <Breadcrumbs

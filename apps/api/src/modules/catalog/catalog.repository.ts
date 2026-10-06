@@ -1,7 +1,12 @@
 import { and, asc, desc, eq, gt, inArray, lte, ne, or, sql, type SQL } from 'drizzle-orm';
 import {
   attributeDefSchema,
+  bundleKey,
+  itemKey,
   type AttributeDef,
+  type BundleFacts,
+  type ItemFacts,
+  type ReturnPolicy,
   type Attributes,
   type CategoryDto,
   type FlashSale,
@@ -14,6 +19,8 @@ import {
 import type { Db } from '../../db/client';
 import {
   attributeDef,
+  bundle,
+  bundleItem,
   category,
   faq,
   flashSale,
@@ -322,6 +329,57 @@ export async function loadRatings(
   return new Map(rows.map((r) => [r.productId, { average: r.average, count: r.count }]));
 }
 
+export type ReviewRow = {
+  id: string;
+  rating: number;
+  title: string | null;
+  body: string | null;
+  authorName: string;
+  createdAt: Date;
+};
+
+/**
+ * Verified reviews of a product, newest first (D-150); `after` is the last row of the previous
+ * page. Returns up to `limit + 1` rows so the caller can tell whether another page exists.
+ */
+export async function loadReviews(
+  db: Db,
+  productId: string,
+  page: { limit: number; after?: { createdAt: Date; id: string } },
+): Promise<ReviewRow[]> {
+  const after = page.after
+    ? or(
+        sql`${review.createdAt} < ${page.after.createdAt}`,
+        and(eq(review.createdAt, page.after.createdAt), sql`${review.id} < ${page.after.id}`),
+      )
+    : undefined;
+  return db
+    .select({
+      id: review.id,
+      rating: review.rating,
+      title: review.title,
+      body: review.body,
+      authorName: review.authorName,
+      createdAt: review.createdAt,
+    })
+    .from(review)
+    .where(and(eq(review.productId, productId), after))
+    .orderBy(desc(review.createdAt), desc(review.id))
+    .limit(page.limit + 1);
+}
+
+/** How many verified reviews a product has at each rating. */
+export async function loadRatingCounts(
+  db: Db,
+  productId: string,
+): Promise<{ rating: number; count: number }[]> {
+  return db
+    .select({ rating: review.rating, count: sql<number>`count(*)::int` })
+    .from(review)
+    .where(eq(review.productId, productId))
+    .groupBy(review.rating);
+}
+
 export type ProductRow = {
   id: string;
   slug: string;
@@ -381,6 +439,33 @@ export async function loadFaqs(
   );
 }
 
+/** The SKU of each product that has exactly one variant (it can be added without a choice). */
+export async function soleVariantSkus(db: Db, productIds: string[]): Promise<Map<string, string>> {
+  if (productIds.length === 0) return new Map();
+  const rows = await db
+    .select({ productId: variant.productId, sku: sql<string>`min(${variant.sku})` })
+    .from(variant)
+    .where(inArray(variant.productId, productIds))
+    .groupBy(variant.productId)
+    .having(sql`count(*) = 1`);
+  return new Map(rows.map((r) => [r.productId, r.sku]));
+}
+
+/** Materialised edges from several products (cart cross-sell, D-199). */
+export async function loadRelationsFromMany(db: Db, productIds: string[]): Promise<RelationEdge[]> {
+  if (productIds.length === 0) return [];
+  return db
+    .select({
+      fromProductId: relation.fromProductId,
+      toProductId: relation.toProductId,
+      type: relation.type,
+      source: relation.source,
+      reason: relation.reason,
+    })
+    .from(relation)
+    .where(inArray(relation.fromProductId, productIds));
+}
+
 /** Materialised edges from a product (D-20, D-21). */
 export async function loadRelationsFrom(db: Db, productId: string): Promise<RelationEdge[]> {
   return db
@@ -393,4 +478,193 @@ export async function loadRelationsFrom(db: Db, productId: string): Promise<Rela
     })
     .from(relation)
     .where(eq(relation.fromProductId, productId));
+}
+
+// Cart facts (D-193–D-198): variants and bundles as the cart rules see them.
+
+/** Display facts for one variant in a cart or bundle. */
+export type CartProductRow = {
+  productId: string;
+  name: string;
+  slug: string;
+  sku: string;
+  options: Record<string, string>;
+  image: ProductImage | null;
+  returnPolicy: ReturnPolicy;
+};
+
+export type ItemRow = { key: string; facts: ItemFacts; product: CartProductRow };
+export type BundleRow = {
+  key: string;
+  slug: string;
+  name: string;
+  facts: BundleFacts;
+  members: (CartProductRow & { qty: number })[];
+};
+
+/** Every state a variant can be in (also discontinued and draft: the cart says so, D-198). */
+async function loadVariants(db: Db, where: { skus?: string[]; ids?: string[] }, now: Date) {
+  const filter = where.skus ? inArray(variant.sku, where.skus) : inArray(variant.id, where.ids!);
+  const stock = db
+    .select({
+      variantId: inventory.variantId,
+      units: sql<number>`sum(${inventory.onHand} - ${inventory.reserved})::int`.as('units'),
+    })
+    .from(inventory)
+    .groupBy(inventory.variantId)
+    .as('stock');
+  const rows = await db
+    .select({
+      id: variant.id,
+      sku: variant.sku,
+      options: variant.options,
+      pricePaise: variant.pricePaise,
+      preorderCap: variant.preorderCap,
+      preorderSold: variant.preorderSold,
+      units: stock.units,
+      productId: product.id,
+      name: product.name,
+      slug: product.slug,
+      status: product.status,
+      categoryId: product.categoryId,
+      returnPolicy: category.returnPolicy,
+    })
+    .from(variant)
+    .innerJoin(product, eq(product.id, variant.productId))
+    .innerJoin(category, eq(category.id, product.categoryId))
+    .leftJoin(stock, eq(stock.variantId, variant.id))
+    .where(filter);
+  if (rows.length === 0) return [];
+  const ids = rows.map((r) => r.id);
+  const productIds = [...new Set(rows.map((r) => r.productId))];
+  const [sales, images] = await Promise.all([
+    db
+      .select()
+      .from(flashSale)
+      .where(and(inArray(flashSale.variantId, ids), gt(flashSale.endsAt, now))),
+    db
+      .selectDistinctOn([media.productId], {
+        productId: media.productId,
+        src: media.url,
+        alt: media.alt,
+      })
+      .from(media)
+      .where(and(inArray(media.productId, productIds), eq(media.kind, 'image')))
+      .orderBy(media.productId, asc(media.sort)),
+  ]);
+  const imageOf = new Map(images.map(({ productId, ...image }) => [productId, image]));
+  return rows.map((r) => ({
+    ...r,
+    unitsAvailable: r.units ?? 0,
+    image: imageOf.get(r.productId) ?? null,
+    flashSales: sales
+      .filter((s) => s.variantId === r.id)
+      .map((s): FlashSale => ({
+        id: s.id,
+        variantId: s.variantId,
+        salePricePaise: s.salePricePaise,
+        startsAt: s.startsAt.getTime(),
+        endsAt: s.endsAt.getTime(),
+        cap: s.cap,
+        sold: s.sold,
+        perCustomerLimit: 1,
+      })),
+  }));
+}
+
+type VariantRow = Awaited<ReturnType<typeof loadVariants>>[number];
+
+const productRow = (v: VariantRow): CartProductRow => ({
+  productId: v.productId,
+  name: v.name,
+  slug: v.slug,
+  sku: v.sku,
+  options: v.options,
+  image: v.image,
+  returnPolicy: v.returnPolicy,
+});
+
+/** Cart facts for variants by SKU; unknown SKUs are left out. */
+export async function loadCartItems(db: Db, skus: string[], now: Date): Promise<ItemRow[]> {
+  if (skus.length === 0) return [];
+  return (await loadVariants(db, { skus }, now)).map((v) => ({
+    key: itemKey(v.sku),
+    product: productRow(v),
+    facts: {
+      kind: 'item',
+      productId: v.productId,
+      categoryId: v.categoryId,
+      status: v.status,
+      regularPaise: v.pricePaise,
+      unitsAvailable: v.unitsAvailable,
+      preorderCap: v.preorderCap,
+      preorderSold: v.preorderSold,
+      flashSales: v.flashSales,
+    },
+  }));
+}
+
+/** Bundles by slug, or every bundle a product is in (D-197). Unknown slugs are left out. */
+export async function loadCartBundles(
+  db: Db,
+  where: { slugs: string[] } | { productId: string },
+  now: Date,
+): Promise<BundleRow[]> {
+  const filter =
+    'slugs' in where
+      ? where.slugs.length
+        ? inArray(bundle.slug, where.slugs)
+        : undefined
+      : inArray(
+          bundle.id,
+          db
+            .select({ id: bundleItem.bundleId })
+            .from(bundleItem)
+            .innerJoin(variant, eq(variant.id, bundleItem.variantId))
+            .where(eq(variant.productId, where.productId)),
+        );
+  if (!filter) return [];
+  const bundles = await db.select().from(bundle).where(filter).orderBy(asc(bundle.slug));
+  if (bundles.length === 0) return [];
+  const items = await db
+    .select()
+    .from(bundleItem)
+    .where(
+      inArray(
+        bundleItem.bundleId,
+        bundles.map((b) => b.id),
+      ),
+    );
+  const variants = new Map(
+    (await loadVariants(db, { ids: [...new Set(items.map((i) => i.variantId))] }, now)).map((v) => [
+      v.id,
+      v,
+    ]),
+  );
+  return bundles.map((b) => {
+    const members = items
+      .filter((i) => i.bundleId === b.id)
+      .map((i) => ({ variant: variants.get(i.variantId)!, qty: i.qty }))
+      .sort((x, y) => y.variant.pricePaise - x.variant.pricePaise);
+    return {
+      key: bundleKey(b.slug),
+      slug: b.slug,
+      name: b.name,
+      facts: {
+        kind: 'bundle',
+        pricePaise: b.pricePaise,
+        activeFrom: b.activeFrom.getTime(),
+        activeTo: b.activeTo?.getTime() ?? null,
+        members: members.map(({ variant: v, qty }) => ({
+          productId: v.productId,
+          categoryId: v.categoryId,
+          status: v.status,
+          regularPaise: v.pricePaise,
+          unitsAvailable: v.unitsAvailable,
+          qty,
+        })),
+      },
+      members: members.map(({ variant: v, qty }) => ({ ...productRow(v), qty })),
+    };
+  });
 }

@@ -55,4 +55,19 @@ describe('suggestions', () => {
     });
     expect(picks.map((s) => s.productId)).toEqual(['charger', 'case', 'watch', 'pods']);
   });
+
+  it('D-199: after adding to cart and on the cart, only add-ons, never alternatives', () => {
+    const mixed = [
+      e('next', 'next_gen'),
+      e('pro', 'family_tier'),
+      e('up', 'upgrade'),
+      e('case', 'accessory'),
+    ];
+    for (const surface of ['addToCart', 'cart'] as const) {
+      expect(
+        pickSuggestions({ edges: mixed, surface, exclude: new Set() }).map((s) => s.productId),
+      ).toEqual(['case']);
+    }
+    expect(pickSuggestions({ edges: mixed, surface: 'pdp', exclude: new Set() })).toHaveLength(4);
+  });
 });

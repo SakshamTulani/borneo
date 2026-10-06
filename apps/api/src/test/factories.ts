@@ -6,6 +6,8 @@ import { user } from '../db/schema/index';
 import type { AddressesDeps } from '../modules/addresses/addresses.service';
 import { createAddressesService } from '../modules/addresses/index';
 import { createAuthService, type IdentityPort } from '../modules/auth/index';
+import type { CartDeps } from '../modules/cart/cart.service';
+import { createCartService } from '../modules/cart/index';
 import type { CatalogDeps } from '../modules/catalog/catalog.service';
 import { createCatalogService } from '../modules/catalog/index';
 import { createDeliveryService } from '../modules/delivery/index';
@@ -61,6 +63,9 @@ export function emptyCatalogDeps(over: Partial<CatalogDeps> = {}): CatalogDeps {
     listAttributeDefs: async () => [],
     loadFaqs: async () => [],
     loadRelationsFrom: async () => [],
+    loadBundlesFor: async () => [],
+    loadReviews: async () => [],
+    loadRatingCounts: async () => [],
     ...over,
   };
 }
@@ -119,6 +124,37 @@ export function emptyNotificationsDeps(over: Partial<NotificationsDeps> = {}): N
   };
 }
 
+/** Cart deps with an empty catalog and in-memory carts; override what a test needs. */
+export function emptyCartDeps(over: Partial<CartDeps> = {}): CartDeps {
+  const carts = new Map<
+    string,
+    { entries: { key: string; qty: number }[]; couponCode: string | undefined }
+  >();
+  const read = (id: string) => carts.get(id) ?? { entries: [], couponCode: undefined };
+  return {
+    now: () => 0,
+    loadOfferBook: async () => ({ coupons: [], paymentOffers: [], emiPlans: [] }),
+    loadItems: async () => [],
+    loadBundles: async () => [],
+    readCart: async (customerId) => read(customerId),
+    changeCart: async (customerId, change) => {
+      const next = await change(read(customerId));
+      carts.set(customerId, next);
+      return next;
+    },
+    checkDelivery: async (sku, pincode) => ({
+      pincode,
+      place: null,
+      estimate: { status: 'notDeliverable' },
+    }),
+    loadEdges: async () => [],
+    listBuyable: async () => [],
+    summarize: async () => [],
+    soleVariantSkus: async () => new Map(),
+    ...over,
+  };
+}
+
 /** An identity provider that knows nobody; override what a test needs. */
 export function emptyIdentity(over: Partial<IdentityPort> = {}): IdentityPort {
   const unused = async (): Promise<never> => {
@@ -159,6 +195,7 @@ export function fakeAppDeps(over: Partial<AppDeps> = {}): AppDeps {
     }),
     addresses: createAddressesService(emptyAddressesDeps()),
     notifications: createNotificationsService(emptyNotificationsDeps()),
+    cart: createCartService(emptyCartDeps()),
     session: headerSession,
     rateLimiter: createRateLimiter(),
     allowedOrigins: ['http://localhost:5173'],

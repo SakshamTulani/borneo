@@ -3,9 +3,10 @@ import type { ReactNode } from 'react';
 import { Logo } from './brand/Logo';
 import { Container } from './layout/Container';
 import { BottomNav } from './navigation/BottomNav';
+import { CartLink } from './navigation/CartLink';
 
 /**
- * Page frame: skip link, frosted header (logo, `search`, `account` on desktop; `nav` on a second desktop row), full-width main (pages use
+ * Page frame: skip link, frosted header (logo, `search`, `account` and cart on desktop; `nav` on a second desktop row), full-width main (pages use
  * `Container`; full-bleed tiles don't), parchment footer, and the mobile bottom nav.
  * `nav`, `search` and `account` are composed by the root route (they come from features).
  */
@@ -14,12 +15,15 @@ export function AppShell({
   nav,
   search,
   account,
+  cartCount,
 }: {
   children: ReactNode;
   nav?: ReactNode;
   search?: ReactNode;
   /** Sign-in / account link (desktop; mobile uses the bottom nav). */
   account?: ReactNode;
+  /** Units in the cart (header link and bottom nav); undefined until known. */
+  cartCount?: number | undefined;
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
@@ -36,6 +40,9 @@ export function AppShell({
           </Link>
           {search ? <div className="mx-auto w-full max-w-xl min-w-0">{search}</div> : null}
           {account ? <div className="hidden shrink-0 lg:block">{account}</div> : null}
+          <div className="hidden shrink-0 lg:block">
+            <CartLink count={cartCount} />
+          </div>
         </Container>
         {/* Categories get their own row so they never crowd the search (owner feedback, Phase I). */}
         {nav ? (
@@ -53,7 +60,7 @@ export function AppShell({
           <p>© Borneo. Demo store.</p>
         </Container>
       </footer>
-      <BottomNav />
+      <BottomNav cartCount={cartCount} />
     </div>
   );
 }

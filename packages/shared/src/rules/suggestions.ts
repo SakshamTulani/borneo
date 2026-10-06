@@ -25,6 +25,20 @@ const TYPE_PRIORITY: RelationType[] = [
 ];
 
 /**
+ * After adding to cart and on the cart, only add-ons to what is being bought, never alternatives
+ * to it (other generations, tiers or upgrades) (D-199).
+ */
+const ADD_ON_TYPES: ReadonlySet<RelationType> = new Set([
+  'accessory',
+  'consumable',
+  'compatible',
+  'complementary',
+  'replacement',
+  'bundle_member',
+]);
+const ADD_ONS_ONLY: ReadonlySet<SuggestionSurface> = new Set(['addToCart', 'cart']);
+
+/**
  * Cross-sell picks (D-124, D-126): every suggestion carries a reason; excludes products already
  * in the cart or owned; ordered by relation type, then curation rank; capped per surface.
  * The caller renders them unselected: nothing pre-ticked.
@@ -37,7 +51,12 @@ export function pickSuggestions(input: {
 }): { productId: string; reason: string; type: RelationType }[] {
   const seen = new Set<string>();
   return input.edges
-    .filter((e) => e.reason.trim().length > 0 && !input.exclude.has(e.toProductId))
+    .filter(
+      (e) =>
+        e.reason.trim().length > 0 &&
+        !input.exclude.has(e.toProductId) &&
+        (!ADD_ONS_ONLY.has(input.surface) || ADD_ON_TYPES.has(e.type)),
+    )
     .sort(
       (a, b) =>
         TYPE_PRIORITY.indexOf(a.type) - TYPE_PRIORITY.indexOf(b.type) ||

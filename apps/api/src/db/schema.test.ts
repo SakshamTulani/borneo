@@ -106,15 +106,27 @@ describe('constraints', () => {
     expect(await rejects(order('cod', true))).toBe('order_preorder_no_cod');
   });
 
-  it('D-39: a cart line cannot take both a bundle and a flash price', async () => {
+  it('D-193: a cart line holds 1 to 5 units, one line per item', async () => {
     const cart = '00000000-0000-4000-8000-000000000002';
-    expect(
-      await rejects(
-        sql`insert into cart (id, customer_id) values (${cart}, 'c1')`,
-        sql`insert into cart_item (cart_id, bundle_id, flash_sale_id, qty)
-            values (${cart}, ${seedId('bundle', 'pulse-4-audio-pack')}, ${seedId('flash', 'echo-buds-2-live')}, 1)`,
-      ),
-    ).toBe('cart_item_flash_not_bundle');
+    const line = (qty: number) =>
+      sql`insert into cart_item (cart_id, variant_id, qty) values (${cart}, ${seedId('variant', 'EB2-SGE')}, ${qty})`;
+    const newCart = sql`insert into cart (id, customer_id) values (${cart}, 'c1')`;
+    expect(await rejects(newCart, line(6))).toBe('cart_item_qty');
+    expect(await rejects(newCart, line(1), line(2))).toBe('cart_item_line');
+  });
+
+  it('D-194: carts store no price and no flash sale; prices are worked out on every read', async () => {
+    const columns = await rowsOf<{ column_name: string }>(
+      sql`select column_name from information_schema.columns where table_name = 'cart_item'`,
+    );
+    expect(columns.map((c) => c.column_name).sort()).toEqual([
+      'bundle_id',
+      'cart_id',
+      'created_at',
+      'id',
+      'qty',
+      'variant_id',
+    ]);
   });
 
   it('D-142: one flash purchase per customer per sale', async () => {

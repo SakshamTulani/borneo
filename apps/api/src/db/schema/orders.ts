@@ -53,13 +53,15 @@ export const returnStatus = pgEnum('return_status', [
   'completed',
 ]);
 
-/** No stock is held in the cart (D-56). */
+/** No stock is held in the cart (D-56). The coupon is kept even when it stops qualifying (D-195). */
 export const cart = pgTable('cart', {
   id: id(),
   customerId: customerId().unique(),
+  couponCode: text('coupon_code'),
   updatedAt: updatedAt(),
 });
 
+/** What and how many; prices are worked out when the cart is read, never stored (D-194). */
 export const cartItem = pgTable(
   'cart_item',
   {
@@ -69,21 +71,15 @@ export const cartItem = pgTable(
       .references(() => cart.id, { onDelete: 'cascade' }),
     variantId: uuid('variant_id').references(() => variant.id),
     bundleId: uuid('bundle_id').references(() => bundle.id),
-    flashSaleId: uuid('flash_sale_id').references(() => flashSale.id),
     qty: integer('qty').notNull(),
+    createdAt: createdAt(),
   },
   (t) => [
     index('cart_item_cart').on(t.cartId),
-    unique('cart_item_line')
-      .on(t.cartId, t.variantId, t.bundleId, t.flashSaleId)
-      .nullsNotDistinct(),
+    unique('cart_item_line').on(t.cartId, t.variantId, t.bundleId).nullsNotDistinct(),
     check('cart_item_one_target', sql`num_nonnulls(${t.variantId}, ${t.bundleId}) = 1`),
-    // D-39: flash price and bundle price don't combine.
-    check(
-      'cart_item_flash_not_bundle',
-      sql`not (${t.bundleId} is not null and ${t.flashSaleId} is not null)`,
-    ),
-    check('cart_item_qty_positive', sql`${t.qty} > 0`),
+    // D-193: 1–5 units per line.
+    check('cart_item_qty', sql`${t.qty} between 1 and 5`),
   ],
 );
 
@@ -298,6 +294,8 @@ export const review = pgTable(
       .unique()
       .references(() => orderItem.id),
     rating: integer('rating').notNull(),
+    /** Shown name, fixed when written: first name and last initial (D-150). */
+    authorName: text('author_name').notNull(),
     title: text('title'),
     body: text('body'),
     createdAt: createdAt(),

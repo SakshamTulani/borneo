@@ -272,4 +272,36 @@ describe('seed catalog', () => {
       ),
     ).toThrow(/Seed catalog is invalid/);
   });
+
+  it('D-200: every demo review sits on a delivered demo order of that product, after launch', () => {
+    const items = new Map(rows.orderItem.map((i) => [i.id, i]));
+    const orders = new Map(rows.order.map((o) => [o.id, o]));
+    const variants = new Map(rows.variant.map((v) => [v.id, v]));
+    const products = new Map(rows.product.map((p) => [p.id, p]));
+    expect(rows.review.length).toBeGreaterThan(100);
+    for (const r of rows.review) {
+      const item = items.get(r.orderItemId)!;
+      const order = orders.get(item.orderId)!;
+      expect(order.status).toBe('delivered');
+      expect(order.customerId).toBe(r.customerId);
+      expect(variants.get(item.variantId)!.productId).toBe(r.productId);
+      const product = products.get(r.productId)!;
+      expect(['live', 'discontinued']).toContain(product.status);
+      if (product.launchedAt)
+        expect(order.placedAt!.getTime()).toBeGreaterThan(Date.parse(product.launchedAt));
+      expect(r.createdAt!.getTime()).toBeLessThan(NOW.getTime());
+    }
+    // One review per order item (D-150), a real spread of ratings, none on the pre-order.
+    expect(new Set(rows.review.map((r) => r.orderItemId)).size).toBe(rows.review.length);
+    expect(new Set(rows.review.map((r) => r.rating)).size).toBeGreaterThanOrEqual(3);
+    const nova4 = rows.product.find((p) => p.slug === 'nova-4')!;
+    expect(rows.review.some((r) => r.productId === nova4.id)).toBe(false);
+  });
+
+  it('D-200: a sold category without demo review templates is reported', () => {
+    const issues = seedIssues(plant((d) => (product(d, 'pulse-4').category = 'no-templates')));
+    expect(issues).toContain(
+      'product pulse-4: no demo review templates for "no-templates" (D-200)',
+    );
+  });
 });

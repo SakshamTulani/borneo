@@ -2,6 +2,7 @@ import Fastify from 'fastify';
 import { serializerCompiler, validatorCompiler } from 'fastify-type-provider-zod';
 import { addressesRoutes, type AddressesService } from './modules/addresses/index';
 import { authRoutes, type AuthService } from './modules/auth/index';
+import { cartRoutes, type CartService } from './modules/cart/index';
 import { catalogRoutes, type CatalogService } from './modules/catalog/index';
 import { deliveryRoutes, type DeliveryService } from './modules/delivery/index';
 import { healthRoutes, type HealthService } from './modules/health/index';
@@ -22,6 +23,7 @@ export type AppDeps = {
   auth: AuthService;
   addresses: AddressesService;
   notifications: NotificationsService;
+  cart: CartService;
   session: SessionReader;
   rateLimiter: RateLimiter;
   /** Browser origins allowed to make cookie-authenticated writes. */
@@ -45,5 +47,6 @@ export function buildApp(deps: AppDeps) {
   app.register(authRoutes(deps.auth, deps.rateLimiter));
   app.register(addressesRoutes(deps.addresses, deps.session));
   app.register(notificationsRoutes(deps.notifications, deps.session));
+  app.register(cartRoutes(deps.cart, deps.session));
   return app;
 }

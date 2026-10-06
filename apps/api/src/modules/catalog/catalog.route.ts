@@ -7,6 +7,8 @@ import {
   productDetailResponse,
   productListQuery,
   productListResponse,
+  reviewPageResponse,
+  reviewsQuery,
   slugParams,
 } from './catalog.schema';
 import type { CatalogService } from './catalog.service';
@@ -58,6 +60,22 @@ export function catalogRoutes(service: CatalogService): FastifyPluginAsync {
         },
       },
       (request) => service.getProduct(request.params.slug),
+    );
+    r.get(
+      '/products/:slug/reviews',
+      {
+        schema: {
+          params: slugParams,
+          querystring: reviewsQuery,
+          response: {
+            200: reviewPageResponse,
+            400: errorResponseSchema,
+            404: errorResponseSchema,
+          },
+        },
+      },
+      (request) =>
+        service.listReviews(request.params.slug, request.query.cursor, request.query.limit),
     );
   };
 }

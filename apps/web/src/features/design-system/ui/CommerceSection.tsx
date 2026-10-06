@@ -4,11 +4,13 @@ import { DeliveryChecker } from '@/shared/ui/commerce/DeliveryChecker';
 import { OfferCard } from '@/shared/ui/commerce/OfferCard';
 import { OrderTimeline } from '@/shared/ui/commerce/OrderTimeline';
 import { PriceBlock } from '@/shared/ui/commerce/PriceBlock';
+import { QuantityStepper } from '@/shared/ui/commerce/QuantityStepper';
 import { ProductCard } from '@/shared/ui/commerce/ProductCard';
 import { ProductCardSkeleton } from '@/shared/ui/commerce/ProductCardSkeleton';
 import { Rating } from '@/shared/ui/commerce/Rating';
 import { SpecTable } from '@/shared/ui/commerce/SpecTable';
 import { StatusBadge } from '@/shared/ui/commerce/StatusBadge';
+import { StickyPurchaseBar } from '@/shared/ui/commerce/StickyPurchaseBar';
 import { VariantSelector } from '@/shared/ui/commerce/VariantSelector';
 import {
   demoCards,
@@ -21,6 +23,7 @@ import {
   demoStorage,
   demoTimeline,
 } from './demoData';
+import { Button } from '@/shared/ui/base/button';
 import { Specimen, State } from './Specimen';
 
 const noop = () => {};
@@ -29,6 +32,7 @@ export function CommerceSection() {
   const [colour, setColour] = useState('forest');
   const [storage, setStorage] = useState('256');
   const [watching, setWatching] = useState(false);
+  const [qty, setQty] = useState(2);
 
   return (
     <section aria-labelledby="commerce" className="space-y-4">
@@ -213,6 +217,43 @@ export function CommerceSection() {
           <OrderTimeline
             steps={demoTimeline.map((s) => ({ ...s, status: 'done' as const }))}
             outcome={{ kind: 'returnRequested', label: 'Replacement requested', at: '10 Oct' }}
+          />
+        </State>
+      </Specimen>
+
+      <Specimen
+        title="Quantity stepper"
+        note="Limits arrive from the cart rules: 5 per line, or what can be supplied (D-193)."
+      >
+        <State label="Adjustable">
+          <QuantityStepper value={qty} max={5} label="Echo Buds 2" onChange={setQty} />
+        </State>
+        <State label="At the limit">
+          <QuantityStepper value={3} max={3} label="Vista 65 OLED" onChange={noop} />
+        </State>
+        <State label="Updating">
+          <QuantityStepper value={1} max={5} label="Pulse 4" onChange={noop} disabled />
+        </State>
+      </Specimen>
+
+      <Specimen
+        title="Sticky purchase bar"
+        note="Mobile product pages, above the bottom nav (D-160). Shown in place here."
+      >
+        <State label="Add to cart" wide>
+          <StickyPurchaseBar
+            placement="static"
+            name="Borneo Pulse 4"
+            sellingPaise={1_499_900}
+            action={<Button>Add to cart</Button>}
+          />
+        </State>
+        <State label="Already in the cart" wide>
+          <StickyPurchaseBar
+            placement="static"
+            name="Borneo Pulse 4"
+            sellingPaise={1_499_900}
+            action={<QuantityStepper value={1} max={5} label="Borneo Pulse 4" onChange={noop} />}
           />
         </State>
       </Specimen>

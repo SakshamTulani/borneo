@@ -1,4 +1,5 @@
 import { useDefaultPincodeQuery } from '@/features/addresses';
+import { BundleOffers, ProductPurchase } from '@/features/cart';
 import { ProductDelivery } from '@/features/delivery';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
@@ -38,6 +39,15 @@ export function ProductPage({ slug, sku, onSkuChange }: Props) {
       variant={variant}
       onVariantChange={onSkuChange}
       delivery={<ProductDelivery sku={variant.sku} defaultPincode={defaultPincode} />}
+      purchase={
+        <ProductPurchase
+          productName={query.data.name}
+          sku={variant.sku}
+          availability={variant.availability}
+          sellingPaise={variant.price.sellingPaise}
+        />
+      }
+      bundles={<BundleOffers bundles={query.data.bundles} />}
     />
   );
 }

@@ -292,6 +292,47 @@ export const productVariantSchema = z.object({
 });
 export type ProductVariant = z.infer<typeof productVariantSchema>;
 
+/** A fixed bundle offered on a member's product page (D-38, D-197). */
+export const bundleOfferSchema = z.object({
+  /** Cart line key, `bundle:<slug>`. */
+  key: z.string().min(1),
+  slug: z.string().min(1),
+  name: z.string().min(1),
+  pricePaise: paiseSchema,
+  /** The members at their regular prices. */
+  separatePaise: paiseSchema,
+  savingPaise: paiseSchema,
+  items: z.array(
+    z.object({
+      name: z.string().min(1),
+      slug: z.string().min(1),
+      sku: z.string().min(1),
+      options: z.record(z.string(), z.string()),
+      qty: z.number().int().positive(),
+      image: productImageSchema.nullable(),
+    }),
+  ),
+});
+export type BundleOffer = z.infer<typeof bundleOfferSchema>;
+
+/** A verified review as shown (D-150): the reviewer's first name and initial only. */
+export const reviewSchema = z.object({
+  id: idSchema,
+  rating: z.number().int().min(1).max(5),
+  title: z.string().nullable(),
+  body: z.string().nullable(),
+  author: z.string().min(1),
+  createdAt: epochMsSchema,
+});
+export type Review = z.infer<typeof reviewSchema>;
+
+/** `GET /products/:slug/reviews`: newest first. */
+export const reviewPageSchema = z.object({
+  items: z.array(reviewSchema),
+  nextCursor: z.string().nullable(),
+});
+export type ReviewPage = z.infer<typeof reviewPageSchema>;
+
 /** `GET /products/:slug`. */
 export const productDetailSchema = z.object({
   id: idSchema,
@@ -322,5 +363,13 @@ export const productDetailSchema = z.object({
   suggestions: z.array(z.object({ product: productSummarySchema, reason: z.string().min(1) })),
   /** Discontinued products point to their next generation, if any (D-17). */
   successor: z.object({ slug: z.string().min(1), name: z.string().min(1) }).nullable(),
+  /** Bundles this product is in that can be bought now (D-197). */
+  bundles: z.array(bundleOfferSchema),
+  /** Newest verified reviews and how many there are at each star rating (D-150). */
+  reviews: z.object({
+    /** Index 0 = 1 star … index 4 = 5 stars. */
+    counts: z.tuple([z.number(), z.number(), z.number(), z.number(), z.number()]),
+    page: reviewPageSchema,
+  }),
 });
 export type ProductDetail = z.infer<typeof productDetailSchema>;

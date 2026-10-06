@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { AccountLink, sessionQuery } from '../features/auth';
+import { useCartCountQuery } from '../features/cart';
 import { categoriesQuery, CategoryNav } from '../features/catalog';
 import { SearchBox } from '../features/search';
 import appCss from '../index.css?url';
@@ -42,12 +43,22 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       <EmptyState title="Page not found" body="The page you're looking for doesn't exist." />
     </Container>
   ),
-  component: () => (
-    <AppShell nav={<CategoryNav />} search={<SearchBox />} account={<AccountLink />}>
+  component: RootLayout,
+});
+
+function RootLayout() {
+  const cartCount = useCartCountQuery().data;
+  return (
+    <AppShell
+      nav={<CategoryNav />}
+      search={<SearchBox />}
+      account={<AccountLink />}
+      cartCount={cartCount}
+    >
       <Outlet />
     </AppShell>
-  ),
-});
+  );
+}
 
 function RootDocument({ children }: { children: ReactNode }) {
   return (

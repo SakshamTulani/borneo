@@ -3,6 +3,7 @@ import {
   categoryDtoSchema,
   productDetailSchema,
   productSummarySchema,
+  reviewPageSchema,
   type ProductSummary,
 } from '@borneo/shared';
 import { describe, expect, it } from 'vitest';
@@ -273,5 +274,42 @@ describe('GET /products/:slug', () => {
     expect(res.statusCode).toBe(404);
     expect(res.json()).toMatchObject({ error: { code: 'PRODUCT_NOT_FOUND' } });
     expect((await get('/products/Bad_Slug')).statusCode).toBe(400);
+  });
+});
+
+describe('reviews (D-150, D-200)', () => {
+  it('the product page carries the newest verified reviews and counts; more pages follow by cursor', async () => {
+    const res = await app.inject({ method: 'GET', url: '/products/pulse-4' });
+    const product = productDetailSchema.parse(res.json());
+    const { counts, page } = product.reviews;
+    expect(counts.reduce((a, b) => a + b, 0)).toBe(product.rating.count);
+    expect(page.items.length).toBe(Math.min(6, product.rating.count));
+    for (const r of page.items) expect(r.author).toMatch(/^\S+( [A-Z]\.)?$/);
+    const dates = page.items.map((r) => r.createdAt);
+    expect([...dates].sort((a, b) => b - a)).toEqual(dates);
+
+    if (page.nextCursor) {
+      const more = await app.inject({
+        method: 'GET',
+        url: `/products/pulse-4/reviews?cursor=${page.nextCursor}`,
+      });
+      const next = reviewPageSchema.parse(more.json());
+      expect(next.items.length).toBe(product.rating.count - page.items.length);
+      expect(next.items.some((r) => page.items.some((p) => p.id === r.id))).toBe(false);
+    }
+    expect(
+      (await app.inject({ method: 'GET', url: '/products/pulse-4/reviews?cursor=junk' }))
+        .statusCode,
+    ).toBe(400);
+    expect((await app.inject({ method: 'GET', url: '/products/nope/reviews' })).statusCode).toBe(
+      404,
+    );
+  });
+
+  it('D-200: the pre-order has no reviews', async () => {
+    const res = await app.inject({ method: 'GET', url: '/products/nova-4' });
+    const product = productDetailSchema.parse(res.json());
+    expect(product.rating).toEqual({ average: null, count: 0 });
+    expect(product.reviews.page.items).toEqual([]);
   });
 });

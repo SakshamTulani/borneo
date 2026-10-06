@@ -1,4 +1,10 @@
-import type { ProductDetail, ProductSummary, ProductVariant } from '@borneo/shared';
+import type {
+  CartLineView,
+  CartView,
+  ProductDetail,
+  ProductSummary,
+  ProductVariant,
+} from '@borneo/shared';
 
 // Test fixtures shaped like API responses. Values are examples, not rule outputs.
 
@@ -110,5 +116,92 @@ export const productFixture = (over: Partial<ProductDetail> = {}): ProductDetail
     },
   ],
   successor: null,
+  bundles: [],
+  reviews: { counts: [0, 0, 0, 0, 0], page: { items: [], nextCursor: null } },
   ...over,
 });
+
+const policy = {
+  phone:
+    'Replacement within 7 days of delivery if it arrives damaged or defective. No returns for change of mind.',
+  audio:
+    'Return within 7 days of delivery for any reason. Replacement if it arrives damaged or defective.',
+};
+
+export const cartLineFixture = (over: Partial<CartLineView> = {}): CartLineView => ({
+  key: 'item:BP4-6-128-FOR',
+  kind: 'item',
+  qty: 1,
+  maxQty: 5,
+  status: 'ok',
+  name: 'Borneo Pulse 4',
+  product: {
+    name: 'Borneo Pulse 4',
+    slug: 'pulse-4',
+    sku: 'BP4-6-128-FOR',
+    options: { colour: 'Forest', storage: '6 GB + 128 GB' },
+    image: { src: 'https://images.example.com/pulse-4-front', alt: 'Borneo Pulse 4' },
+    returnPolicy: policy.phone,
+  },
+  members: [],
+  isPreorder: false,
+  unitPricePaise: 1_499_900,
+  flash: null,
+  linePaise: 1_499_900,
+  couponDiscountPaise: 0,
+  delivery: null,
+  ...over,
+});
+
+export const budsLineFixture = (over: Partial<CartLineView> = {}): CartLineView =>
+  cartLineFixture({
+    key: 'item:EB2-BLK',
+    name: 'Echo Buds 2',
+    product: {
+      name: 'Echo Buds 2',
+      slug: 'echo-buds-2',
+      sku: 'EB2-BLK',
+      options: { colour: 'Black' },
+      image: null,
+      returnPolicy: policy.audio,
+    },
+    unitPricePaise: 349_900,
+    linePaise: 349_900,
+    ...over,
+  });
+
+export const cartFixture = (over: Partial<CartView> = {}): CartView => {
+  const lines = over.lines ?? [cartLineFixture()];
+  const subtotal = lines.reduce((n, l) => n + l.linePaise, 0);
+  return {
+    lines,
+    count: lines.reduce((n, l) => n + l.qty, 0),
+    subtotalPaise: subtotal,
+    coupon: null,
+    totalPaise: subtotal,
+    emiFromPaise: 70_000,
+    coupons: [
+      {
+        code: 'WELCOME500',
+        name: '₹500 off orders above ₹4,999',
+        validTo: Date.UTC(2026, 11, 31),
+        savingPaise: 50_000,
+        reason: null,
+      },
+    ],
+    paymentOffers: [
+      {
+        id: 'po1',
+        kind: 'bank',
+        name: '10% instant discount with HDFC Bank cards',
+        validTo: Date.UTC(2026, 11, 31),
+        savingPaise: null,
+        reason: 'On orders of ₹15,000 or more.',
+      },
+    ],
+    delivery: null,
+    suggestions: [],
+    canCheckout: true,
+    ...over,
+  };
+};
