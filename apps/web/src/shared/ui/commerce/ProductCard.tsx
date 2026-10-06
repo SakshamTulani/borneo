@@ -1,3 +1,5 @@
+import { Link, type RegisteredRouter, type ValidateLinkOptions } from '@tanstack/react-router';
+import type { ReactNode } from 'react';
 import { BellIcon, BellRingIcon, ImageIcon } from 'lucide-react';
 import { Button } from '@/shared/ui/base/button';
 import { cn } from '@/shared/lib/utils';
@@ -5,9 +7,13 @@ import { PriceBlock, type PriceBlockProps } from './PriceBlock';
 import { Rating } from './Rating';
 import { StatusBadge, type StatusBadgeProps } from './StatusBadge';
 
-export type ProductCardProps = {
+export type ProductCardProps<
+  TRouter extends RegisteredRouter = RegisteredRouter,
+  TOptions = unknown,
+> = {
   name: string;
-  href: string;
+  /** Router link to the product page, e.g. `{ to: '/products/$slug', params: { slug } }`. */
+  link: ValidateLinkOptions<TRouter, TOptions>;
   familyLabel?: string;
   image?: { src: string; alt: string };
   rating: { value?: number; count: number };
@@ -19,10 +25,13 @@ export type ProductCardProps = {
   className?: string;
 };
 
+export function ProductCard<TRouter extends RegisteredRouter, TOptions>(
+  props: ProductCardProps<TRouter, TOptions>,
+): ReactNode;
 export function ProductCard(props: ProductCardProps) {
   const {
     name,
-    href,
+    link,
     familyLabel,
     image,
     rating,
@@ -60,12 +69,12 @@ export function ProductCard(props: ProductCardProps) {
         {familyLabel ? <p className="text-xs font-medium text-ink-muted">{familyLabel}</p> : null}
         <h3 className="font-heading text-base font-semibold">
           {/* Stretched link: the whole card opens the product; the Watch button sits above it. */}
-          <a
-            href={href}
+          <Link
+            {...link}
             className="after:absolute after:inset-0 after:rounded-xl focus-visible:outline-none focus-visible:after:outline-2 focus-visible:after:outline-brand"
           >
             {name}
-          </a>
+          </Link>
         </h3>
       </div>
       <Rating {...rating} />

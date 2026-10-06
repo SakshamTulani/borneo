@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import { categoriesQuery, CategoryNav } from '../features/catalog';
 import appCss from '../index.css?url';
 import { pageHead } from '../shared/lib/seo';
 import { AppShell } from '../shared/ui/AppShell';
@@ -19,6 +20,8 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       links: [{ rel: 'stylesheet', href: appCss }],
     };
   },
+  // Header navigation lists categories on every page.
+  loader: ({ context }) => context.queryClient.prefetchQuery(categoriesQuery),
   shellComponent: RootDocument,
   errorComponent: ({ reset }) => (
     <AppShell>
@@ -38,7 +41,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     />
   ),
   component: () => (
-    <AppShell>
+    <AppShell nav={<CategoryNav />}>
       <Outlet />
     </AppShell>
   ),

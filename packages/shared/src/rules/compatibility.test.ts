@@ -5,7 +5,14 @@ import { compatibilityFacts, isFilled } from './compatibility';
 const defs: AttributeDef[] = [
   { key: 'works_with_alexa', label: 'Alexa', type: 'bool', compat: true },
   { key: 'works_with_iphone', label: 'iPhone', type: 'bool', compat: true },
-  { key: 'connector', label: 'Connector', type: 'enum', compat: true },
+  {
+    key: 'connector',
+    label: 'Connector',
+    type: 'enum',
+    options: ['usb_c', 'USB-C'],
+    optionLabels: { usb_c: 'USB-C' },
+    compat: true,
+  },
   { key: 'bluetooth', label: 'Bluetooth', type: 'number', unit: '', compat: true },
   { key: 'protocols', label: 'Protocols', type: 'list', compat: true },
   { key: 'colour', label: 'Colour', type: 'enum', compat: false },
@@ -46,6 +53,16 @@ describe('compatibility', () => {
         defs,
       ).map((f) => f.text),
     ).toEqual(['Connector: USB-C', 'Bluetooth: 5.3', 'Protocols: Matter, Thread']);
+  });
+
+  it('D-23: coded options read by their label', () => {
+    expect(compatibilityFacts({ connector: 'usb_c' }, defs)).toEqual([
+      { key: 'connector', text: 'Connector: USB-C' },
+    ]);
+  });
+
+  it('D-22: a malformed value makes no claim', () => {
+    expect(compatibilityFacts({ bluetooth: 'five' }, defs)).toEqual([]);
   });
 
   it('D-22: what counts as filled', () => {

@@ -1,4 +1,4 @@
-import type { EmiPlan } from '../contracts/catalog';
+import type { EmiPlan, PriceDisplay } from '../contracts/catalog';
 import type { FlashSale, PaymentOffer } from '../contracts/offers';
 import type { Paise } from '../money';
 import { emiFrom } from './emi';
@@ -48,16 +48,6 @@ export function effectivePrice(
   }
   return best;
 }
-
-export type PriceDisplay = {
-  /** Always the selling price (flash price while live). D-30. */
-  sellingPaise: Paise;
-  priceSource: 'regular' | 'flash';
-  mrpPaise?: Paise;
-  savings?: { paise: Paise; percent: number };
-  effective?: { paise: Paise; offerName: string };
-  emiFromPaise?: Paise;
-};
 
 /** Everything the PriceBlock shows, decided in one place (D-30–33, D-36, D-140). */
 export function priceDisplay(input: {

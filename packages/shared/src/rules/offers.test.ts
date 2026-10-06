@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import type { CartLine } from '../contracts/cart';
 import type { Coupon, PaymentOffer } from '../contracts/offers';
 import { emiInterest } from './emi';
-import { discountAmount, priceOrder } from './offers';
+import { discountAmount, priceOrder, productOffers } from './offers';
 
 const now = 1_500;
 const window = { validFrom: 0, validTo: 10_000 };
@@ -243,5 +243,45 @@ describe('offers', () => {
     const r = run({});
     expect(r.subtotalPaise).toBe(2_200_000);
     expect(r.totalPaise).toBe(2_200_000);
+  });
+
+  describe('productOffers', () => {
+    const scoped: Coupon = { ...tenPct, id: 'audio', categoryIds: ['audio'] };
+    const expired: PaymentOffer = { ...bank, id: 'old', validFrom: 0, validTo: 1_000 };
+    const offers = (priceSource: 'regular' | 'flash') =>
+      productOffers({
+        categoryId: 'smartphones',
+        priceSource,
+        coupons: [{ ...flat500, minOrderPaise: 499_900 }, scoped],
+        paymentOffers: [bank, noCost, expired],
+        now,
+      });
+
+    it('D-34: lists live, in-scope offers, payment offers first, with their terms', () => {
+      expect(offers('regular')).toEqual([
+        { id: 'bank', kind: 'bank', name: 'Demo Bank', validTo: 10_000, status: 'available' },
+        { id: 'nc', kind: 'noCostEmi', name: 'No-cost EMI', validTo: 10_000, status: 'available' },
+        {
+          id: 'c500',
+          kind: 'coupon',
+          name: '₹500 off',
+          code: 'DEMO500',
+          minOrderPaise: 499_900,
+          validTo: 10_000,
+          status: 'available',
+        },
+      ]);
+    });
+
+    it('D-36: coupons show as not applicable on a live flash price; payment offers still apply', () => {
+      const list = offers('flash');
+      expect(list.find((o) => o.kind === 'coupon')).toMatchObject({
+        status: 'notApplicable',
+        reason: "Coupons don't apply to flash sale prices",
+      });
+      expect(list.filter((o) => o.kind !== 'coupon').every((o) => o.status === 'available')).toBe(
+        true,
+      );
+    });
   });
 });

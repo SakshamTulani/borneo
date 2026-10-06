@@ -53,12 +53,13 @@ shadcn semantic names (`primary`, `secondary`, `muted-foreground`, `destructive`
 
 Every component has a render test and a vitest-axe check per state.
 
-| Layer                   | Path                  | Components                                                                                                                                |
-| ----------------------- | --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
-| Base (shadcn, restyled) | `shared/ui/base/`     | Button (variants, disabled, loading, ≥ 44px), Badge (9 tones), Card, Input, Label, RadioGroup, Separator, Skeleton, Table                 |
-| Feedback                | `shared/ui/feedback/` | EmptyState, ErrorState (retry, `role=alert`), DemoBox                                                                                     |
-| Brand                   | `shared/ui/brand/`    | Logo                                                                                                                                      |
-| Commerce                | `shared/ui/commerce/` | PriceBlock, Rating, StatusBadge, ProductCard + skeleton, VariantSelector, DeliveryChecker, OfferCard, Countdown, SpecTable, OrderTimeline |
+| Layer                   | Path                    | Components                                                                                                                                |
+| ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| Base (shadcn, restyled) | `shared/ui/base/`       | Button (variants, disabled, loading, ≥ 44px), Badge (9 tones), Card, Input, Label, RadioGroup, Separator, Skeleton, Table                 |
+| Feedback                | `shared/ui/feedback/`   | EmptyState, ErrorState (retry, `role=alert`), DemoBox                                                                                     |
+| Brand                   | `shared/ui/brand/`      | Logo                                                                                                                                      |
+| Navigation              | `shared/ui/navigation/` | BottomNav (mobile, `aria-current`), Breadcrumbs; `AppShell` has a skip link and sticky header                                             |
+| Commerce                | `shared/ui/commerce/`   | PriceBlock, Rating, StatusBadge, ProductCard + skeleton, VariantSelector, DeliveryChecker, OfferCard, Countdown, SpecTable, OrderTimeline |
 
 Commerce components only display. They never compute prices, savings, eligibility, serviceability or stock. Those values arrive as props from `@borneo/shared` rules.
 
@@ -75,7 +76,7 @@ Commerce components only display. They never compute prices, savings, eligibilit
 | SpecTable       | Grouped rows                                                                                           | full, "Not specified", empty                                                                                        |
 | OrderTimeline   | Ordered steps, `aria-current="step"`                                                                   | in transit, cancelled, replacement requested                                                                        |
 
-Still to design, in later phases: policy summary, payment hold timer, suggestion card with reason, upgrade strip, compare table, finder step, sticky purchase bar, bottom nav.
+Still to design, in later phases: payment hold timer, upgrade strip, compare table, finder step, sticky purchase bar (with add to cart, Phase J), product media gallery. Phase F placed the policy summary and suggestion-with-reason inline on the PDP.
 
 Global states for every data view: loading (skeleton), empty, error (with retry).
 

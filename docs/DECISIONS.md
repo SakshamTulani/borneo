@@ -17,16 +17,18 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 
 ## Catalog
 
-| ID   | Rule                                                                                                                                        | Status     |
-| ---- | ------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
-| D-10 | Launch categories: smartphones, audio, wearables, accessories, smart home, TVs, robot vacuums. Catalog configurable; no category hardcoded. | v1         |
-| D-11 | Large home appliances (AC, washer, fridge) dropped.                                                                                         | later      |
-| D-12 | TVs sit under TVs only (not appliances).                                                                                                    | v1         |
-| D-13 | Full depth (guided finder, category compare, rich explainers): smartphones, audio. Others: standard template via per-category config.       | v1         |
-| D-14 | Structured specs per category + rich media.                                                                                                 | v1         |
-| D-15 | Catalog size unknown. Demo uses a seeded catalog.                                                                                           | open       |
-| D-16 | Product attributes must match their category's attribute definitions (type, listed options). Unknown keys are rejected; any may be missing. | assumption |
-| D-17 | Discontinued products leave category listings but keep their PDP and relations (owners still need accessories and support).                 | assumption |
+| ID   | Rule                                                                                                                                                                                                                                                            | Status     |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-10 | Launch categories: smartphones, audio, wearables, accessories, smart home, TVs, robot vacuums. Catalog configurable; no category hardcoded.                                                                                                                     | v1         |
+| D-11 | Large home appliances (AC, washer, fridge) dropped.                                                                                                                                                                                                             | later      |
+| D-12 | TVs sit under TVs only (not appliances).                                                                                                                                                                                                                        | v1         |
+| D-13 | Full depth (guided finder, category compare, rich explainers): smartphones, audio. Others: standard template via per-category config.                                                                                                                           | v1         |
+| D-14 | Structured specs per category + rich media.                                                                                                                                                                                                                     | v1         |
+| D-15 | Catalog size unknown. Demo uses a seeded catalog.                                                                                                                                                                                                               | open       |
+| D-16 | Product attributes must match their category's attribute definitions (type, listed options). Unknown keys are rejected; any may be missing.                                                                                                                     | assumption |
+| D-17 | Discontinued products leave category listings but keep their PDP and relations (owners still need accessories and support).                                                                                                                                     | assumption |
+| D-18 | Category filters come from category config and live in the URL. Options match any selected value; yes/no filters only narrow to "Yes"; numbers are minimums ("8 GB or more"); price is a maximum on the lowest regular price. Different filters must all match. | assumption |
+| D-19 | Listings default to newest first (launch date), or price low→high / high→low by lowest regular price. A card shows the lowest price payable now among variants you can buy (flash price while live).                                                            | assumption |
 
 ## Relationships & compatibility
 

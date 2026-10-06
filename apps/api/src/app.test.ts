@@ -2,12 +2,9 @@ import { describe, expect, it } from 'vitest';
 import { buildApp } from './app';
 import { createCatalogService } from './modules/catalog/index';
 import { createHealthService } from './modules/health/index';
+import { emptyCatalogDeps } from './test/factories';
 
-const catalog = createCatalogService({
-  listCategories: async () => [],
-  findCategoryIdBySlug: async () => undefined,
-  listProducts: async () => [],
-});
+const catalog = createCatalogService(emptyCatalogDeps());
 
 describe('GET /health', () => {
   it('reports status, demo mode and database state', async () => {

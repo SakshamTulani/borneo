@@ -66,6 +66,16 @@ describe('seed catalog', () => {
     );
   });
 
+  it('D-16: an option label for an unlisted option is reported', () => {
+    const issues = seedIssues(
+      plant((d) => {
+        const audio = d.categories.find((c) => c.slug === 'audio')!;
+        audio.attributes.find((a) => a.key === 'form_factor')!.optionLabels!.earcup = 'Earcup';
+      }),
+    );
+    expect(issues).toContain('audio.form_factor: label for unlisted option "earcup" (D-16)');
+  });
+
   it('D-31: a selling price above MRP is reported', () => {
     const issues = seedIssues(plant((d) => (product(d, 'nova-3').variants[0]!.price = 99999)));
     expect(issues).toContain('BN3-8-128-MIS: price must be > 0 and ≤ MRP (D-31)');

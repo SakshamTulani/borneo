@@ -1,71 +1,377 @@
-import { and, asc, eq, gt, inArray } from 'drizzle-orm';
-import type { CategoryDto, ProductSummary } from '@borneo/shared';
+import { and, asc, desc, eq, gt, inArray, lte, ne, or, sql, type SQL } from 'drizzle-orm';
+import {
+  attributeDefSchema,
+  type AttributeDef,
+  type Attributes,
+  type CategoryDto,
+  type FlashSale,
+  type ListingFilter,
+  type ProductSort,
+  type ProductStatus,
+  type RelationEdge,
+} from '@borneo/shared';
 import type { Db } from '../../db/client';
-import { category, product, variant } from '../../db/schema/index';
+import {
+  attributeDef,
+  category,
+  faq,
+  flashSale,
+  inventory,
+  product,
+  productLine,
+  relation,
+  review,
+  variant,
+} from '../../db/schema/index';
 
 /** Discontinued products leave listings but keep their PDP and relations (D-17). */
 const LISTED = ['live', 'preorder'] as const;
 
+const categoryColumns = {
+  id: category.id,
+  slug: category.slug,
+  name: category.name,
+  parentId: category.parentId,
+  depth: category.depth,
+  returnPolicy: category.returnPolicy,
+  config: category.config,
+};
+
 export async function listCategories(db: Db): Promise<CategoryDto[]> {
-  return db
-    .select({
-      id: category.id,
-      slug: category.slug,
-      name: category.name,
-      parentId: category.parentId,
-      depth: category.depth,
-      returnPolicy: category.returnPolicy,
-      config: category.config,
-    })
-    .from(category)
-    .orderBy(asc(category.sort), asc(category.slug));
+  return db.select(categoryColumns).from(category).orderBy(asc(category.sort), asc(category.slug));
 }
 
-export async function findCategoryIdBySlug(db: Db, slug: string): Promise<string | undefined> {
-  const [row] = await db.select({ id: category.id }).from(category).where(eq(category.slug, slug));
-  return row?.id;
+export type CategoryWithDefs = { category: CategoryDto; defs: AttributeDef[] };
+
+export async function listAttributeDefs(db: Db, categoryId: string): Promise<AttributeDef[]> {
+  const rows = await db
+    .select()
+    .from(attributeDef)
+    .where(eq(attributeDef.categoryId, categoryId))
+    .orderBy(asc(attributeDef.sort));
+  return rows.map((d) =>
+    attributeDefSchema.parse({
+      key: d.key,
+      label: d.label,
+      type: d.type,
+      ...(d.unit ? { unit: d.unit } : {}),
+      ...(d.options ? { options: d.options } : {}),
+      ...(d.optionLabels ? { optionLabels: d.optionLabels } : {}),
+      filterable: d.filterable,
+      comparable: d.comparable,
+      compat: d.compat,
+    }),
+  );
 }
 
-/**
- * One page of listed products ordered by slug (keyset on slug). Returns up to `limit + 1` rows so
- * the caller can tell whether another page exists. Price is the cheapest variant's, with its MRP;
- * products without a variant are not listed.
- */
-export async function listProducts(
+export async function findCategoryBySlug(
   db: Db,
-  query: { categoryId?: string; afterSlug?: string; limit: number },
-): Promise<ProductSummary[]> {
-  const cheapest = db
+  slug: string,
+): Promise<CategoryWithDefs | undefined> {
+  const [row] = await db.select(categoryColumns).from(category).where(eq(category.slug, slug));
+  return row ? { category: row, defs: await listAttributeDefs(db, row.id) } : undefined;
+}
+
+/** Each product's lowest regular variant price: what sorting and the price filter use (D-18, D-19). */
+function cheapestVariant(db: Db) {
+  return db
     .selectDistinctOn([variant.productId], {
       productId: variant.productId,
       pricePaise: variant.pricePaise,
-      mrpPaise: variant.mrpPaise,
     })
     .from(variant)
     .orderBy(variant.productId, asc(variant.pricePaise), asc(variant.sku))
     .as('cheapest');
+}
+
+/** SQL for one category filter (D-18). Values were validated against the category's definitions. */
+function filterCondition(f: ListingFilter): SQL {
+  const attrs = product.attributes;
+  const values = (vs: string[]) =>
+    sql.join(
+      vs.map((v) => sql`${v}`),
+      sql`, `,
+    );
+  // Parenthesised: drizzle's and() does not wrap its operands.
+  switch (f.kind) {
+    case 'anyOf':
+      // Enum: the value is one of them. List: it contains any of them.
+      return sql`((jsonb_typeof(${attrs} -> ${f.key}) = 'string' and ${attrs} ->> ${f.key} in (${values(f.values)})) or (jsonb_typeof(${attrs} -> ${f.key}) = 'array' and ${attrs} -> ${f.key} ?| array[${values(f.values)}]::text[]))`;
+    case 'isTrue':
+      return sql`(${attrs} -> ${f.key} = 'true'::jsonb)`;
+    case 'atLeast':
+      return sql`((case when jsonb_typeof(${attrs} -> ${f.key}) = 'number' then (${attrs} ->> ${f.key})::numeric end) >= ${f.value})`;
+  }
+}
+
+export type ListingRow = {
+  id: string;
+  slug: string;
+  name: string;
+  categoryId: string;
+  categorySlug: string;
+  lineName: string;
+  tier: 'value' | 'upper_mid' | 'premium';
+  status: ProductStatus;
+  /** Sort key: lowest regular variant price. */
+  pricePaise: number;
+  /** Sort key: launch date (YYYY-MM-DD), '0000-01-01' when unknown. */
+  launched: string;
+};
+
+export type ListingQuery = {
+  categoryId?: string;
+  filters: ListingFilter[];
+  maxPricePaise?: number;
+  sort: ProductSort;
+  /** Keyset: the last row of the previous page. */
+  after?: { key: string | number; slug: string };
+  limit: number;
+};
+
+const UNKNOWN_LAUNCH = '0000-01-01';
+
+/**
+ * One page of listed products (live or pre-order), filtered and sorted (D-17–19). Returns up to
+ * `limit + 1` rows so the caller can tell whether another page exists. Products without a
+ * variant are not listed. Slug breaks ties, so keyset paging never skips or repeats.
+ */
+export async function listProducts(db: Db, q: ListingQuery): Promise<ListingRow[]> {
+  const cheapest = cheapestVariant(db);
+  const launched = sql<string>`coalesce(${product.launchedAt}::text, ${UNKNOWN_LAUNCH})`;
+  const key = q.sort === 'newest' ? launched : sql`${cheapest.pricePaise}`;
+  const keyDir = q.sort === 'price_asc' ? gt : (a: SQL, b: unknown) => sql`${a} < ${b}`;
+  const after = q.after
+    ? or(
+        keyDir(key, q.after.key),
+        and(sql`${key} = ${q.after.key}`, gt(product.slug, q.after.slug)),
+      )
+    : undefined;
 
   return db
     .select({
       id: product.id,
       slug: product.slug,
       name: product.name,
+      categoryId: product.categoryId,
       categorySlug: category.slug,
+      lineName: productLine.name,
       tier: product.tier,
       status: product.status,
       pricePaise: cheapest.pricePaise,
-      mrpPaise: cheapest.mrpPaise,
+      launched,
     })
     .from(product)
     .innerJoin(category, eq(category.id, product.categoryId))
+    .innerJoin(productLine, eq(productLine.id, product.lineId))
     .innerJoin(cheapest, eq(cheapest.productId, product.id))
     .where(
       and(
         inArray(product.status, [...LISTED]),
-        query.categoryId ? eq(product.categoryId, query.categoryId) : undefined,
-        query.afterSlug ? gt(product.slug, query.afterSlug) : undefined,
+        q.categoryId ? eq(product.categoryId, q.categoryId) : undefined,
+        q.maxPricePaise !== undefined ? lte(cheapest.pricePaise, q.maxPricePaise) : undefined,
+        ...q.filters.map(filterCondition),
+        after,
       ),
     )
-    .orderBy(asc(product.slug))
-    .limit(query.limit + 1);
+    .orderBy(q.sort === 'price_asc' ? asc(key) : desc(key), asc(product.slug))
+    .limit(q.limit + 1);
+}
+
+/** Listing rows for given products (suggestions), listed ones only (D-17). */
+export async function listProductsByIds(db: Db, ids: string[]): Promise<ListingRow[]> {
+  if (ids.length === 0) return [];
+  const cheapest = cheapestVariant(db);
+  return db
+    .select({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      categoryId: product.categoryId,
+      categorySlug: category.slug,
+      lineName: productLine.name,
+      tier: product.tier,
+      status: product.status,
+      pricePaise: cheapest.pricePaise,
+      launched: sql<string>`coalesce(${product.launchedAt}::text, ${UNKNOWN_LAUNCH})`,
+    })
+    .from(product)
+    .innerJoin(category, eq(category.id, product.categoryId))
+    .innerJoin(productLine, eq(productLine.id, product.lineId))
+    .innerJoin(cheapest, eq(cheapest.productId, product.id))
+    .where(and(inArray(product.id, ids), inArray(product.status, [...LISTED])));
+}
+
+/** Attributes and lowest regular price of every listed product in a category, for facets (D-18). */
+export async function listedProductFacts(
+  db: Db,
+  categoryId: string,
+): Promise<{ attributes: Attributes; pricePaise: number }[]> {
+  const cheapest = cheapestVariant(db);
+  return db
+    .select({ attributes: product.attributes, pricePaise: cheapest.pricePaise })
+    .from(product)
+    .innerJoin(cheapest, eq(cheapest.productId, product.id))
+    .where(and(eq(product.categoryId, categoryId), inArray(product.status, [...LISTED])));
+}
+
+export type VariantState = {
+  id: string;
+  productId: string;
+  sku: string;
+  options: Record<string, string>;
+  pricePaise: number;
+  mrpPaise: number;
+  preorderCap: number | null;
+  preorderSold: number;
+  /** Unreserved units across all warehouses. */
+  unitsAvailable: number;
+  /** Flash sales that have not ended; the rule decides which is live (D-140). */
+  flashSales: FlashSale[];
+};
+
+export async function loadVariantStates(
+  db: Db,
+  productIds: string[],
+  now: Date,
+): Promise<VariantState[]> {
+  if (productIds.length === 0) return [];
+  const stock = db
+    .select({
+      variantId: inventory.variantId,
+      units: sql<number>`sum(${inventory.onHand} - ${inventory.reserved})::int`.as('units'),
+    })
+    .from(inventory)
+    .groupBy(inventory.variantId)
+    .as('stock');
+  const [variants, sales] = await Promise.all([
+    db
+      .select({
+        id: variant.id,
+        productId: variant.productId,
+        sku: variant.sku,
+        options: variant.options,
+        pricePaise: variant.pricePaise,
+        mrpPaise: variant.mrpPaise,
+        preorderCap: variant.preorderCap,
+        preorderSold: variant.preorderSold,
+        units: stock.units,
+      })
+      .from(variant)
+      .leftJoin(stock, eq(stock.variantId, variant.id))
+      .where(inArray(variant.productId, productIds))
+      .orderBy(asc(variant.pricePaise), asc(variant.sku)),
+    db
+      .select()
+      .from(flashSale)
+      .innerJoin(variant, eq(variant.id, flashSale.variantId))
+      .where(and(inArray(variant.productId, productIds), gt(flashSale.endsAt, now))),
+  ]);
+  return variants.map(({ units, ...v }) => ({
+    ...v,
+    unitsAvailable: units ?? 0,
+    flashSales: sales
+      .filter((s) => s.flash_sale.variantId === v.id)
+      .map(({ flash_sale: s }) => ({
+        id: s.id,
+        variantId: s.variantId,
+        salePricePaise: s.salePricePaise,
+        startsAt: s.startsAt.getTime(),
+        endsAt: s.endsAt.getTime(),
+        cap: s.cap,
+        sold: s.sold,
+        perCustomerLimit: 1 as const,
+      })),
+  }));
+}
+
+/** Verified reviews only (D-150): every review row is tied to a delivered order item. */
+export async function loadRatings(
+  db: Db,
+  productIds: string[],
+): Promise<Map<string, { average: number; count: number }>> {
+  if (productIds.length === 0) return new Map();
+  const rows = await db
+    .select({
+      productId: review.productId,
+      average: sql<number>`avg(${review.rating})::float`,
+      count: sql<number>`count(*)::int`,
+    })
+    .from(review)
+    .where(inArray(review.productId, productIds))
+    .groupBy(review.productId);
+  return new Map(rows.map((r) => [r.productId, { average: r.average, count: r.count }]));
+}
+
+export type ProductRow = {
+  id: string;
+  slug: string;
+  name: string;
+  modelNumber: string;
+  lineName: string;
+  tier: 'value' | 'upper_mid' | 'premium';
+  status: ProductStatus;
+  attributes: Attributes;
+  explainer: string | null;
+  whoFor: string | null;
+  notFor: string | null;
+  dispatchFrom: string | null;
+  dispatchTo: string | null;
+  category: CategoryDto;
+};
+
+/** A product page: any status but draft, so discontinued products keep their PDP (D-17). */
+export async function findProductBySlug(db: Db, slug: string): Promise<ProductRow | undefined> {
+  const [row] = await db
+    .select({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      modelNumber: product.modelNumber,
+      lineName: productLine.name,
+      tier: product.tier,
+      status: product.status,
+      attributes: product.attributes,
+      explainer: product.explainer,
+      whoFor: product.whoFor,
+      notFor: product.notFor,
+      dispatchFrom: product.dispatchFrom,
+      dispatchTo: product.dispatchTo,
+      category: categoryColumns,
+    })
+    .from(product)
+    .innerJoin(category, eq(category.id, product.categoryId))
+    .innerJoin(productLine, eq(productLine.id, product.lineId))
+    .where(and(eq(product.slug, slug), ne(product.status, 'draft')));
+  return row;
+}
+
+/** Product FAQs first, then the category's (D-152). */
+export async function loadFaqs(
+  db: Db,
+  productId: string,
+  categoryId: string,
+): Promise<{ question: string; answer: string }[]> {
+  const rows = await db
+    .select({ question: faq.question, answer: faq.answer, productId: faq.productId })
+    .from(faq)
+    .where(or(eq(faq.productId, productId), eq(faq.categoryId, categoryId)))
+    .orderBy(asc(faq.sort));
+  return [...rows.filter((r) => r.productId), ...rows.filter((r) => !r.productId)].map(
+    ({ question, answer }) => ({ question, answer }),
+  );
+}
+
+/** Materialised edges from a product (D-20, D-21). */
+export async function loadRelationsFrom(db: Db, productId: string): Promise<RelationEdge[]> {
+  return db
+    .select({
+      fromProductId: relation.fromProductId,
+      toProductId: relation.toProductId,
+      type: relation.type,
+      source: relation.source,
+      reason: relation.reason,
+    })
+    .from(relation)
+    .where(eq(relation.fromProductId, productId));
 }

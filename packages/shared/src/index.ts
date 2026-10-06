@@ -1,7 +1,7 @@
 export type { CustomerId } from './ids';
 export { toCustomerId } from './ids';
 export type { Paise } from './money';
-export { allocate, divideHalfUp, formatInr, percentOf, sumPaise } from './money';
+export { allocate, divideHalfUp, formatInr, fromRupees, percentOf, sumPaise } from './money';
 export { addIstDays, endOfIstDayAfter, istDate } from './time';
 
 export * from './contracts/common';
@@ -11,6 +11,7 @@ export * from './contracts/cart';
 export * from './contracts/delivery';
 export * from './contracts/orders';
 
+export * from './rules/catalog';
 export * from './rules/cod';
 export * from './rules/compatibility';
 export * from './rules/emi';

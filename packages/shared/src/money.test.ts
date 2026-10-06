@@ -1,11 +1,17 @@
 import { describe, expect, it } from 'vitest';
-import { allocate, divideHalfUp, formatInr, percentOf } from './money';
+import { allocate, divideHalfUp, formatInr, fromRupees, percentOf } from './money';
 
 describe('money', () => {
   it('D-41: formats integer paise with Indian grouping', () => {
     expect(formatInr(2_499_900)).toBe('₹24,999');
     expect(formatInr(124_999_900)).toBe('₹12,49,999');
     expect(formatInr(99_950)).toBe('₹999.50');
+  });
+
+  it('D-41: whole rupees convert exactly to paise', () => {
+    expect(fromRupees(30_000)).toBe(3_000_000);
+    expect(() => fromRupees(10.5)).toThrow();
+    expect(() => fromRupees(Number.MAX_SAFE_INTEGER)).toThrow();
   });
 
   it('D-41: rejects non-integer paise', () => {

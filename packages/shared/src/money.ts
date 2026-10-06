@@ -16,6 +16,13 @@ export function assertPaise(paise: number): void {
   if (!Number.isSafeInteger(paise)) throw new Error(`paise must be a safe integer, got ${paise}`);
 }
 
+/** Whole rupees (e.g. a price filter typed by a customer) to paise. */
+export function fromRupees(rupees: number): Paise {
+  if (!Number.isSafeInteger(rupees * 100) || !Number.isInteger(rupees))
+    throw new Error(`rupees must be a whole number, got ${rupees}`);
+  return rupees * 100;
+}
+
 export function sumPaise(values: Paise[]): Paise {
   return values.reduce((a, b) => a + b, 0);
 }

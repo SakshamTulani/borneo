@@ -1,4 +1,5 @@
 import type { CartLine } from '../contracts/cart';
+import type { ProductOffer } from '../contracts/catalog';
 import type { Coupon, Discount, PaymentOffer, PaymentSelection } from '../contracts/offers';
 import { allocate, percentOf, sumPaise, type Paise } from '../money';
 import { emiInterest } from './emi';
@@ -143,4 +144,44 @@ function paymentMatches(offer: PaymentOffer, payment: PaymentSelection | undefin
   if (offer.kind === 'noCostEmi')
     return payment.method === 'emi' && payment.tenureMonths === offer.tenureMonths;
   return (offer.methods as string[]).includes(payment.method);
+}
+
+/**
+ * Offers to show on a product page for one variant (D-34): live and in scope for its category.
+ * Payment offers first, then coupons. Coupons never apply to a flash price (D-36), so they show as
+ * not applicable while it is live. Minimum orders are terms, not blocks: the cart may reach them.
+ */
+export function productOffers(input: {
+  categoryId: string;
+  priceSource: 'regular' | 'flash';
+  coupons: Coupon[];
+  paymentOffers: PaymentOffer[];
+  now: number;
+}): ProductOffer[] {
+  const { categoryId, now } = input;
+  const live = (o: { validFrom: number; validTo: number; categoryIds?: string[] | undefined }) =>
+    active(o, now) && (!o.categoryIds || o.categoryIds.includes(categoryId));
+  const terms = (o: { minOrderPaise?: number | undefined; validTo: number }) => ({
+    ...(o.minOrderPaise !== undefined ? { minOrderPaise: o.minOrderPaise } : {}),
+    validTo: o.validTo,
+  });
+  return [
+    ...input.paymentOffers.filter(live).map((o): ProductOffer => ({
+      id: o.id,
+      kind: o.kind,
+      name: o.name,
+      ...terms(o),
+      status: 'available',
+    })),
+    ...input.coupons.filter(live).map((c): ProductOffer => ({
+      id: c.id,
+      kind: 'coupon',
+      name: c.name,
+      code: c.code,
+      ...terms(c),
+      ...(input.priceSource === 'flash'
+        ? { status: 'notApplicable', reason: "Coupons don't apply to flash sale prices" }
+        : { status: 'available' }),
+    })),
+  ];
 }

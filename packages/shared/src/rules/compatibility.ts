@@ -1,4 +1,5 @@
 import type { AttributeDef, Attributes } from '../contracts/catalog';
+import { formatAttributeValue } from './catalog';
 
 export type CompatibilityFact = { key: string; text: string };
 
@@ -26,10 +27,9 @@ export function compatibilityFacts(
         d.type !== 'text' &&
         (d.type === 'bool' ? attributes[d.key] === true : isFilled(attributes[d.key])),
     )
-    .map((d) => {
-      const value = attributes[d.key];
-      if (d.type === 'bool') return { key: d.key, text: `Works with ${d.label}` };
-      const shown = Array.isArray(value) ? value.join(', ') : String(value);
-      return { key: d.key, text: `${d.label}: ${shown}${d.unit ? ` ${d.unit}` : ''}` };
+    .flatMap((d) => {
+      if (d.type === 'bool') return [{ key: d.key, text: `Works with ${d.label}` }];
+      const shown = formatAttributeValue(d, attributes[d.key]);
+      return shown === undefined ? [] : [{ key: d.key, text: `${d.label}: ${shown}` }];
     });
 }

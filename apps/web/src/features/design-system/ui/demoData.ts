@@ -34,7 +34,7 @@ export const demoPrices: { state: string; props: PriceBlockProps }[] = [
 ];
 
 const demoCard = {
-  href: '#demo-product',
+  link: { to: '/design-system', hash: 'demo-product' },
   familyLabel: 'Demo Pulse · Pro',
   rating: { value: 4.4, count: 52 },
   price: {

@@ -53,6 +53,8 @@ export const attributeDef = pgTable(
     type: attributeType('type').notNull(),
     unit: text('unit'),
     options: text('options').array(),
+    /** Display labels for coded options (`usb_c` → "USB-C"). */
+    optionLabels: jsonb('option_labels').$type<Record<string, string>>(),
     filterable: boolean('filterable').notNull().default(false),
     comparable: boolean('comparable').notNull().default(false),
     compat: boolean('compat').notNull().default(false),

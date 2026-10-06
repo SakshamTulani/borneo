@@ -18,7 +18,11 @@ const attr = (
   extra: Partial<Omit<AttributeDef, 'key' | 'label' | 'type'>> = {},
 ): AttributeDef => ({ key, label, type, compat: false, ...extra });
 
-const usbC = attr('connector', 'Connector', 'enum', { options: ['usb_c'], compat: true });
+const usbC = attr('connector', 'Connector', 'enum', {
+  options: ['usb_c'],
+  optionLabels: { usb_c: 'USB-C' },
+  compat: true,
+});
 const alexa = attr('works_with_alexa', 'Alexa', 'bool', {
   compat: true,
   filterable: true,
@@ -108,6 +112,7 @@ export const categories: SeedCategory[] = [
         'weight_g',
       ],
       finder: 'phones',
+      homeEntry: 'helpMeChoose',
     },
     faqs: [
       {
@@ -130,6 +135,12 @@ export const categories: SeedCategory[] = [
     attributes: [
       attr('form_factor', 'Type', 'enum', {
         options: ['tws', 'neckband', 'over_ear', 'speaker'],
+        optionLabels: {
+          tws: 'True wireless',
+          neckband: 'Neckband',
+          over_ear: 'Over-ear',
+          speaker: 'Speaker',
+        },
         filterable: true,
         comparable: true,
       }),
@@ -182,6 +193,7 @@ export const categories: SeedCategory[] = [
         'weight_g',
       ],
       finder: 'audio',
+      homeEntry: 'helpMeChoose',
     },
     faqs: [
       {
@@ -203,6 +215,7 @@ export const categories: SeedCategory[] = [
     attributes: [
       attr('form_factor', 'Type', 'enum', {
         options: ['band', 'watch'],
+        optionLabels: { band: 'Band', watch: 'Watch' },
         filterable: true,
         comparable: true,
       }),
@@ -264,6 +277,16 @@ export const categories: SeedCategory[] = [
           'strap',
           'vacuum_kit',
         ],
+        optionLabels: {
+          charger: 'Charger',
+          cable: 'Cable',
+          wireless_charger: 'Wireless charger',
+          case: 'Case',
+          screen_protector: 'Screen protector',
+          ear_tips: 'Ear tips',
+          strap: 'Strap',
+          vacuum_kit: 'Vacuum kit',
+        },
         filterable: true,
         comparable: true,
       }),
@@ -287,6 +310,7 @@ export const categories: SeedCategory[] = [
         { label: 'Details', keys: ['accessory_type', 'connector', 'output_w', 'cable_length_m'] },
       ],
       compare: ['accessory_type', 'output_w', 'cable_length_m'],
+      homeEntry: 'buildYourSetup',
     },
     faqs: [
       {
@@ -303,6 +327,7 @@ export const categories: SeedCategory[] = [
     attributes: [
       attr('device_type', 'Type', 'enum', {
         options: ['plug', 'bulb', 'hub', 'camera'],
+        optionLabels: { plug: 'Smart plug', bulb: 'Smart bulb', hub: 'Hub', camera: 'Camera' },
         filterable: true,
         comparable: true,
       }),
@@ -320,6 +345,7 @@ export const categories: SeedCategory[] = [
         { label: 'Details', keys: ['device_type', 'wifi_band', 'max_load_w', 'video_resolution'] },
       ],
       compare: ['device_type', 'works_with_alexa', 'works_with_google', 'wifi_band', 'needs_hub'],
+      homeEntry: 'buildYourSetup',
     },
     faqs: [
       {

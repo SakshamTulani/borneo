@@ -1,10 +1,13 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import {
+  categoryDetailResponse,
   categoryListResponse,
   errorResponseSchema,
+  productDetailResponse,
   productListQuery,
   productListResponse,
+  slugParams,
 } from './catalog.schema';
 import type { CatalogService } from './catalog.service';
 
@@ -13,6 +16,20 @@ export function catalogRoutes(service: CatalogService): FastifyPluginAsync {
     const r = app.withTypeProvider<ZodTypeProvider>();
     r.get('/categories', { schema: { response: { 200: categoryListResponse } } }, () =>
       service.listCategories(),
+    );
+    r.get(
+      '/categories/:slug',
+      {
+        schema: {
+          params: slugParams,
+          response: {
+            200: categoryDetailResponse,
+            400: errorResponseSchema,
+            404: errorResponseSchema,
+          },
+        },
+      },
+      (request) => service.getCategory(request.params.slug),
     );
     r.get(
       '/products',
@@ -27,6 +44,20 @@ export function catalogRoutes(service: CatalogService): FastifyPluginAsync {
         },
       },
       (request) => service.listProducts(request.query),
+    );
+    r.get(
+      '/products/:slug',
+      {
+        schema: {
+          params: slugParams,
+          response: {
+            200: productDetailResponse,
+            400: errorResponseSchema,
+            404: errorResponseSchema,
+          },
+        },
+      },
+      (request) => service.getProduct(request.params.slug),
     );
   };
 }

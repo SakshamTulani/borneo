@@ -27,7 +27,7 @@ src/test/               factories, globalSetup (seeded test DB), useTestDb()
 drizzle/                generated migrations; commit them
 ```
 
-Reference modules: `src/modules/health` (minimal), `src/modules/catalog` (DB-backed, paginated, error codes). `src/modules/relations` has no routes; the reset script and (later) jobs call it.
+Reference modules: `src/modules/health` (minimal), `src/modules/catalog` (DB-backed, filtered keyset pagination, error codes). `src/modules/offers` has only a repository (`loadOfferBook`); services get it injected. `src/modules/relations` has no routes; the reset script and (later) jobs call it.
 
 ## Rules (enforced)
 
@@ -42,18 +42,19 @@ Reference modules: `src/modules/health` (minimal), `src/modules/catalog` (DB-bac
 
 Services call these; never re-implement them. Each cites its `D-xx` IDs.
 
-| Need                                 | Function                                                                     |
-| ------------------------------------ | ---------------------------------------------------------------------------- |
-| Price shown on PDP/cards             | `priceDisplay` (selling price, savings, effective price, EMI from)           |
-| Order totals with offers             | `priceOrder` (1 coupon + 1 payment offer, per-line shares)                   |
-| Delivery estimate / not deliverable  | `deliveryEstimate`, `addressNeedsRecheck`                                    |
-| COD and payment methods              | `codEligibility`, `allowedPaymentMethods`                                    |
-| 5-min stock hold, late payment       | `startHold`, `holdStatus`, `resolvePaidOrder`                                |
-| Flash sale state and purchase        | `flashState`, `unitPriceWithFlash`, `canBuyFlash`, `lowStockCount`           |
-| Returns                              | `returnPolicyFor`, `returnWindowEndsAt`, `canRequestReturn`, `policySummary` |
-| Upgrade badge / strip                | `upgradeBadge`, `upgradeStrip`                                               |
-| Compatibility, relations, cross-sell | `compatibilityFacts`, `materializeRelations`, `pickSuggestions`              |
-| Cancel, Watch                        | `canCustomerCancel`, `canWatch`                                              |
+| Need                                 | Function                                                                                                                                                  |
+| ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Price shown on PDP/cards             | `priceDisplay` (selling price, savings, effective price, EMI from)                                                                                        |
+| Order totals with offers             | `priceOrder` (1 coupon + 1 payment offer, per-line shares)                                                                                                |
+| Delivery estimate / not deliverable  | `deliveryEstimate`, `addressNeedsRecheck`                                                                                                                 |
+| COD and payment methods              | `codEligibility`, `allowedPaymentMethods`                                                                                                                 |
+| 5-min stock hold, late payment       | `startHold`, `holdStatus`, `resolvePaidOrder`                                                                                                             |
+| Flash sale state and purchase        | `flashState`, `unitPriceWithFlash`, `canBuyFlash`, `lowStockCount`                                                                                        |
+| Returns                              | `returnPolicyFor`, `returnWindowEndsAt`, `canRequestReturn`, `policySummary`                                                                              |
+| Upgrade badge / strip                | `upgradeBadge`, `upgradeStrip`                                                                                                                            |
+| Compatibility, relations, cross-sell | `compatibilityFacts`, `materializeRelations`, `pickSuggestions`                                                                                           |
+| Cancel, Watch                        | `canCustomerCancel`, `canWatch`                                                                                                                           |
+| Listing, PDP display                 | `parseListingFilters`, `filterFacets`, `specGroups`, `formatAttributeValue`, `variantAvailability`, `productAvailability`, `cardVariant`, `productOffers` |
 
 Rules take `now` as a parameter: services pass the clock, so rules stay pure and testable.
 

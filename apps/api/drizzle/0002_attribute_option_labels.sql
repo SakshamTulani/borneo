@@ -1,0 +1,1 @@
+ALTER TABLE "attribute_def" ADD COLUMN "option_labels" jsonb;

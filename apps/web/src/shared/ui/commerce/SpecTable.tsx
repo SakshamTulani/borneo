@@ -8,7 +8,7 @@ import {
 } from '@/shared/ui/base/table';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 
-export type SpecGroup = { title: string; rows: { label: string; value?: string }[] };
+export type SpecGroup = { title: string; rows: { label: string; value?: string | undefined }[] };
 
 export function SpecTable({ groups }: { groups: SpecGroup[] }) {
   if (groups.length === 0) {

@@ -89,6 +89,9 @@ export function seedIssues(data: SeedData): string[] {
         issues.push(`${c.slug}.${d.key}: ${d.type} attributes need options`);
       if (d.compat && d.type === 'text')
         issues.push(`${c.slug}.${d.key}: text cannot be compat (D-22)`);
+      for (const k of Object.keys(d.optionLabels ?? {}))
+        if (!d.options?.includes(k))
+          issues.push(`${c.slug}.${d.key}: label for unlisted option "${k}" (D-16)`);
     }
     for (const k of c.config.filters)
       if (!defs.get(k)?.filterable)
@@ -329,6 +332,7 @@ export function buildSeed(now: Date, data: SeedData = seedData): SeedRows {
         type: d.type,
         unit: d.unit ?? null,
         options: d.options ?? null,
+        optionLabels: d.optionLabels ?? null,
         filterable: d.filterable ?? false,
         comparable: d.comparable ?? false,
         compat: d.compat,

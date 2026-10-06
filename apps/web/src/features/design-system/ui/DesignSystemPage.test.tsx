@@ -1,11 +1,12 @@
-import { render, screen } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { describe, expect, it } from 'vitest';
 import { axe } from 'vitest-axe';
+import { renderWithRouter } from '@/test/router';
 import { DesignSystemPage } from './DesignSystemPage';
 
 describe('DesignSystemPage', () => {
   it('renders every section, labels demo data and has no axe violations', async () => {
-    const { container } = render(<DesignSystemPage />);
+    const { container } = await renderWithRouter(<DesignSystemPage />);
     for (const name of ['Tokens', 'Base components', 'Commerce components']) {
       expect(screen.getByRole('heading', { level: 2, name })).toBeTruthy();
     }

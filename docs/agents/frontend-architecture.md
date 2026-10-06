@@ -23,7 +23,7 @@ src/shared/ui/tokens.ts  design tokens; index.css must match (tokens.test.ts)
 src/shared/lib           http (api/ only), seo pageHead, format, useNow, cn
 ```
 
-Reference slice: `src/features/health`. Living component reference: `/design-system` (`features/design-system`).
+Reference slices: `src/features/health` (minimal), `src/features/catalog` (infinite list, filters in URL), `src/features/product`. UI tests that render router `Link`s use `renderWithRouter` from `src/test/router.tsx`; API-shaped fixtures live in `src/test/fixtures.ts`. Living component reference: `/design-system` (`features/design-system`).
 
 ## Rules (enforced)
 

@@ -7,6 +7,43 @@
 | 2026-10-06 | C     | `phase-c/design-system` | Mutation hook naming (D-174). 5 skills + 2 subagents. Validator proof (6/6 caught). Tokens, shadcn base, feedback + commerce components, noindex `/design-system`. 130 tests. `pnpm check` green.                                                                                                           | Owner review; then Phase D (shared rules) |
 | 2026-10-06 | D     | `phase-d/shared-rules`  | Money helpers, IST time, Zod contracts, 14 pure rule modules. 110 tests named by D-xx, coverage 99.4% stmts / 97.8% branches (gate ≥ 90%). New `rule-ids` check. Architecture-reviewer pass: 11 findings fixed.                                                                                             | Owner review; then Phase E (DB + seed)    |
 | 2026-10-06 | E     | `phase-e/db-seed`       | Drizzle schema (37 tables, CHECKs for never-break invariants), migrations 0000 pg_trgm + 0001 schema, validated seed (7 categories, 45 products), relation materialiser, `GET /categories` + `GET /products`, `pnpm db:reset`, seeded test DB. 58 API tests. Architecture-reviewer pass: 18 findings fixed. | Owner review; then Phase F (browse)       |
+| 2026-10-06 | F     | `phase-f/browse`        | Home (hybrid), header + mobile bottom nav, `/categories`, category page (config filters + sort in URL, keyset paging), PDP template. API: `GET /categories/:slug`, filtered `GET /products`, `GET /products/:slug`. D-18, D-19. Migration 0002. Reviewer pass: 6 findings fixed.                            | Owner review; then Phase G (search)       |
+
+## Phase F: browse
+
+**Runnable:** `pnpm db:reset && pnpm dev`, then `/` → a category (try filters and sort; they live in the URL) → a product (`?variant=SKU` keeps the choice). `/products/pulse-3` shows a discontinued page; `/products/nova-4` a pre-order.
+
+| Piece         | Where                                                    | Notes                                                                                                             |
+| ------------- | -------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Shared rules  | `rules/catalog.ts`, `productOffers` in `rules/offers.ts` | Filters parse (D-18), facets, price caps, spec groups, value formatting, availability (D-65), card variant (D-19) |
+| Catalog API   | `modules/catalog`, `modules/offers` (repository only)    | Filters are SQL on jsonb, bound params, keys allowlisted by config. Cursor = sort key + slug.                     |
+| Option labels | `attribute_def.option_labels` (migration 0002)           | `usb_c` → "USB-C" in specs, facets and compatibility facts                                                        |
+| Web features  | `features/catalog`, `features/product`                   | Loaders prefetch (infinite list too); views are prop-driven and tested with axe                                   |
+| Navigation    | `shared/ui/AppShell`, `shared/ui/navigation/`            | Skip link, sticky header with category links (desktop), bottom nav (mobile), breadcrumbs                          |
+| SEO           | `shared/lib/seo.ts`                                      | Title, description, canonical, Open Graph per route. Filtered and variant URLs share the base canonical.          |
+
+**Validators:** axe on home, category (list, loading, error, empty), PDP (live, flash, pre-order, discontinued), nav; filters-in-URL tests (parse, toggle, chips, API params); route head tests; API tests for each D-18 filter kind, sorts, paging without gaps for every sort, flash pricing, PDP sections, 404/400 codes. SSR checked with curl: real `<title>`, canonical and OG in the HTML; unknown product/category returns 404 inside the shell.
+
+**A test caught a real bug:** combined filters returned wrong products because drizzle's `and()` doesn't parenthesise `or` fragments. Every filter fragment is now wrapped.
+
+**Reviewer findings fixed:**
+
+1. A card could show a "Flash sale" badge from a variant other than the one it priced (D-140). The badge now comes from the priced variant.
+2. Price filter steps were decided in the web app; now `priceCaps` (shared) returned by the API.
+3. Option values the router parses as numbers/booleans were dropped from the URL.
+4. Home had no empty/loading states for new launches, categories and entry points.
+5. "Help me choose" copy promised side-by-side compare, which arrives in Phase M.
+6. A price cap in the URL that the category doesn't offer showed a chip but not the select; now ignored everywhere.
+
+**Not done (noted):**
+
+- **No product images.** Media needs an S3 client and a public-read bucket or a media route: a new technical choice, so it needs an ADR you accept first. Cards and PDP show a neutral placeholder.
+- No add-to-cart or sticky purchase bar (Phase J), delivery checker (Phase H), search in the header (Phase G).
+- Home shows only the two entry points with real destinations (Help me choose, Build your setup), driven by `config.homeEntry`. Deals and Upgrade come with J/M/N.
+- No visual screenshot pass this phase (no browser tooling in the session). Layout is checked by markup and axe only.
+- Card "In stock" means stock in any warehouse; pincode-level availability is Phase H (D-54), so cards don't badge "In stock".
+
+**New assumptions:** D-18 (filter semantics), D-19 (newest-first default; card shows the lowest price payable now).
 
 ## Phase E: DB + seed
 
@@ -143,5 +180,6 @@ Each fault was planted on a green baseline, run through `pnpm check`, then rever
 
 - Review Phase D, especially assumptions D-43, D-45, D-62, D-87.
 - Review Phase E, especially D-17, D-65 and the seeded catalog/offers.
+- Review Phase F, especially D-18, D-19, and decide how product media is served (ADR needed).
 - Decide D-175 (Start production host) before Phase O.
 - Decide **open** items when convenient: D-15, D-60, D-61, D-72 (COD cap is a ready parameter), D-75.

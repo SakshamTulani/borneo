@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { toCustomerId, type CustomerId } from '@borneo/shared';
+import type { CatalogDeps } from '../modules/catalog/catalog.service';
 
 // Test data factories. Grows per phase (products, orders, ...).
 
@@ -10,4 +11,24 @@ export function makeCustomerId(): CustomerId {
 /** Two distinct customers for cross-customer tests (ADR-0005). */
 export function makeTwoCustomers(): { owner: CustomerId; other: CustomerId } {
   return { owner: makeCustomerId(), other: makeCustomerId() };
+}
+
+/** Catalog service deps that return nothing; override what a test needs. */
+export function emptyCatalogDeps(over: Partial<CatalogDeps> = {}): CatalogDeps {
+  return {
+    now: () => 0,
+    listCategories: async () => [],
+    findCategoryBySlug: async () => undefined,
+    listProducts: async () => [],
+    listProductsByIds: async () => [],
+    listedProductFacts: async () => [],
+    loadVariantStates: async () => [],
+    loadRatings: async () => new Map(),
+    loadOfferBook: async () => ({ coupons: [], paymentOffers: [], emiPlans: [] }),
+    findProductBySlug: async () => undefined,
+    listAttributeDefs: async () => [],
+    loadFaqs: async () => [],
+    loadRelationsFrom: async () => [],
+    ...over,
+  };
 }

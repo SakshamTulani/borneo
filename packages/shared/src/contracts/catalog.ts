@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { idSchema, paiseSchema } from './common';
+import { epochMsSchema, idSchema, paiseSchema } from './common';
 
 /** Per-category config (D-89): phones and TVs are seeded replacementOnly (D-81), the rest return (D-83). */
 export const returnPolicySchema = z.enum(['return', 'replacementOnly']);
@@ -18,6 +18,8 @@ export const attributeDefSchema = z
     unit: z.string().optional(),
     /** Allowed values for `enum` and `list` attributes. */
     options: z.array(z.string().min(1)).min(1).optional(),
+    /** Display labels for options stored as codes (e.g. `usb_c` → "USB-C"). Missing = the option itself. */
+    optionLabels: z.record(z.string(), z.string().min(1)).optional(),
     filterable: z.boolean().optional(),
     comparable: z.boolean().optional(),
     /** Marks attributes that may produce a compatibility fact (D-22). */
@@ -30,6 +32,10 @@ export const attributeDefSchema = z
   .refine(
     (d) => (d.type !== 'enum' && d.type !== 'list') || d.options !== undefined,
     'enum and list attributes need their allowed options (D-16)',
+  )
+  .refine(
+    (d) => Object.keys(d.optionLabels ?? {}).every((k) => d.options?.includes(k)),
+    'option labels must name listed options (D-16)',
   );
 export type AttributeDef = z.infer<typeof attributeDefSchema>;
 
@@ -69,6 +75,8 @@ export const categoryConfigSchema = z.object({
   compare: z.array(z.string().min(1)),
   /** Guided finder id; full-depth categories only (D-13). */
   finder: z.string().min(1).optional(),
+  /** Which home entry point lists this category (D-120). */
+  homeEntry: z.enum(['helpMeChoose', 'buildYourSetup']).optional(),
 });
 export type CategoryConfig = z.infer<typeof categoryConfigSchema>;
 
@@ -159,15 +167,149 @@ export const categoryDtoSchema = z.object({
 });
 export type CategoryDto = z.infer<typeof categoryDtoSchema>;
 
-/** `GET /products` item. Price fields are the cheapest variant's (D-30, D-31). */
+/** Everything a PriceBlock shows, decided by `priceDisplay` (D-30–33). */
+export const priceDisplaySchema = z.object({
+  /** Always the selling price (flash price while live). D-30. */
+  sellingPaise: paiseSchema,
+  priceSource: z.enum(['regular', 'flash']),
+  mrpPaise: paiseSchema.optional(),
+  savings: z.object({ paise: paiseSchema, percent: z.number().int().min(1).max(99) }).optional(),
+  effective: z.object({ paise: paiseSchema, offerName: z.string().min(1) }).optional(),
+  emiFromPaise: paiseSchema.optional(),
+});
+export type PriceDisplay = z.infer<typeof priceDisplaySchema>;
+
+/** Anywhere in the country; pincode-level availability comes from serviceability (D-54). */
+export const availabilitySchema = z.enum(['inStock', 'outOfStock', 'preorder']);
+export type Availability = z.infer<typeof availabilitySchema>;
+
+/** Verified-purchase reviews only (D-150): `average` is null until the first review. */
+export const ratingSummarySchema = z.object({
+  average: z.number().min(1).max(5).nullable(),
+  count: z.number().int().nonnegative(),
+});
+export type RatingSummary = z.infer<typeof ratingSummarySchema>;
+
+/** A live flash sale on the product (D-140). `lowStockCount` only from the real cap (D-148). */
+export const flashBadgeSchema = z.object({
+  endsAt: epochMsSchema,
+  lowStockCount: z.number().int().positive().optional(),
+});
+
+/** Listing order (D-19). */
+export const productSortSchema = z.enum(['newest', 'price_asc', 'price_desc']);
+export type ProductSort = z.infer<typeof productSortSchema>;
+
+/** `GET /products` item. Price is the lowest price payable now (D-19), shown per D-30–33. */
 export const productSummarySchema = z.object({
   id: idSchema,
   slug: z.string().min(1),
   name: z.string().min(1),
   categorySlug: z.string().min(1),
+  lineName: z.string().min(1),
   tier: productTierSchema,
   status: productStatusSchema,
-  pricePaise: paiseSchema,
-  mrpPaise: paiseSchema,
+  availability: availabilitySchema,
+  price: priceDisplaySchema,
+  flash: flashBadgeSchema.nullable(),
+  rating: ratingSummarySchema,
 });
 export type ProductSummary = z.infer<typeof productSummarySchema>;
+
+/** Category filters (D-18), parsed from query params named by attribute key. */
+export type ListingFilter =
+  | { key: string; kind: 'anyOf'; values: string[] }
+  | { key: string; kind: 'isTrue' }
+  | { key: string; kind: 'atLeast'; value: number };
+
+/** What a category page can filter on, from listed products only (D-17, D-18). */
+export const filterFacetSchema = z.discriminatedUnion('kind', [
+  z.object({
+    key: z.string().min(1),
+    label: z.string().min(1),
+    kind: z.literal('anyOf'),
+    options: z.array(z.object({ value: z.string().min(1), label: z.string().min(1) })),
+  }),
+  z.object({ key: z.string().min(1), label: z.string().min(1), kind: z.literal('isTrue') }),
+  z.object({
+    key: z.string().min(1),
+    label: z.string().min(1),
+    kind: z.literal('atLeast'),
+    unit: z.string().optional(),
+    values: z.array(z.number().finite()),
+  }),
+]);
+export type FilterFacet = z.infer<typeof filterFacetSchema>;
+
+/** `GET /categories/:slug`. */
+export const categoryDetailSchema = z.object({
+  category: categoryDtoSchema,
+  filters: z.array(filterFacetSchema),
+  /** Lowest regular prices among listed products; null when the category is empty. */
+  priceRangePaise: z.object({ min: paiseSchema, max: paiseSchema }).nullable(),
+  /** "Up to" choices for the price filter, from `priceCaps` (D-18). */
+  priceCapsPaise: z.array(paiseSchema),
+});
+export type CategoryDetail = z.infer<typeof categoryDetailSchema>;
+
+export const specGroupSchema = z.object({
+  title: z.string().min(1),
+  /** `value` missing = "Not specified": never guessed (D-22). */
+  rows: z.array(z.object({ label: z.string().min(1), value: z.string().optional() })),
+});
+export type SpecGroup = z.infer<typeof specGroupSchema>;
+
+/** An offer as shown on a product page, with its status for that variant (D-34–36). */
+export const productOfferSchema = z.object({
+  id: idSchema,
+  kind: z.enum(['bank', 'noCostEmi', 'coupon']),
+  name: z.string().min(1),
+  code: z.string().min(1).optional(),
+  minOrderPaise: paiseSchema.optional(),
+  validTo: epochMsSchema,
+  status: z.enum(['available', 'notApplicable']),
+  reason: z.string().min(1).optional(),
+});
+export type ProductOffer = z.infer<typeof productOfferSchema>;
+
+export const productVariantSchema = z.object({
+  id: idSchema,
+  sku: z.string().min(1),
+  options: z.record(z.string(), z.string()),
+  availability: availabilitySchema,
+  price: priceDisplaySchema,
+  flash: flashBadgeSchema.nullable(),
+  offers: z.array(productOfferSchema),
+});
+export type ProductVariant = z.infer<typeof productVariantSchema>;
+
+/** `GET /products/:slug`. */
+export const productDetailSchema = z.object({
+  id: idSchema,
+  slug: z.string().min(1),
+  name: z.string().min(1),
+  modelNumber: z.string().min(1),
+  lineName: z.string().min(1),
+  tier: productTierSchema,
+  status: productStatusSchema,
+  category: z.object({ slug: z.string().min(1), name: z.string().min(1) }),
+  explainer: z.string().nullable(),
+  whoFor: z.string().nullable(),
+  notFor: z.string().nullable(),
+  /** Pre-orders: expected dispatch, IST dates (D-64, D-146). */
+  dispatch: z.object({ from: z.string(), to: z.string() }).nullable(),
+  /** Option keys in display order, e.g. ["colour", "storage"]. */
+  optionKeys: z.array(z.string().min(1)),
+  variants: z.array(productVariantSchema).min(1),
+  specs: z.array(specGroupSchema),
+  compatibility: z.array(z.object({ key: z.string().min(1), text: z.string().min(1) })),
+  /** Plain-language policy (D-84). */
+  returnPolicy: z.string().min(1),
+  faqs: z.array(z.object({ question: z.string().min(1), answer: z.string().min(1) })),
+  rating: ratingSummarySchema,
+  /** Cross-sell with a reason each, at most 4 (D-123, D-124). */
+  suggestions: z.array(z.object({ product: productSummarySchema, reason: z.string().min(1) })),
+  /** Discontinued products point to their next generation, if any (D-17). */
+  successor: z.object({ slug: z.string().min(1), name: z.string().min(1) }).nullable(),
+});
+export type ProductDetail = z.infer<typeof productDetailSchema>;
