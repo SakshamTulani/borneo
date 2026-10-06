@@ -76,6 +76,12 @@ export function seedIssues(data: SeedData): string[] {
     'category slug',
     data.categories.map((c) => c.slug),
   );
+  for (const c of data.categories) {
+    // D-209: HSN codes are 4–8 digits; GST slabs run 0–28%.
+    if (!/^[0-9]{4,8}$/.test(c.tax.hsnCode)) issues.push(`${c.slug}: HSN code must be 4–8 digits`);
+    if (!Number.isInteger(c.tax.gstRateBps) || c.tax.gstRateBps < 0 || c.tax.gstRateBps > 2800)
+      issues.push(`${c.slug}: GST rate must be 0–28%`);
+  }
   unique(
     'product slug',
     data.products.map((p) => p.slug),
@@ -303,6 +309,7 @@ function demoReviews(data: SeedData, t: number) {
     emailVerified: false,
   }));
   const policy = new Map(data.categories.map((c) => [c.slug, c.returnPolicy]));
+  const tax = new Map(data.categories.map((c) => [c.slug, c.tax]));
   let n = 0;
   for (const p of data.products) {
     if (p.status !== 'live' && p.status !== 'discontinued') continue;
@@ -343,6 +350,8 @@ function demoReviews(data: SeedData, t: number) {
         sku: variant.sku,
         productName: p.name,
         returnPolicy: policy.get(p.category)!,
+        hsnCode: tax.get(p.category)!.hsnCode,
+        gstRateBps: tax.get(p.category)!.gstRateBps,
         qty: 1,
         mrpPaise: inr(variant.mrp),
         unitPricePaise: inr(variant.price),
@@ -451,6 +460,8 @@ export function buildSeed(now: Date, data: SeedData = seedData): SeedRows {
       depth: c.depth,
       config: c.config,
       returnPolicy: c.returnPolicy,
+      hsnCode: c.tax.hsnCode,
+      gstRateBps: c.tax.gstRateBps,
       sort: i,
     })),
     attributeDef: data.categories.flatMap((c) =>

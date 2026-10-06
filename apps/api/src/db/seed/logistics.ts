@@ -1,8 +1,29 @@
 /** Warehouse order matches `Stock` tuples in products.ts. */
 export const warehouses = [
-  { code: 'blr', name: 'Bengaluru (Hoskote)', pincode: '562114', lat: 13.0707, lng: 77.7982 },
-  { code: 'ggn', name: 'Gurugram (Bilaspur)', pincode: '122413', lat: 28.3172, lng: 76.8932 },
-  { code: 'bhw', name: 'Mumbai (Bhiwandi)', pincode: '421302', lat: 19.2813, lng: 73.0483 },
+  {
+    code: 'blr',
+    name: 'Bengaluru (Hoskote)',
+    pincode: '562114',
+    state: 'Karnataka',
+    lat: 13.0707,
+    lng: 77.7982,
+  },
+  {
+    code: 'ggn',
+    name: 'Gurugram (Bilaspur)',
+    pincode: '122413',
+    state: 'Haryana',
+    lat: 28.3172,
+    lng: 76.8932,
+  },
+  {
+    code: 'bhw',
+    name: 'Mumbai (Bhiwandi)',
+    pincode: '421302',
+    state: 'Maharashtra',
+    lat: 19.2813,
+    lng: 73.0483,
+  },
 ] as const;
 
 /** Longest prefix wins; "" is the national fallback (D-63). */

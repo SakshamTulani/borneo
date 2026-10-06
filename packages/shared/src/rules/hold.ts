@@ -25,14 +25,16 @@ export type PaymentOutcome =
 
 /**
  * A successful payment: confirm within the hold; after expiry allocate if a unit is free,
- * otherwise refund automatically with a clear notice (D-59).
+ * otherwise refund automatically with a clear notice (D-59). A hold already released (its expiry
+ * ran first) holds nothing, so that payment is treated as late whatever its time (D-212).
  */
 export function resolvePaidOrder(input: {
   holdExpiresAt: number;
   paidAt: number;
   unitAvailableNow: boolean;
+  holdReleased?: boolean;
 }): PaymentOutcome {
-  if (input.paidAt < input.holdExpiresAt) return { outcome: 'confirm' };
+  if (input.paidAt < input.holdExpiresAt && !input.holdReleased) return { outcome: 'confirm' };
   return input.unitAvailableNow
     ? { outcome: 'confirmAfterExpiry' }
     : { outcome: 'refund', notice: 'HOLD_EXPIRED_REFUNDED' };

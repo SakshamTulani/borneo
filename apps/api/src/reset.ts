@@ -24,6 +24,8 @@ export async function resetDatabase(
   const { db, close } = createDb(databaseUrl);
   try {
     await db.execute(sql`drop schema if exists drizzle cascade`);
+    // Jobs refer to orders that are about to go (pg-boss recreates its schema on start).
+    await db.execute(sql`drop schema if exists pgboss cascade`);
     await db.execute(sql`drop schema if exists public cascade`);
     await db.execute(sql`create schema public`);
     await migrate(db, { migrationsFolder });

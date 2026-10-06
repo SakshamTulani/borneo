@@ -8,6 +8,7 @@ import { deliveryRoutes, type DeliveryService } from './modules/delivery/index';
 import { healthRoutes, type HealthService } from './modules/health/index';
 import { notificationsRoutes, type NotificationsService } from './modules/notifications/index';
 import { offersRoutes, type OffersService } from './modules/offers/index';
+import { ordersRoutes, type OrdersService } from './modules/orders/index';
 import { searchRoutes, type SearchService } from './modules/search/index';
 import { registerErrorHandler } from './plugins/errors';
 import { registerOriginGuard } from './plugins/origin';
@@ -24,6 +25,7 @@ export type AppDeps = {
   addresses: AddressesService;
   notifications: NotificationsService;
   cart: CartService;
+  orders: OrdersService;
   session: SessionReader;
   rateLimiter: RateLimiter;
   /** Browser origins allowed to make cookie-authenticated writes. */
@@ -48,5 +50,6 @@ export function buildApp(deps: AppDeps) {
   app.register(addressesRoutes(deps.addresses, deps.session));
   app.register(notificationsRoutes(deps.notifications, deps.session));
   app.register(cartRoutes(deps.cart, deps.session));
+  app.register(ordersRoutes(deps.orders, deps.session));
   return app;
 }

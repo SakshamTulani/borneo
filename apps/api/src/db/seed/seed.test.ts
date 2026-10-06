@@ -92,6 +92,17 @@ describe('seed catalog', () => {
     expect(issues).toContain('pincode 560001: unknown category "fridges" (D-50)');
   });
 
+  it('D-209: a bad HSN code or GST rate is reported; every warehouse has a state', () => {
+    const issues = seedIssues(
+      plant((d) => {
+        d.categories[0]!.tax = { hsnCode: '85', gstRateBps: 3000 };
+      }),
+    );
+    expect(issues).toContain('smartphones: HSN code must be 4–8 digits');
+    expect(issues).toContain('smartphones: GST rate must be 0–28%');
+    for (const w of rows.warehouse) expect(w.state).toBeTruthy();
+  });
+
   it('D-31: a selling price above MRP is reported', () => {
     const issues = seedIssues(plant((d) => (product(d, 'nova-3').variants[0]!.price = 99999)));
     expect(issues).toContain('BN3-8-128-MIS: price must be > 0 and ≤ MRP (D-31)');

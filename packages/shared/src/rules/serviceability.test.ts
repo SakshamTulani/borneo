@@ -7,6 +7,7 @@ import {
   nearestPincode,
   PIN_MATCH_MAX_KM,
   startingPincode,
+  warehousesBySpeed,
 } from './serviceability';
 
 const now = Date.parse('2026-10-06T06:30:00Z'); // 6 Oct, noon IST
@@ -161,5 +162,18 @@ describe('serviceability', () => {
     expect(startingPincode('560034', '560001')).toBe('560034');
     expect(startingPincode(null, '560001')).toBe('560001');
     expect(startingPincode(null, null)).toBeNull();
+  });
+
+  it('D-203: reservation walks warehouses fastest first, like the estimate', () => {
+    const lanes = [
+      { warehouseId: 'slow', pincodePrefix: '', minDays: 5, maxDays: 8 },
+      { warehouseId: 'fast', pincodePrefix: '5', minDays: 1, maxDays: 2 },
+      { warehouseId: 'tie', pincodePrefix: '', minDays: 4, maxDays: 8 },
+    ];
+    expect(warehousesBySpeed('560034', lanes).map((w) => w.warehouseId)).toEqual([
+      'fast',
+      'tie',
+      'slow',
+    ]);
   });
 });

@@ -8,3 +8,4 @@ export {
   setDefaultAddress,
   updateAddress,
 } from './addresses.repository';
+export type { AddressRow } from './addresses.repository';

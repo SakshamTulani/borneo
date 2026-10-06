@@ -20,6 +20,10 @@ export const warehouse = pgTable(
     code: text('code').notNull().unique(),
     name: text('name').notNull(),
     pincode: text('pincode').notNull(),
+    /** State of supply on invoices (D-209). */
+    state: text('state'),
+    /** Null in the demo: no real GST registration (production blocker). */
+    gstin: text('gstin'),
     lat: doublePrecision('lat').notNull(),
     lng: doublePrecision('lng').notNull(),
   },

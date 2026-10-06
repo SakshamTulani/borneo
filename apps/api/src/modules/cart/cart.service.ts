@@ -1,5 +1,6 @@
 import {
   addEntry,
+  cartAfterOrder,
   cartReady,
   codEligibility,
   combineDeliveries,
@@ -135,6 +136,11 @@ export function createCartService(deps: CartDeps) {
   }
 
   async function view(cart: StoredCart, pincode: string | undefined): Promise<CartView> {
+    return (await build(cart, pincode, true)).view;
+  }
+
+  /** The cart as shown, plus what checkout needs to place it (priced lines, facts, offers). */
+  async function build(cart: StoredCart, pincode: string | undefined, withSuggestions: boolean) {
     const now = deps.now();
     const [resolved, book] = await Promise.all([
       resolve(cart.entries, now),
@@ -158,7 +164,7 @@ export function createCartService(deps: CartDeps) {
             ),
           )
         : Promise.resolve(resolved.map(() => null)),
-      suggest([...inCart], inCart, 'cart'),
+      withSuggestions ? suggest([...inCart], inCart, 'cart') : Promise.resolve([]),
     ]);
 
     const lines = resolved.map(({ entry, row }, i): CartLineView => {
@@ -184,11 +190,12 @@ export function createCartService(deps: CartDeps) {
     });
 
     let delivery: CartView['delivery'] = null;
+    let cod: ReturnType<typeof codEligibility> | null = null;
     if (pincode) {
       const all = checks.flatMap((c) => c ?? []);
       // COD: every line's pincode × category, no pre-orders, no live flash sales (D-70, D-71).
       // The order-value cap (D-72) is still open.
-      const cod = codEligibility({
+      cod = codEligibility({
         lines: all.map((c) => {
           const reasons = c.estimate.status === 'deliverable' ? c.estimate.cod.reasons : [];
           return {
@@ -207,7 +214,7 @@ export function createCartService(deps: CartDeps) {
       };
     }
 
-    return {
+    const shown: CartView = {
       lines,
       count: lines.reduce((n, l) => n + l.qty, 0),
       subtotalPaise: priced.subtotalPaise,
@@ -222,6 +229,17 @@ export function createCartService(deps: CartDeps) {
         priced.canCheckout,
         lines.map((l) => l.delivery),
       ),
+    };
+    return {
+      view: shown,
+      pricing: priced,
+      book,
+      cod,
+      entries: resolved.map(({ entry, row }) => ({
+        ...entry,
+        facts: row.facts,
+        ...('members' in row ? { memberSkus: row.members.map((m) => m.sku) } : {}),
+      })),
     };
   }
 
@@ -346,6 +364,21 @@ export function createCartService(deps: CartDeps) {
       return view(saved, pincode);
     },
 
+    /**
+     * The account cart priced for checkout at a pincode, with what placing needs. No
+     * suggestions: nothing is cross-sold in the payment step (D-73).
+     */
+    forCheckout: async (customerId: CustomerId, pincode: string | undefined) =>
+      build(await deps.readCart(customerId), pincode, false),
+
+    /** Once an order is confirmed its lines (and the coupon it used) leave the cart (D-207). */
+    async removeOrdered(
+      customerId: CustomerId,
+      ordered: { lines: { key: string; qty: number }[]; couponCode: string | null },
+    ): Promise<void> {
+      await deps.changeCart(customerId, (current) => cartAfterOrder(current, ordered));
+    },
+
     /** The browser cart joins the account cart at sign-in (D-192). */
     async merge(customerId: CustomerId, browser: CartMergeRequest, pincode?: string) {
       const saved = await deps.changeCart(customerId, (current) =>
@@ -357,3 +390,4 @@ export function createCartService(deps: CartDeps) {
 }
 
 export type CartService = ReturnType<typeof createCartService>;
+export type CheckoutCart = Awaited<ReturnType<CartService['forCheckout']>>;

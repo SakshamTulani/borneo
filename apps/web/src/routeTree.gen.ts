@@ -21,10 +21,13 @@ import { Route as AccountIndexRouteImport } from './routes/account.index'
 import { Route as AccountInboxRouteImport } from './routes/account.inbox'
 import { Route as CategoriesIndexRouteImport } from './routes/categories.index'
 import { Route as CategoriesSlugRouteImport } from './routes/categories.$slug'
+import { Route as CheckoutIndexRouteImport } from './routes/checkout.index'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as AccountAddressesIndexRouteImport } from './routes/account.addresses.index'
 import { Route as AccountAddressesIdRouteImport } from './routes/account.addresses.$id'
 import { Route as AccountAddressesNewRouteImport } from './routes/account.addresses.new'
+import { Route as CheckoutOrderIdDoneRouteImport } from './routes/checkout.$orderId.done'
+import { Route as CheckoutOrderIdPayRouteImport } from './routes/checkout.$orderId.pay'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -86,6 +89,11 @@ const CategoriesSlugRoute = CategoriesSlugRouteImport.update({
   path: '/categories/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CheckoutIndexRoute = CheckoutIndexRouteImport.update({
+  id: '/checkout/',
+  path: '/checkout/',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsSlugRoute = ProductsSlugRouteImport.update({
   id: '/products/$slug',
   path: '/products/$slug',
@@ -106,6 +114,16 @@ const AccountAddressesNewRoute = AccountAddressesNewRouteImport.update({
   path: '/addresses/new',
   getParentRoute: () => AccountRoute,
 } as any)
+const CheckoutOrderIdDoneRoute = CheckoutOrderIdDoneRouteImport.update({
+  id: '/checkout/$orderId/done',
+  path: '/checkout/$orderId/done',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const CheckoutOrderIdPayRoute = CheckoutOrderIdPayRouteImport.update({
+  id: '/checkout/$orderId/pay',
+  path: '/checkout/$orderId/pay',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -121,8 +139,11 @@ export interface FileRoutesByFullPath {
   '/products/$slug': typeof ProductsSlugRoute
   '/account/': typeof AccountIndexRoute
   '/categories/': typeof CategoriesIndexRoute
+  '/checkout/': typeof CheckoutIndexRoute
   '/account/addresses/$id': typeof AccountAddressesIdRoute
   '/account/addresses/new': typeof AccountAddressesNewRoute
+  '/checkout/$orderId/done': typeof CheckoutOrderIdDoneRoute
+  '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/account/addresses/': typeof AccountAddressesIndexRoute
 }
 export interface FileRoutesByTo {
@@ -138,8 +159,11 @@ export interface FileRoutesByTo {
   '/products/$slug': typeof ProductsSlugRoute
   '/account': typeof AccountIndexRoute
   '/categories': typeof CategoriesIndexRoute
+  '/checkout': typeof CheckoutIndexRoute
   '/account/addresses/$id': typeof AccountAddressesIdRoute
   '/account/addresses/new': typeof AccountAddressesNewRoute
+  '/checkout/$orderId/done': typeof CheckoutOrderIdDoneRoute
+  '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/account/addresses': typeof AccountAddressesIndexRoute
 }
 export interface FileRoutesById {
@@ -157,8 +181,11 @@ export interface FileRoutesById {
   '/products/$slug': typeof ProductsSlugRoute
   '/account/': typeof AccountIndexRoute
   '/categories/': typeof CategoriesIndexRoute
+  '/checkout/': typeof CheckoutIndexRoute
   '/account/addresses/$id': typeof AccountAddressesIdRoute
   '/account/addresses/new': typeof AccountAddressesNewRoute
+  '/checkout/$orderId/done': typeof CheckoutOrderIdDoneRoute
+  '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/account/addresses/': typeof AccountAddressesIndexRoute
 }
 export interface FileRouteTypes {
@@ -177,8 +204,11 @@ export interface FileRouteTypes {
     | '/products/$slug'
     | '/account/'
     | '/categories/'
+    | '/checkout/'
     | '/account/addresses/$id'
     | '/account/addresses/new'
+    | '/checkout/$orderId/done'
+    | '/checkout/$orderId/pay'
     | '/account/addresses/'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -194,8 +224,11 @@ export interface FileRouteTypes {
     | '/products/$slug'
     | '/account'
     | '/categories'
+    | '/checkout'
     | '/account/addresses/$id'
     | '/account/addresses/new'
+    | '/checkout/$orderId/done'
+    | '/checkout/$orderId/pay'
     | '/account/addresses'
   id:
     | '__root__'
@@ -212,8 +245,11 @@ export interface FileRouteTypes {
     | '/products/$slug'
     | '/account/'
     | '/categories/'
+    | '/checkout/'
     | '/account/addresses/$id'
     | '/account/addresses/new'
+    | '/checkout/$orderId/done'
+    | '/checkout/$orderId/pay'
     | '/account/addresses/'
   fileRoutesById: FileRoutesById
 }
@@ -229,6 +265,9 @@ export interface RootRouteChildren {
   CategoriesSlugRoute: typeof CategoriesSlugRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
+  CheckoutIndexRoute: typeof CheckoutIndexRoute
+  CheckoutOrderIdDoneRoute: typeof CheckoutOrderIdDoneRoute
+  CheckoutOrderIdPayRoute: typeof CheckoutOrderIdPayRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -317,6 +356,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriesSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/checkout/': {
+      id: '/checkout/'
+      path: '/checkout'
+      fullPath: '/checkout/'
+      preLoaderRoute: typeof CheckoutIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products/$slug': {
       id: '/products/$slug'
       path: '/products/$slug'
@@ -344,6 +390,20 @@ declare module '@tanstack/react-router' {
       fullPath: '/account/addresses/new'
       preLoaderRoute: typeof AccountAddressesNewRouteImport
       parentRoute: typeof AccountRoute
+    }
+    '/checkout/$orderId/done': {
+      id: '/checkout/$orderId/done'
+      path: '/checkout/$orderId/done'
+      fullPath: '/checkout/$orderId/done'
+      preLoaderRoute: typeof CheckoutOrderIdDoneRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/checkout/$orderId/pay': {
+      id: '/checkout/$orderId/pay'
+      path: '/checkout/$orderId/pay'
+      fullPath: '/checkout/$orderId/pay'
+      preLoaderRoute: typeof CheckoutOrderIdPayRouteImport
+      parentRoute: typeof rootRouteImport
     }
   }
 }
@@ -379,6 +439,9 @@ const rootRouteChildren: RootRouteChildren = {
   CategoriesSlugRoute: CategoriesSlugRoute,
   ProductsSlugRoute: ProductsSlugRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
+  CheckoutIndexRoute: CheckoutIndexRoute,
+  CheckoutOrderIdDoneRoute: CheckoutOrderIdDoneRoute,
+  CheckoutOrderIdPayRoute: CheckoutOrderIdPayRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

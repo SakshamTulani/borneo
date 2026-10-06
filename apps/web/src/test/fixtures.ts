@@ -1,4 +1,6 @@
 import type {
+  CheckoutView,
+  OrderView,
   CartLineView,
   CartView,
   ProductDetail,
@@ -205,3 +207,111 @@ export const cartFixture = (over: Partial<CartView> = {}): CartView => {
     ...over,
   };
 };
+
+/** `GET /me/checkout` at the default address with nothing chosen. */
+export const checkoutFixture = (over: Partial<CheckoutView> = {}): CheckoutView => ({
+  cart: cartFixture({
+    lines: [
+      cartLineFixture({
+        delivery: { status: 'deliverable', from: '2026-10-08', to: '2026-10-09' },
+      }),
+    ],
+    count: 1,
+    subtotalPaise: 2_499_900,
+    totalPaise: 2_499_900,
+    coupons: [],
+    paymentOffers: [],
+  }),
+  addressId: 'a1',
+  methods: [
+    { method: 'upi', allowed: true, reasons: [] },
+    { method: 'card', allowed: true, reasons: [] },
+    { method: 'emi', allowed: true, reasons: [] },
+    { method: 'cod', allowed: false, reasons: ['FLASH_SALE'] },
+  ],
+  banks: ['HDFC'],
+  emiPlans: [
+    {
+      bank: 'HDFC',
+      tenureMonths: 6,
+      annualRateBps: 1500,
+      monthlyPaise: 435_100,
+      noCostOfferId: 'po-nocost',
+    },
+  ],
+  paymentOffers: [
+    {
+      id: 'po-hdfc',
+      kind: 'bank',
+      name: '10% off with HDFC cards',
+      validTo: Date.UTC(2026, 11, 31),
+      methods: ['card'],
+      banks: ['HDFC'],
+      tenureMonths: null,
+      savingPaise: 150_000,
+      reason: null,
+    },
+  ],
+  totals: {
+    subtotalPaise: 2_499_900,
+    couponDiscountPaise: 0,
+    paymentDiscountPaise: 0,
+    totalPaise: 2_499_900,
+    emiMonthlyPaise: null,
+  },
+  paymentOfferReason: null,
+  blocks: ['NO_PAYMENT_METHOD'],
+  canPlace: false,
+  ...over,
+});
+
+/** An order waiting for payment with its 5-minute hold (D-56). */
+export const orderFixture = (over: Partial<OrderView> = {}): OrderView => ({
+  id: '0b8f7f8e-1f7a-4d2f-9a0e-5d1c2b3a4f50',
+  number: 'BN-000042',
+  status: 'pending_payment',
+  placedAt: Date.UTC(2026, 9, 6, 6, 30),
+  address: {
+    name: 'Asha Rao',
+    phone: '9876543210',
+    line1: '12, 4th Cross',
+    line2: null,
+    landmark: null,
+    city: 'Bengaluru',
+    state: 'Karnataka',
+    pincode: '560034',
+  },
+  items: [
+    {
+      sku: 'BP4-6-128-FOR',
+      name: 'Borneo Pulse 4',
+      slug: 'borneo-pulse-4',
+      options: { colour: 'Forest' },
+      qty: 1,
+      mrpPaise: 2_799_900,
+      unitPricePaise: 2_499_900,
+      discountPaise: 0,
+      bundleName: null,
+      isFlash: false,
+      isPreorder: false,
+    },
+  ],
+  subtotalPaise: 2_499_900,
+  couponDiscountPaise: 0,
+  couponCode: null,
+  paymentDiscountPaise: 0,
+  paymentOfferName: null,
+  totalPaise: 2_499_900,
+  payment: {
+    method: 'upi',
+    bank: null,
+    tenureMonths: null,
+    attemptId: '1c2d3e4f-0000-4000-8000-000000000001',
+  },
+  holdExpiresAt: Date.UTC(2026, 9, 6, 6, 35),
+  eta: { from: '2026-10-08', to: '2026-10-09' },
+  isPreorder: false,
+  invoiceNumber: null,
+  notice: null,
+  ...over,
+});

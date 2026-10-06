@@ -240,7 +240,7 @@ export function couponReason(
     : "Nothing in your cart qualifies. Coupons don't apply to flash sale or bundle prices.";
 }
 
-function paymentReason(rejection: OfferRejection, offer: PaymentOffer): string {
+export function paymentReason(rejection: OfferRejection, offer: PaymentOffer): string {
   if (rejection === 'PAYMENT_OFFER_MIN_ORDER' && offer.minOrderPaise !== undefined)
     return `On orders of ${formatInr(offer.minOrderPaise)} or more.`;
   if (rejection === 'PAYMENT_OFFER_NOT_ACTIVE') return "This offer isn't active right now.";
@@ -248,7 +248,7 @@ function paymentReason(rejection: OfferRejection, offer: PaymentOffer): string {
 }
 
 /** The payment that would use this offer, to preview its saving (D-196). */
-function samplePayment(offer: PaymentOffer): PaymentSelection {
+export function samplePayment(offer: PaymentOffer): PaymentSelection {
   const bank = offer.banks?.[0];
   return offer.kind === 'bank'
     ? { method: offer.methods[0]!, ...(bank ? { bank } : {}) }

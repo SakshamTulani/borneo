@@ -7,6 +7,7 @@ import { TEST_NOW } from './db';
 declare module 'vitest' {
   export interface ProvidedContext {
     databaseUrl: string;
+    ordersDatabaseUrl: string;
   }
 }
 
@@ -24,6 +25,7 @@ export default async function setup(project: TestProject) {
   if (!/^[a-z0-9_]+_test$/.test(name))
     throw new Error(`Test database name must end in _test: ${name}`);
 
+  const ordersName = name.replace(/_test$/, '_orders_test');
   const admin = new pg.Client({ connectionString: base });
   try {
     await admin.connect();
@@ -31,12 +33,19 @@ export default async function setup(project: TestProject) {
     throw new Error('Postgres is not reachable. Run "docker compose up -d".', { cause });
   }
   try {
+    await admin.query(`drop database if exists "${ordersName}" with (force)`);
     await admin.query(`drop database if exists "${name}" with (force)`);
     await admin.query(`create database "${name}"`);
+    await resetDatabase(url.toString(), TEST_NOW, 'test');
+    // Suites that add catalog rows (orders: products with known stock) write to a copy, so
+    // suites that list the whole catalog never see them (taken before any test connects).
+    await admin.query(`create database "${ordersName}" template "${name}"`);
   } finally {
     await admin.end();
   }
 
-  await resetDatabase(url.toString(), TEST_NOW, 'test');
+  const ordersUrl = new URL(url);
+  ordersUrl.pathname = `/${ordersName}`;
   project.provide('databaseUrl', url.toString());
+  project.provide('ordersDatabaseUrl', ordersUrl.toString());
 }

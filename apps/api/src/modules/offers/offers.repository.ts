@@ -9,7 +9,14 @@ import {
   type PaymentOffer,
 } from '@borneo/shared';
 import type { Db } from '../../db/client';
-import { emiPlan, flashSale, offer, product, variant } from '../../db/schema/index';
+import {
+  disposableDomain,
+  emiPlan,
+  flashSale,
+  offer,
+  product,
+  variant,
+} from '../../db/schema/index';
 
 /** Every price-relevant offer and EMI plan. Rules decide which are live and in scope (D-32–35). */
 export type OfferBook = { coupons: Coupon[]; paymentOffers: PaymentOffer[]; emiPlans: EmiPlan[] };
@@ -78,4 +85,10 @@ export async function listFlashListings(db: Db, now: Date): Promise<FlashListing
       perCustomerLimit: 1 as const,
     },
   }));
+}
+
+/** Disposable email domains blocked from flash sales (D-143). */
+export async function loadDisposableDomains(db: Db): Promise<Set<string>> {
+  const rows = await db.select({ domain: disposableDomain.domain }).from(disposableDomain);
+  return new Set(rows.map((r) => r.domain.toLowerCase()));
 }

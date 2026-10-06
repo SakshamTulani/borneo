@@ -6,6 +6,8 @@ export type SeedCategory = {
   depth: 'full' | 'template';
   /** D-81, D-83, D-89: seeded config, never derived from the slug. */
   returnPolicy: ReturnPolicy;
+  /** Invoice tax (D-209). Demo placeholders: confirm with an accountant before launch. */
+  tax: { hsnCode: string; gstRateBps: number };
   attributes: AttributeDef[];
   config: CategoryConfig;
   faqs: { question: string; answer: string }[];
@@ -55,6 +57,7 @@ export const VACUUM_KIT_FITS = ['sweep-r1', 'sweep-r2'];
 export const categories: SeedCategory[] = [
   {
     slug: 'smartphones',
+    tax: { hsnCode: '8517', gstRateBps: 1800 },
     name: 'Smartphones',
     depth: 'full',
     returnPolicy: 'replacementOnly',
@@ -129,6 +132,7 @@ export const categories: SeedCategory[] = [
   },
   {
     slug: 'audio',
+    tax: { hsnCode: '8518', gstRateBps: 1800 },
     name: 'Audio',
     depth: 'full',
     returnPolicy: 'return',
@@ -209,6 +213,7 @@ export const categories: SeedCategory[] = [
   },
   {
     slug: 'wearables',
+    tax: { hsnCode: '8517', gstRateBps: 1800 },
     name: 'Wearables',
     depth: 'template',
     returnPolicy: 'return',
@@ -261,6 +266,7 @@ export const categories: SeedCategory[] = [
   },
   {
     slug: 'accessories',
+    tax: { hsnCode: '8504', gstRateBps: 1800 },
     name: 'Accessories',
     depth: 'template',
     returnPolicy: 'return',
@@ -321,6 +327,7 @@ export const categories: SeedCategory[] = [
   },
   {
     slug: 'smart-home',
+    tax: { hsnCode: '8517', gstRateBps: 1800 },
     name: 'Smart home',
     depth: 'template',
     returnPolicy: 'return',
@@ -357,6 +364,7 @@ export const categories: SeedCategory[] = [
   },
   {
     slug: 'tvs',
+    tax: { hsnCode: '8528', gstRateBps: 1800 },
     name: 'TVs',
     depth: 'template',
     returnPolicy: 'replacementOnly',
@@ -412,6 +420,7 @@ export const categories: SeedCategory[] = [
   },
   {
     slug: 'robot-vacuums',
+    tax: { hsnCode: '8508', gstRateBps: 1800 },
     name: 'Robot vacuums',
     depth: 'template',
     returnPolicy: 'return',

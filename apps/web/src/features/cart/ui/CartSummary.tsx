@@ -205,25 +205,30 @@ export function CartSummary(props: Props) {
           </p>
         ) : null}
 
-        {signedIn ? (
+        {cart.canCheckout ? (
+          <Link to="/checkout" className={buttonVariants({ size: 'lg', className: 'w-full' })}>
+            Check out
+          </Link>
+        ) : (
           <div className="space-y-1">
             <Button size="lg" className="w-full" disabled>
-              Checkout
+              Check out
             </Button>
-            <p className="text-sm text-ink-muted">
-              {cart.canCheckout
-                ? 'Checkout arrives in the next update of this demo.'
-                : 'Fix the items marked above to continue.'}
-            </p>
+            <p className="text-sm text-ink-muted">Fix the items marked above to continue.</p>
           </div>
-        ) : (
-          <Link
-            to="/sign-in"
-            search={{ redirect: '/cart' }}
-            className={buttonVariants({ size: 'lg', className: 'w-full' })}
-          >
-            Sign in to check out
-          </Link>
+        )}
+        {signedIn ? null : (
+          <p className="text-sm text-ink-muted">
+            You'll create an account or{' '}
+            <Link
+              to="/sign-in"
+              search={{ redirect: '/checkout' }}
+              className="font-semibold text-brand hover:underline"
+            >
+              sign in
+            </Link>{' '}
+            at checkout.
+          </p>
         )}
       </section>
 

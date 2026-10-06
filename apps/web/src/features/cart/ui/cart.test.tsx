@@ -42,8 +42,10 @@ describe('CartPage, signed out (browser cart, D-192)', () => {
     });
     // D-84: the return policy shows in the cart.
     expect(screen.getByText(/^Replacement within 7 days/)).toBeTruthy();
-    expect(screen.getByRole('link', { name: 'Sign in to check out' }).getAttribute('href')).toBe(
-      '/sign-in?redirect=%2Fcart',
+    // D-92: the account is made at checkout; signing in is offered there too.
+    expect(screen.getByRole('link', { name: 'Check out' }).getAttribute('href')).toBe('/checkout');
+    expect(screen.getByRole('link', { name: 'sign in' }).getAttribute('href')).toBe(
+      '/sign-in?redirect=%2Fcheckout',
     );
     // D-196: payment offers say why they don't apply; none is selected.
     expect(screen.getByText('On orders of ₹15,000 or more.')).toBeTruthy();
@@ -181,7 +183,7 @@ describe('CartPage, signed in (account cart)', () => {
     expect(await screen.findByText('Delivery Thu, 8 – Fri, 9 Oct')).toBeTruthy();
     expect(screen.getByText('No cash on delivery: flash sale prices are paid online')).toBeTruthy();
     expect(screen.getByText('We no longer sell this. Remove it to continue.')).toBeTruthy();
-    expect(screen.getByRole('button', { name: 'Checkout' }).hasAttribute('disabled')).toBe(true);
+    expect(screen.getByRole('button', { name: 'Check out' }).hasAttribute('disabled')).toBe(true);
     expect(screen.getByText('Fix the items marked above to continue.')).toBeTruthy();
     expect(api).toHaveBeenCalled();
     expect(await axe(container)).toHaveNoViolations();

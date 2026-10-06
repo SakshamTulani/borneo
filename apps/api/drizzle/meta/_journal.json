@@ -64,6 +64,13 @@
       "when": 1791309530788,
       "tag": "0008_review_author_name",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1791310849081,
+      "tag": "0009_checkout",
+      "breakpoints": true
     }
   ]
 }

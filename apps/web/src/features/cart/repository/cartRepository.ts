@@ -29,7 +29,7 @@ let merging: Promise<void> | null = null;
  * The browser copy is cleared before sending so two reads (or tabs) can't add it twice; it is put
  * back if the merge fails.
  */
-function mergeBrowserCartOnce(): Promise<void> {
+export function mergeBrowserCartOnce(): Promise<void> {
   merging ??= (async () => {
     const local = readBrowserCart();
     if (isEmptyCart(local)) return;

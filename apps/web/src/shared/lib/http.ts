@@ -23,8 +23,13 @@ export class ApiError extends Error {
 export const isApiError = (e: unknown, status?: number): e is ApiError =>
   e instanceof ApiError && (status === undefined || e.status === status);
 
-async function request(method: string, path: string, body?: unknown): Promise<Response> {
-  const headers: Record<string, string> = {};
+async function request(
+  method: string,
+  path: string,
+  body?: unknown,
+  extra: Record<string, string> = {},
+): Promise<Response> {
+  const headers: Record<string, string> = { ...extra };
   if (body !== undefined) headers['content-type'] = 'application/json';
   if (import.meta.env.SSR) {
     const cookie = requestCookie();
@@ -64,8 +69,10 @@ export async function sendJson<T>(
   path: string,
   body: unknown,
   schema: z.ZodType<T>,
+  /** E.g. `Idempotency-Key` for order placement (api-design.md). */
+  headers?: Record<string, string>,
 ): Promise<T> {
-  return schema.parse(await (await request(method, path, body)).json());
+  return schema.parse(await (await request(method, path, body, headers)).json());
 }
 
 /** A write whose answer has no body (204). Only feature `api/` folders call this. */

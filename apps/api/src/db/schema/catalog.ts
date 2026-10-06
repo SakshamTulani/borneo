@@ -38,6 +38,9 @@ export const category = pgTable('category', {
   config: jsonb('config').$type<CategoryConfig>().notNull(),
   /** D-89: per-category config, never inferred from the category key. */
   returnPolicy: returnPolicy('return_policy').notNull(),
+  /** GST on invoices (D-209): HSN code and rate per category. Seed values await review. */
+  hsnCode: text('hsn_code'),
+  gstRateBps: integer('gst_rate_bps').notNull().default(1800),
   sort: integer('sort').notNull().default(0),
 });
 

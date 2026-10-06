@@ -43,4 +43,15 @@ describe('stock hold', () => {
       resolvePaidOrder({ holdExpiresAt: 301_000, paidAt: 350_000, unitAvailableNow: false }),
     ).toEqual({ outcome: 'refund', notice: 'HOLD_EXPIRED_REFUNDED' });
   });
+
+  it('D-212: a hold already released holds nothing: the payment needs a free unit or is refunded', () => {
+    const base = { holdExpiresAt: 301_000, paidAt: 300_000, holdReleased: true };
+    expect(resolvePaidOrder({ ...base, unitAvailableNow: false })).toEqual({
+      outcome: 'refund',
+      notice: 'HOLD_EXPIRED_REFUNDED',
+    });
+    expect(resolvePaidOrder({ ...base, unitAvailableNow: true })).toEqual({
+      outcome: 'confirmAfterExpiry',
+    });
+  });
 });

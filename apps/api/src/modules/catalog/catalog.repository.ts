@@ -668,3 +668,32 @@ export async function loadCartBundles(
     };
   });
 }
+
+/** What an order item snapshots about a variant (D-89, D-173, D-209). */
+export type OrderFactsRow = {
+  sku: string;
+  variantId: string;
+  productName: string;
+  mrpPaise: number;
+  returnPolicy: ReturnPolicy;
+  hsnCode: string | null;
+  gstRateBps: number;
+};
+
+export async function loadOrderFacts(db: Db, skus: string[]): Promise<OrderFactsRow[]> {
+  if (skus.length === 0) return [];
+  return db
+    .select({
+      sku: variant.sku,
+      variantId: variant.id,
+      productName: product.name,
+      mrpPaise: variant.mrpPaise,
+      returnPolicy: category.returnPolicy,
+      hsnCode: category.hsnCode,
+      gstRateBps: category.gstRateBps,
+    })
+    .from(variant)
+    .innerJoin(product, eq(product.id, variant.productId))
+    .innerJoin(category, eq(category.id, product.categoryId))
+    .where(inArray(variant.sku, [...new Set(skus)]));
+}

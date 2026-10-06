@@ -2,7 +2,21 @@ import { randomUUID } from 'node:crypto';
 import { toCustomerId, type CustomerId } from '@borneo/shared';
 import type { AppDeps } from '../app';
 import type { Db } from '../db/client';
-import { user } from '../db/schema/index';
+import {
+  address,
+  category,
+  flashSale,
+  inventory,
+  product,
+  productLine,
+  serviceability,
+  user,
+  variant,
+} from '../db/schema/index';
+import { seedId } from '../db/seed/ids';
+import { noJobs } from '../jobs/index';
+import { createOrdersService } from '../modules/orders/index';
+import type { OrdersDeps } from '../modules/orders/orders.service';
 import type { AddressesDeps } from '../modules/addresses/addresses.service';
 import { createAddressesService } from '../modules/addresses/index';
 import { createAuthService, type IdentityPort } from '../modules/auth/index';
@@ -196,10 +210,149 @@ export function fakeAppDeps(over: Partial<AppDeps> = {}): AppDeps {
     addresses: createAddressesService(emptyAddressesDeps()),
     notifications: createNotificationsService(emptyNotificationsDeps()),
     cart: createCartService(emptyCartDeps()),
+    orders: createOrdersService(emptyOrdersDeps()),
     session: headerSession,
     rateLimiter: createRateLimiter(),
     allowedOrigins: ['http://localhost:5173'],
     trustProxy: '127.0.0.1',
     ...over,
   };
+}
+
+/** Orders deps with no data and no effects; override what a test needs. */
+export function emptyOrdersDeps(over: Partial<OrdersDeps> = {}): OrdersDeps {
+  const none = async () => undefined;
+  return {
+    now: () => 0,
+    demoMode: false,
+    forCheckout: async () => {
+      throw new Error('no cart in emptyOrdersDeps');
+    },
+    removeOrdered: async () => {},
+    listAddresses: async () => [],
+    listLanes: async () => [],
+    loadOrderFacts: async () => [],
+    loadDisposableDomains: async () => new Set(),
+    countFlashPurchases: async () => new Map(),
+    findCustomerEmail: none,
+    findOrderIdByKey: none,
+    placeOrder: async () => ({ status: 'conflict', code: 'OUT_OF_STOCK' }),
+    findOrder: none,
+    expireHold: async () => false,
+    settlePayment: async () => 'unchanged',
+    failAttempt: async () => false,
+    startAttempt: async () => null,
+    setGatewayRef: async () => {},
+    issueInvoice: async () => {},
+    gateway: { available: false, startSession: async () => ({ gatewayRef: '' }) },
+    jobs: noJobs,
+    notifications: { send: async () => null },
+    renderInvoice: () => new Uint8Array(),
+    log: { warn: () => {} },
+    ...over,
+  };
+}
+
+/**
+ * Something to sell, private to one test: its own category (served at `pincode`, COD as given),
+ * line, product and variant with stock per seeded warehouse. Nothing seeded changes, so other
+ * suites reading the catalog in parallel see the same data.
+ */
+export async function insertSellable(
+  db: Db,
+  options: {
+    stock?: Partial<Record<'blr' | 'ggn' | 'bhw', number>>;
+    pricePaise?: number;
+    mrpPaise?: number;
+    pincode?: string;
+    codAllowed?: boolean;
+    flash?: { salePricePaise: number; cap: number; sold?: number; endsAt: Date };
+    now?: Date;
+  } = {},
+) {
+  const key = randomUUID().slice(0, 8);
+  const sku = `TK-${key.toUpperCase()}`;
+  const [cat] = await db
+    .insert(category)
+    .values({
+      slug: `test-${key}`,
+      name: `Test ${key}`,
+      depth: 'template',
+      config: { filters: [], specGroups: [], compare: [] },
+      returnPolicy: 'return',
+      hsnCode: '8518',
+      sort: 999,
+    })
+    .returning({ id: category.id });
+  await db.insert(serviceability).values({
+    pincode: options.pincode ?? '560034',
+    categoryId: cat!.id,
+    deliverable: true,
+    codAllowed: options.codAllowed ?? true,
+  });
+  const [line] = await db
+    .insert(productLine)
+    .values({ categoryId: cat!.id, name: `Test line ${key}` })
+    .returning({ id: productLine.id });
+  const [p] = await db
+    .insert(product)
+    .values({
+      lineId: line!.id,
+      categoryId: cat!.id,
+      slug: `test-product-${key}`,
+      name: `Order fixture ${key}`,
+      modelNumber: `TK${key}`,
+      generation: 1,
+      tier: 'value',
+      familyTier: 'standard',
+      status: 'live',
+    })
+    .returning({ id: product.id });
+  const pricePaise = options.pricePaise ?? 199_900;
+  const [v] = await db
+    .insert(variant)
+    .values({ productId: p!.id, sku, mrpPaise: options.mrpPaise ?? pricePaise, pricePaise })
+    .returning({ id: variant.id });
+  for (const [code, onHand] of Object.entries(options.stock ?? { blr: 5 }))
+    await db
+      .insert(inventory)
+      .values({ warehouseId: seedId('warehouse', code), variantId: v!.id, onHand });
+  let flashSaleId: string | undefined;
+  if (options.flash) {
+    const now = options.now ?? new Date();
+    const [sale] = await db
+      .insert(flashSale)
+      .values({
+        variantId: v!.id,
+        salePricePaise: options.flash.salePricePaise,
+        startsAt: new Date(now.getTime() - 60_000),
+        endsAt: options.flash.endsAt,
+        cap: options.flash.cap,
+        sold: options.flash.sold ?? 0,
+      })
+      .returning({ id: flashSale.id });
+    flashSaleId = sale!.id;
+  }
+  return { sku, key: `item:${sku}`, variantId: v!.id, categoryId: cat!.id, flashSaleId };
+}
+
+/** A customer with a default delivery address at `pincode` (a Bengaluru pin by default). */
+export async function insertShopper(db: Db, pincode = '560034') {
+  const customerId = await insertCustomer(db, 'Asha Rao');
+  const [row] = await db
+    .insert(address)
+    .values({
+      customerId,
+      name: 'Asha Rao',
+      phone: '9876543210',
+      line1: '12, 4th Cross, Koramangala',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      pincode,
+      lat: 12.9279,
+      lng: 77.6271,
+      isDefault: true,
+    })
+    .returning({ id: address.id });
+  return { customerId, addressId: row!.id };
 }

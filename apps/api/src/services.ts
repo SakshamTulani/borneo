@@ -4,7 +4,14 @@ import {
   createInboxOnlyNotifier,
   type NotifierDeps,
 } from './adapters/notifications/index';
+import {
+  createMockGateway,
+  createUnconfiguredGateway,
+  type PaymentGateway,
+} from './adapters/payments/index';
 import type { Db } from './db/client';
+import { renderInvoicePdf } from './documents/invoice';
+import { noJobs } from './jobs/index';
 import {
   createAddressesService,
   deleteAddress,
@@ -44,6 +51,7 @@ import {
   loadCartItems,
   loadFaqs,
   loadImages,
+  loadOrderFacts,
   loadRatingCounts,
   loadRatings,
   loadRelationsFrom,
@@ -62,7 +70,27 @@ import {
   loadWarehouseStock,
   pincodeAreasNear,
 } from './modules/delivery/index';
-import { createOffersService, listFlashListings, loadOfferBook } from './modules/offers/index';
+import {
+  createOffersService,
+  listFlashListings,
+  loadDisposableDomains,
+  loadOfferBook,
+} from './modules/offers/index';
+import {
+  countFlashPurchases,
+  createOrdersService,
+  expireHold,
+  failAttempt,
+  findCustomerEmail,
+  findOrder,
+  findOrderIdByKey,
+  issueInvoice,
+  placeOrder,
+  setGatewayRef,
+  settlePayment,
+  startAttempt,
+  type OrderJobs,
+} from './modules/orders/index';
 import {
   createSearchService,
   findExactCandidates,
@@ -191,6 +219,50 @@ export function cartService(
   });
 }
 
+/** Checkout and orders on the account cart (Phase K). */
+export function ordersService(
+  db: Db,
+  cart: ReturnType<typeof cartService>,
+  options: {
+    demoMode: boolean;
+    jobs: OrderJobs;
+    gateway: PaymentGateway;
+    notifications: ReturnType<typeof notificationAdapter>;
+    now: () => number;
+    log: NotifierDeps['log'];
+  },
+) {
+  return createOrdersService({
+    now: options.now,
+    demoMode: options.demoMode,
+    forCheckout: (customerId, pincode) => cart.forCheckout(customerId, pincode),
+    removeOrdered: (customerId, ordered) => cart.removeOrdered(customerId, ordered),
+    listAddresses: (customerId) => listAddresses(customerId, db),
+    listLanes: () => listDeliveryLanes(db),
+    loadOrderFacts: (skus) => loadOrderFacts(db, skus),
+    loadDisposableDomains: () => loadDisposableDomains(db),
+    countFlashPurchases: (customerId, saleIds) => countFlashPurchases(customerId, db, saleIds),
+    findCustomerEmail: (customerId) => findCustomerEmail(customerId, db),
+    findOrderIdByKey: (customerId, key) => findOrderIdByKey(customerId, db, key),
+    placeOrder: (customerId, order) => placeOrder(customerId, db, order),
+    findOrder: (customerId, id) => findOrder(customerId, db, id),
+    expireHold: (customerId, id, at) => expireHold(customerId, db, id, new Date(at)),
+    settlePayment: (customerId, input) =>
+      settlePayment(customerId, db, { ...input, at: new Date(input.at) }),
+    failAttempt: (customerId, id, attemptId) => failAttempt(customerId, db, id, attemptId),
+    startAttempt: (customerId, id, at) => startAttempt(customerId, db, id, new Date(at)),
+    setGatewayRef: (customerId, id, attemptId, ref) =>
+      setGatewayRef(customerId, db, id, attemptId, ref),
+    issueInvoice: (customerId, id, number, at) =>
+      issueInvoice(customerId, db, id, number, new Date(at)),
+    gateway: options.gateway,
+    jobs: options.jobs,
+    notifications: options.notifications,
+    renderInvoice: renderInvoicePdf,
+    log: options.log,
+  });
+}
+
 export type AppConfig = {
   demoMode: boolean;
   auth: AuthConfig;
@@ -200,6 +272,8 @@ export type AppConfig = {
   /** Clock for prices, offers and flash sales; tests pin it. */
   now?: () => number;
   log?: NotifierDeps['log'];
+  /** Background jobs (pg-boss in main.ts); without them holds end lazily on read (D-57). */
+  jobs?: OrderJobs;
 };
 
 const consoleLog: NotifierDeps['log'] = {
@@ -213,6 +287,8 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
   const catalog = catalogService(db, now);
   const delivery = deliveryService(db, now);
   const betterAuth = createBetterAuth(db, config.auth);
+  const notifications = notificationAdapter(db, config.demoMode, config.log ?? consoleLog);
+  const cart = cartService(db, catalog, delivery, now);
   return {
     health: createHealthService({
       demoMode: config.demoMode,
@@ -224,11 +300,20 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
     offers: offersService(db, now),
     auth: createAuthService({
       identity: betterAuthIdentity(betterAuth),
-      notifications: notificationAdapter(db, config.demoMode, config.log ?? consoleLog),
+      notifications,
     }),
     addresses: addressesService(db),
     notifications: notificationsService(db, now),
-    cart: cartService(db, catalog, delivery, now),
+    cart,
+    orders: ordersService(db, cart, {
+      demoMode: config.demoMode,
+      jobs: config.jobs ?? noJobs,
+      // A real gateway is a production blocker (D-74): only the demo can take payments.
+      gateway: config.demoMode ? createMockGateway() : createUnconfiguredGateway(),
+      notifications,
+      now,
+      log: config.log ?? consoleLog,
+    }),
     session: betterAuthSession(betterAuth),
     rateLimiter: createRateLimiter(),
     allowedOrigins: [config.webOrigin],

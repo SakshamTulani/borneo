@@ -7,6 +7,7 @@ import {
   integer,
   jsonb,
   pgEnum,
+  pgSequence,
   pgTable,
   primaryKey,
   text,
@@ -45,6 +46,17 @@ export const shipmentStatus = pgEnum('shipment_status', [
 ]);
 export const returnKind = pgEnum('return_kind', ['return', 'replacement']);
 export const returnReason = pgEnum('return_reason', ['defect', 'damage', 'changedMind', 'other']);
+/** What the customer was told about how payment ended (D-57, D-59). */
+export const orderNotice = pgEnum('order_notice', [
+  'PAYMENT_FAILED',
+  'HOLD_EXPIRED',
+  'CONFIRMED_AFTER_EXPIRY',
+  'REFUNDED_AFTER_EXPIRY',
+]);
+/** `BN-000001` (D-208). */
+export const orderNumberSeq = pgSequence('order_number_seq', { startWith: 1 });
+/** `INV2627-000001` (D-208). */
+export const invoiceNumberSeq = pgSequence('invoice_number_seq', { startWith: 1 });
 export const holdStatus = pgEnum('hold_status', ['active', 'converted', 'expired']);
 export const returnStatus = pgEnum('return_status', [
   'requested',
@@ -94,10 +106,17 @@ export const order = pgTable(
     address: jsonb('address').$type<Record<string, unknown>>().notNull(),
     subtotalPaise: paise('subtotal_paise').notNull(),
     discountPaise: paise('discount_paise').notNull().default(0),
+    /** The two parts of `discount_paise` (D-35). */
+    couponDiscountPaise: paise('coupon_discount_paise').notNull().default(0),
+    paymentDiscountPaise: paise('payment_discount_paise').notNull().default(0),
     totalPaise: paise('total_paise').notNull(),
     couponOfferId: uuid('coupon_offer_id').references(() => offer.id),
     paymentOfferId: uuid('payment_offer_id').references(() => offer.id),
     paymentMethod: paymentMethod('payment_method').notNull(),
+    /** As chosen: the card or EMI bank, and the EMI plan's months (D-202). */
+    paymentBank: text('payment_bank'),
+    emiTenureMonths: integer('emi_tenure_months'),
+    notice: orderNotice('notice'),
     isPreorder: boolean('is_preorder').notNull().default(false),
     etaFrom: date('eta_from', { mode: 'string' }),
     etaTo: date('eta_to', { mode: 'string' }),
@@ -110,6 +129,10 @@ export const order = pgTable(
     uniqueIndex('order_idempotency').on(t.customerId, t.idempotencyKey),
     check('order_amounts', sql`${t.discountPaise} >= 0 and ${t.totalPaise} >= 0`),
     check('order_total', sql`${t.totalPaise} = ${t.subtotalPaise} - ${t.discountPaise}`),
+    check(
+      'order_discount_parts',
+      sql`${t.discountPaise} = ${t.couponDiscountPaise} + ${t.paymentDiscountPaise}`,
+    ),
     // D-71: no COD for pre-orders.
     check('order_preorder_no_cod', sql`not (${t.isPreorder} and ${t.paymentMethod} = 'cod')`),
   ],
@@ -136,6 +159,9 @@ export const orderItem = pgTable(
     warehouseId: uuid('warehouse_id').references(() => warehouse.id),
     bundleId: uuid('bundle_id').references(() => bundle.id),
     flashSaleId: uuid('flash_sale_id').references(() => flashSale.id),
+    /** Tax snapshot for the invoice (D-209). */
+    hsnCode: text('hsn_code'),
+    gstRateBps: integer('gst_rate_bps').notNull().default(1800),
     /** Drives return requests and hiding the upgrade badge (D-87, D-132). */
     returnWindowEndsAt: at('return_window_ends_at'),
   },
@@ -168,6 +194,7 @@ export const stockHold = pgTable(
   },
   (t) => [
     index('stock_hold_order').on(t.orderId),
+    index('stock_hold_active').on(t.status, t.expiresAt),
     check('stock_hold_qty_positive', sql`${t.qty} > 0`),
   ],
 );
@@ -276,7 +303,11 @@ export const invoice = pgTable('invoice', {
     .unique()
     .references(() => order.id),
   number: text('number').notNull().unique(),
-  s3Key: text('s3_key').notNull(),
+  /** Rendered from the order's snapshots on request; stored files wait for ADR-0009 (D-210). */
+  s3Key: text('s3_key'),
+  /** Warehouse state and delivery state: CGST + SGST when equal, else IGST (D-209). */
+  supplierState: text('supplier_state').notNull(),
+  placeOfSupply: text('place_of_supply').notNull(),
   issuedAt: at('issued_at').notNull().defaultNow(),
 });
 

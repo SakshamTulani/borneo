@@ -17,6 +17,30 @@ export type DeliveryEstimate =
   | { status: 'deliverable'; warehouseId: string; from: string; to: string; codAllowed: boolean };
 
 /**
+ * Warehouses with a lane to the pincode, fastest first (D-63): the longest matching pincode prefix
+ * is each warehouse's lane; ties go to the shorter minimum, then the warehouse id. Delivery
+ * estimates and stock reservation (D-203) both walk this order.
+ */
+export function warehousesBySpeed(
+  pincode: string,
+  lanes: DeliveryLane[],
+): { warehouseId: string; lane: DeliveryLane }[] {
+  const laneFor = (warehouseId: string) =>
+    lanes
+      .filter((l) => l.warehouseId === warehouseId && pincode.startsWith(l.pincodePrefix))
+      .sort((a, b) => b.pincodePrefix.length - a.pincodePrefix.length)[0];
+  return [...new Set(lanes.map((l) => l.warehouseId))]
+    .map((warehouseId) => ({ warehouseId, lane: laneFor(warehouseId) }))
+    .filter((c): c is { warehouseId: string; lane: DeliveryLane } => c.lane !== undefined)
+    .sort(
+      (a, b) =>
+        a.lane.maxDays - b.lane.maxDays ||
+        a.lane.minDays - b.lane.minDays ||
+        a.warehouseId.localeCompare(b.warehouseId),
+    );
+}
+
+/**
  * Serviceability per pincode × category (D-50); a missing row means not deliverable (D-62).
  * Picks the fastest warehouse that has stock and a lane to the pincode (D-54, D-63).
  * Pre-orders start counting from the expected dispatch date (D-64).
@@ -38,30 +62,15 @@ export function deliveryEstimate(input: {
   const row = input.rows.find((r) => r.pincode === pincode && r.categoryId === categoryId);
   if (!row?.deliverable) return { status: 'notDeliverable' };
 
-  const laneFor = (warehouseId: string) =>
-    input.lanes
-      .filter((l) => l.warehouseId === warehouseId && pincode.startsWith(l.pincodePrefix))
-      .sort((a, b) => b.pincodePrefix.length - a.pincodePrefix.length)[0];
-
-  const reachable = [...new Set(input.lanes.map((l) => l.warehouseId))]
-    .map((warehouseId) => ({ warehouseId, lane: laneFor(warehouseId) }))
-    .filter((c): c is { warehouseId: string; lane: DeliveryLane } => c.lane !== undefined);
+  const reachable = warehousesBySpeed(pincode, input.lanes);
   if (reachable.length === 0) return { status: 'notDeliverable' };
 
   // Pre-orders ship from future stock, so only the lane matters (D-64).
   const preorder = input.dispatchFrom !== undefined;
-  const best = reachable
-    .filter(
-      (c) =>
-        preorder ||
-        (input.stock.find((s) => s.warehouseId === c.warehouseId)?.available ?? 0) >= qty,
-    )
-    .sort(
-      (a, b) =>
-        a.lane.maxDays - b.lane.maxDays ||
-        a.lane.minDays - b.lane.minDays ||
-        a.warehouseId.localeCompare(b.warehouseId),
-    )[0];
+  const best = reachable.find(
+    (c) =>
+      preorder || (input.stock.find((s) => s.warehouseId === c.warehouseId)?.available ?? 0) >= qty,
+  );
   if (!best) return { status: 'outOfStockHere' };
 
   const start = Math.max(now, input.dispatchFrom ?? now);

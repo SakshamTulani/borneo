@@ -5,6 +5,7 @@ export type {
   CartProductRow,
   ItemRow,
   ListingRow,
+  OrderFactsRow,
   ReviewRow,
 } from './catalog.repository';
 export {
@@ -20,6 +21,7 @@ export {
   loadCartBundles,
   loadCartItems,
   loadImages,
+  loadOrderFacts,
   loadRatingCounts,
   loadRatings,
   loadReviews,
