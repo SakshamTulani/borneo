@@ -36,40 +36,50 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 | D-23 | Cross-brand ecosystem facts ("works with iPhone/Alexa") shown as plain facts, not comparisons.                                                    | v1         |
 | D-24 | No self-declared owned devices. Owned devices = delivered items in the customer's order history.                                                  | v1         |
 | D-25 | Recommendations: rules + curation only. Behavioural "bought together" later.                                                                      | v1 / later |
+| D-27 | Relation overrides: a manual remove beats a manual add for the same edge; the pair is reported as a conflict.                                     | assumption |
 
 ## Pricing & offers
 
-| ID   | Rule                                                                                                           | Status     |
-| ---- | -------------------------------------------------------------------------------------------------------------- | ---------- |
-| D-30 | Headline is always the selling price. Never the effective price.                                               | v1         |
-| D-31 | MRP must be genuine. Discount shown only if real.                                                              | v1         |
-| D-32 | "Effective price with [offer]" line only when the offer applies to everyone paying that way.                   | v1         |
-| D-33 | EMI shown as "from ₹X/mo" wherever price shows (where EMI available).                                          | v1         |
-| D-34 | Offer types: bank offers, coupons, no-cost EMI, bundle prices, flash prices.                                   | v1         |
-| D-35 | Max per order: 1 coupon + 1 payment offer. No-cost EMI uses the payment-offer slot (no bank discount with it). | v1         |
-| D-36 | Flash price: payment offer allowed, no coupon.                                                                 | v1         |
-| D-37 | Bundle price: payment offer allowed, no coupon.                                                                | v1         |
-| D-38 | Bundles fixed. Build-your-own later.                                                                           | v1 / later |
-| D-39 | Flash price and bundle price don't combine.                                                                    | assumption |
-| D-40 | Coupon shapes: flat or %, optional min order value, optional category scope.                                   | assumption |
-| D-41 | Money stored and computed as integer paise.                                                                    | v1         |
+| ID   | Rule                                                                                                                                                                                                                                   | Status     |
+| ---- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-30 | Headline is always the selling price. Never the effective price.                                                                                                                                                                       | v1         |
+| D-31 | MRP must be genuine. Discount shown only if real.                                                                                                                                                                                      | v1         |
+| D-32 | "Effective price with [offer]" line only when the offer applies to everyone paying that way.                                                                                                                                           | v1         |
+| D-33 | EMI shown as "from ₹X/mo" wherever price shows (where EMI available).                                                                                                                                                                  | v1         |
+| D-34 | Offer types: bank offers, coupons, no-cost EMI, bundle prices, flash prices.                                                                                                                                                           | v1         |
+| D-35 | Max per order: 1 coupon + 1 payment offer. No-cost EMI uses the payment-offer slot (no bank discount with it).                                                                                                                         | v1         |
+| D-36 | Flash price: payment offer allowed, no coupon.                                                                                                                                                                                         | v1         |
+| D-37 | Bundle price: payment offer allowed, no coupon.                                                                                                                                                                                        | v1         |
+| D-38 | Bundles fixed. Build-your-own later.                                                                                                                                                                                                   | v1 / later |
+| D-39 | Flash price and bundle price don't combine.                                                                                                                                                                                            | assumption |
+| D-40 | Coupon shapes: flat or %, optional min order value, optional category scope.                                                                                                                                                           | assumption |
+| D-41 | Money stored and computed as integer paise.                                                                                                                                                                                            | v1         |
+| D-42 | Savings % is floored (never overstated) and shown only when ≥ 1%; otherwise no MRP strike-through either.                                                                                                                              | assumption |
+| D-43 | Coupon minimum order is measured on the coupon-eligible subtotal (regular-price lines in scope).                                                                                                                                       | assumption |
+| D-44 | Payment offers apply after the coupon, to every in-scope line including flash and bundle lines.                                                                                                                                        | assumption |
+| D-45 | No-cost EMI = upfront discount equal to the plan's interest; the bank charges interest on the reduced amount, so the customer repays the original price ÷ months. Never shown as an effective price.                                   | assumption |
+| D-46 | Rounding: percentages round half up to the paisa; split discounts floor per line with the remainder on the last line (ADR-0006).                                                                                                       | assumption |
+| D-47 | "from ₹X/mo" = lowest instalment among EMI plans available at that amount; a no-cost plan counts as 0% only while its offer is live, in scope and above its minimum. Instalments use a float power term, rounded half up to the paisa. | assumption |
 
 ## Delivery, stock, serviceability
 
-| ID   | Rule                                                                                                                          | Status    |
-| ---- | ----------------------------------------------------------------------------------------------------------------------------- | --------- |
-| D-50 | Pan-India. Serviceability configurable per pincode × category.                                                                | v1        |
-| D-51 | PDP shows "not deliverable here" clearly; never first fail at checkout.                                                       | v1        |
-| D-52 | Delivery shown as an estimated date range (not a promise), from pincode/map pin + warehouse stock.                            | v1        |
-| D-53 | Each address stores an exact map pin.                                                                                         | v1        |
-| D-54 | Stock per warehouse; availability and date depend on pincode.                                                                 | v1        |
-| D-55 | Cart and checkout recheck stock, delivery date and COD eligibility on any address or pin change.                              | v1        |
-| D-56 | Stock held only once payment starts: 5 min, visible real countdown. Applies to all products. Not held in cart.                | v1        |
-| D-57 | Hold expiry: item returns to stock; we say so.                                                                                | v1        |
-| D-58 | Payment gateway session timeout = 5 min.                                                                                      | v1 (mock) |
-| D-59 | Payment succeeds after hold expiry: allocate if a unit is free; else auto-refund + clear message (in-account notice in demo). | v1        |
-| D-60 | Scheduled delivery slots (formerly for large appliances). For TVs: undecided.                                                 | open      |
-| D-61 | Max quantity per line for normal items.                                                                                       | open      |
+| ID   | Rule                                                                                                                                    | Status     |
+| ---- | --------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-50 | Pan-India. Serviceability configurable per pincode × category.                                                                          | v1         |
+| D-51 | PDP shows "not deliverable here" clearly; never first fail at checkout.                                                                 | v1         |
+| D-52 | Delivery shown as an estimated date range (not a promise), from pincode/map pin + warehouse stock.                                      | v1         |
+| D-53 | Each address stores an exact map pin.                                                                                                   | v1         |
+| D-54 | Stock per warehouse; availability and date depend on pincode.                                                                           | v1         |
+| D-55 | Cart and checkout recheck stock, delivery date and COD eligibility on any address or pin change.                                        | v1         |
+| D-56 | Stock held only once payment starts: 5 min, visible real countdown. Applies to all products. Not held in cart.                          | v1         |
+| D-57 | Hold expiry: item returns to stock; we say so.                                                                                          | v1         |
+| D-58 | Payment gateway session timeout = 5 min.                                                                                                | v1 (mock)  |
+| D-59 | Payment succeeds after hold expiry: allocate if a unit is free; else auto-refund + clear message (in-account notice in demo).           | v1         |
+| D-60 | Scheduled delivery slots (formerly for large appliances). For TVs: undecided.                                                           | open       |
+| D-61 | Max quantity per line for normal items.                                                                                                 | open       |
+| D-62 | No serviceability row for a pincode × category means not deliverable.                                                                   | assumption |
+| D-63 | Delivery estimate: fastest warehouse with stock and a lane to the pincode (longest pincode-prefix lane wins); calendar days; IST dates. | assumption |
+| D-64 | Pre-order estimates count from the expected dispatch date.                                                                              | assumption |
 
 ## Payments
 
@@ -84,15 +94,18 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 
 ## Returns
 
-| ID   | Rule                                                                                 | Status     |
-| ---- | ------------------------------------------------------------------------------------ | ---------- |
-| D-80 | Small electronics: 7-day return.                                                     | v1         |
-| D-81 | Phones and TVs: replacement only, for defect or damage.                              | v1         |
-| D-82 | Replacement window for phones/TVs = 7 days.                                          | assumption |
-| D-83 | Wearables, accessories, smart home, robot vacuums, audio count as small electronics. | assumption |
-| D-84 | Policy in plain language on PDP and in cart.                                         | v1         |
-| D-85 | No open-box delivery.                                                                | v1         |
-| D-86 | Self-serve return/replacement request with photo upload for defects.                 | v1         |
+| ID   | Rule                                                                                                                   | Status     |
+| ---- | ---------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-80 | Small electronics: 7-day return.                                                                                       | v1         |
+| D-81 | Phones and TVs: replacement only, for defect or damage.                                                                | v1         |
+| D-82 | Replacement window for phones/TVs = 7 days.                                                                            | assumption |
+| D-83 | Wearables, accessories, smart home, robot vacuums, audio count as small electronics (seeded as category config, D-89). | assumption |
+| D-84 | Policy in plain language on PDP and in cart.                                                                           | v1         |
+| D-85 | No open-box delivery.                                                                                                  | v1         |
+| D-86 | Self-serve return/replacement request with photo upload for defects.                                                   | v1         |
+| D-87 | Return/replacement window ends at 23:59:59 IST on the 7th day after delivery.                                          | assumption |
+| D-88 | Defect or damage requests require photos; change-of-mind returns don't.                                                | assumption |
+| D-89 | Return policy (`return` / `replacementOnly`) is per-category config, never hardcoded by category key (D-10).           | v1         |
 
 ## Accounts & identity
 
@@ -129,25 +142,29 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 
 ## Discovery, compare, cross-sell
 
-| ID    | Rule                                                                                                              | Status |
-| ----- | ----------------------------------------------------------------------------------------------------------------- | ------ |
-| D-120 | Home: hybrid. Categories in main nav; home entry points "Help me choose", "Deals", "Upgrade", "Build your setup". | v1     |
-| D-121 | Same home for everyone + "Upgrade available" strip for logged-in customers (badge rules apply).                   | v1     |
-| D-122 | Compare within a category. Desktop up to 4; mobile up to 3, 2 visible, swipe for third.                           | v1     |
-| D-123 | Cross-sell allowed: PDP, add-to-cart confirmation, cart, order confirmation.                                      | v1     |
-| D-124 | Max 4 suggestions per surface; max 3 at add-to-cart. Each shows a reason. Nothing pre-ticked.                     | v1     |
-| D-125 | Cross-sell in post-delivery email.                                                                                | later  |
+| ID    | Rule                                                                                                                                   | Status     |
+| ----- | -------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-120 | Home: hybrid. Categories in main nav; home entry points "Help me choose", "Deals", "Upgrade", "Build your setup".                      | v1         |
+| D-121 | Same home for everyone + "Upgrade available" strip for logged-in customers (badge rules apply).                                        | v1         |
+| D-122 | Compare within a category. Desktop up to 4; mobile up to 3, 2 visible, swipe for third.                                                | v1         |
+| D-123 | Cross-sell allowed: PDP, add-to-cart confirmation, cart, order confirmation.                                                           | v1         |
+| D-124 | Max 4 suggestions per surface; max 3 at add-to-cart. Each shows a reason. Nothing pre-ticked.                                          | v1         |
+| D-125 | Cross-sell in post-delivery email.                                                                                                     | later      |
+| D-126 | Suggestions exclude products in the cart or owned; ordered by relation type (accessory, consumable, compatible, …) then curation rank. | assumption |
 
 ## Upgrade
 
-| ID    | Rule                                                                                                                                                   | Status |
-| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------ | ------ |
-| D-130 | Badge "Upgrade from your X": logged-in, owned item in order history.                                                                                   | v1     |
-| D-131 | Only same product line, newer generation or higher tier. Never downgrade or different product type.                                                    | v1     |
-| D-132 | Shown when a newer model exists. Hidden if they own the newer model. Hidden while owned item is inside its return window. No other ownership-age rule. | v1     |
-| D-133 | "What you gain" comparison vs owned device: PDP of phones and audio only.                                                                              | v1     |
-| D-134 | Proactive upgrade prompts (email/home).                                                                                                                | later  |
-| D-135 | No trade-in.                                                                                                                                           | v1     |
+| ID    | Rule                                                                                                                                                          | Status     |
+| ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------- |
+| D-130 | Badge "Upgrade from your X": logged-in, owned item in order history.                                                                                          | v1         |
+| D-131 | Only same product line, newer generation or higher tier. Never downgrade or different product type.                                                           | v1         |
+| D-132 | Shown when a newer model exists. Hidden if they own the newer model. Hidden while owned item is inside its return window. No other ownership-age rule.        | v1         |
+| D-133 | "What you gain" comparison vs owned device: PDP of phones and audio only.                                                                                     | v1         |
+| D-134 | Proactive upgrade prompts (email/home).                                                                                                                       | later      |
+| D-135 | No trade-in.                                                                                                                                                  | v1         |
+| D-136 | Home upgrade strip: only when a newer generation exists; suggests the newest generation that is an upgrade, same tier if it exists, else nearest higher tier. | assumption |
+| D-137 | Upgrades compare against the customer's newest, highest owned item in that line.                                                                              | assumption |
+| D-138 | Tiers rank standard < pro < premium. An upgrade has generation and tier not lower, with at least one higher.                                                  | assumption |
 
 ## Flash sales & pre-orders
 
@@ -161,6 +178,8 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 | D-145 | Flash sales are the hardest engineering part; designed early.                                                                   | v1                         |
 | D-146 | Pre-orders: pay in full, no COD, UPI/cards/EMI, free cancel before dispatch. Date shown as a range and updated if it changes.   | v1                         |
 | D-147 | "Notify me" renamed **Watch**: on-site only, for out-of-stock catalog products.                                                 | v1                         |
+| D-148 | "Only N left" only during a live flash sale, from the real remaining cap, when N ≤ 5.                                           | assumption                 |
+| D-149 | Customers can cancel in their account until the order ships (pending payment, paid, confirmed, packed).                         | assumption                 |
 
 ## Reviews & content
 
@@ -227,3 +246,5 @@ D-74 payment gateway · D-94 verified email · D-104 email provider · D-141 ver
 | 18  | Phase C = shared rules (ROADMAP)                                                   | Phase C = agent tooling + validator proof + design system; later phases shift one letter   |
 | 19  | Token `accent` #B85C2E (DESIGN)                                                    | `offer` #9c4a1e (D-178)                                                                    |
 | 20  | Hook names Query/Result/Form only                                                  | + `use<Action>Mutation` (D-174)                                                            |
+| 21  | Return policy looked up from hardcoded category keys (first Phase D draft)         | Per-category config (D-89)                                                                 |
+| 22  | No-cost EMI could appear as an "effective price" (first Phase D draft)             | Never; customer repays the full price (D-45)                                               |

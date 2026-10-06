@@ -33,6 +33,25 @@ Reference module: `src/modules/health`.
 - A repository mentioning `customerId`/`customer_id` is customer-scoped: every exported function takes `customerId: CustomerId` first, and the module has `<m>.cross-customer.test.ts`.
 - Module folders contain only route/service/repository/schema/index files (plus tests).
 
+## Shared rules (`@borneo/shared`)
+
+Services call these; never re-implement them. Each cites its `D-xx` IDs.
+
+| Need                                 | Function                                                                     |
+| ------------------------------------ | ---------------------------------------------------------------------------- |
+| Price shown on PDP/cards             | `priceDisplay` (selling price, savings, effective price, EMI from)           |
+| Order totals with offers             | `priceOrder` (1 coupon + 1 payment offer, per-line shares)                   |
+| Delivery estimate / not deliverable  | `deliveryEstimate`, `addressNeedsRecheck`                                    |
+| COD and payment methods              | `codEligibility`, `allowedPaymentMethods`                                    |
+| 5-min stock hold, late payment       | `startHold`, `holdStatus`, `resolvePaidOrder`                                |
+| Flash sale state and purchase        | `flashState`, `unitPriceWithFlash`, `canBuyFlash`, `lowStockCount`           |
+| Returns                              | `returnPolicyFor`, `returnWindowEndsAt`, `canRequestReturn`, `policySummary` |
+| Upgrade badge / strip                | `upgradeBadge`, `upgradeStrip`                                               |
+| Compatibility, relations, cross-sell | `compatibilityFacts`, `materializeRelations`, `pickSuggestions`              |
+| Cancel, Watch                        | `canCustomerCancel`, `canWatch`                                              |
+
+Rules take `now` as a parameter: services pass the clock, so rules stay pure and testable.
+
 ## Rules (review)
 
 - Dependencies are injected: services get repository functions/adapters via a `create<M>Service(deps)` factory; `main.ts` wires real ones, tests wire fakes.

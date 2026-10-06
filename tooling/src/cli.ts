@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { checkAdrs } from './checks/adr.ts';
 import { checkBoundaryAnchors, type Anchor } from './checks/boundaryAnchors.ts';
 import { checkHookFile } from './checks/hooks.ts';
+import { checkRuleIds } from './checks/ruleIds.ts';
 import { checkScoping } from './checks/scoping.ts';
 import { listFiles, read } from './files.ts';
 
@@ -23,6 +24,12 @@ const results: Record<string, string[]> = {
     new Map(code.filter((f) => f.startsWith('apps/api/')).map((f) => [f, read(root, f)])),
   ),
   boundaries: checkBoundaryAnchors(anchors, files),
+  'rule-ids': checkRuleIds(
+    new Map(
+      code.filter((f) => f.startsWith('packages/shared/src/rules/')).map((f) => [f, read(root, f)]),
+    ),
+    read(root, 'docs/DECISIONS.md'),
+  ),
 };
 
 let failed = false;

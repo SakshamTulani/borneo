@@ -9,7 +9,7 @@ Format, lint, typecheck, dependency boundaries + canaries, ADR structure, hook n
 ## Reviewer checks (prose-only rules, not machine-enforced)
 
 1. Business rules live in `@borneo/shared` as pure functions; UI and routes only call them.
-2. Every new rule function has tests named after its `D-xx` ID; DECISIONS.md updated if a rule changed (latest wins, conflict logged).
+2. DECISIONS.md updated if a rule changed (latest wins, conflict logged). Test naming per `D-xx` and coverage are machine-checked; the reviewer checks the tests assert the rule's actual wording.
 3. Money is integer paise end to end; formatting only at render.
 4. Headline price is the selling price; effective price only as a secondary line when it applies to everyone (D-30–33).
 5. No fake urgency, fake scarcity, fake discount or pre-ticked option (D-06, D-140).

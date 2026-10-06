@@ -8,14 +8,14 @@ Node ≥ 24, pnpm 11. Never npm or yarn.
 
 ## Commands
 
-| Command                                | What                                                            |
-| -------------------------------------- | --------------------------------------------------------------- |
-| `docker compose up -d`                 | Postgres :5432, MinIO :9000 (console :9001)                     |
-| `pnpm dev`                             | web :5173 (SSR, `/api` proxied) + API :3000                     |
-| `pnpm check`                           | The only gate: format, lint, typecheck, depcruise, rules, tests |
-| `pnpm test`                            | All Vitest suites                                               |
-| `pnpm db:generate` / `pnpm db:migrate` | Drizzle migrations (`apps/api/drizzle/`)                        |
-| `pnpm check:rules`                     | ADR, hook naming, customer scoping, boundary anchors            |
+| Command                                | What                                                                               |
+| -------------------------------------- | ---------------------------------------------------------------------------------- |
+| `docker compose up -d`                 | Postgres :5432, MinIO :9000 (console :9001)                                        |
+| `pnpm dev`                             | web :5173 (SSR, `/api` proxied) + API :3000                                        |
+| `pnpm check`                           | The only gate: format, lint, typecheck, depcruise, rules, tests                    |
+| `pnpm test`                            | All Vitest suites                                                                  |
+| `pnpm db:generate` / `pnpm db:migrate` | Drizzle migrations (`apps/api/drizzle/`)                                           |
+| `pnpm check:rules`                     | ADR, hook naming, customer scoping, boundary anchors, rule IDs ↔ tests ↔ DECISIONS |
 
 ## Read before changing code
 
