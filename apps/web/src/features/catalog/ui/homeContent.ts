@@ -47,12 +47,15 @@ export const HOME_BANNERS: HomeBanner[] = [
 ];
 
 /** Category tile artwork by slug; categories without one show a plain tile. */
+// Matching studio set (square, not resized by its host); TVs and robot vacuums have none yet.
+const scene = (name: string) => `https://cdn.scenesku.com/resources/${name}.webp`;
+
 export const CATEGORY_ART: Record<string, string> = {
-  smartphones: photo('photo-1784407097298-759eb54e8aeb'),
-  audio: photo('photo-1505740106531-4243f3831c78'),
-  wearables: photo('photo-1772983069620-43a502c2784f'),
-  accessories: photo('photo-1575543419095-0b090628213f'),
-  'smart-home': photo('photo-1511842745775-b366af36db2a'),
+  smartphones: scene('smartphones'),
+  audio: scene('electronics'),
+  wearables: scene('watches'),
+  accessories: scene('accessories'),
+  'smart-home': scene('smart-home'),
   tvs: photo('photo-1595935736128-db1f0a261263'),
   'robot-vacuums': photo('photo-1558317374-24793bc9f2fb'),
 };
