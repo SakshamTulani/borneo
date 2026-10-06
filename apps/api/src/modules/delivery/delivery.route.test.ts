@@ -1,18 +1,10 @@
 import { deliveryCheckSchema, pincodeAreaSchema, type DeliveryCheck } from '@borneo/shared';
 import { describe, expect, it } from 'vitest';
-import { buildApp } from '../../app';
-import { catalogService, deliveryService, searchService } from '../../services';
-import { TEST_NOW, useTestDb } from '../../test/db';
-import { createHealthService } from '../health/index';
+import { testApp } from '../../test/app';
+import { useTestDb } from '../../test/db';
 
 const db = useTestDb();
-const catalog = catalogService(db, () => TEST_NOW.getTime());
-const app = buildApp({
-  health: createHealthService({ demoMode: false, pingDatabase: async () => true }),
-  catalog,
-  search: searchService(db, catalog),
-  delivery: deliveryService(db, () => TEST_NOW.getTime()),
-});
+const app = testApp(db);
 
 async function check(sku: string, pincode: string, qty = 1): Promise<DeliveryCheck> {
   const res = await app.inject({
@@ -140,5 +132,26 @@ describe('GET /pincodes/at', () => {
 
   it('rejects coordinates off the globe', async () => {
     expect((await at(100, 77)).statusCode).toBe(400);
+  });
+});
+
+describe('GET /pincodes/:pincode', () => {
+  it('D-189: a known pincode returns its place and centre', async () => {
+    const res = await app.inject({ method: 'GET', url: '/pincodes/560034' });
+    expect(res.statusCode).toBe(200);
+    expect(pincodeAreaSchema.parse(res.json())).toEqual({
+      pincode: '560034',
+      city: 'Bengaluru',
+      state: 'Karnataka',
+      lat: 12.9279,
+      lng: 77.6271,
+    });
+  });
+
+  it('an unknown pincode is 404; a malformed one 400', async () => {
+    const unknown = await app.inject({ method: 'GET', url: '/pincodes/999999' });
+    expect(unknown.statusCode).toBe(404);
+    expect(unknown.json().error.code).toBe('PINCODE_NOT_FOUND');
+    expect((await app.inject({ method: 'GET', url: '/pincodes/5600' })).statusCode).toBe(400);
   });
 });

@@ -7,7 +7,7 @@ Fastify + Zod type provider + Drizzle/Postgres. Fastify is the only backend (ADR
 ```
 src/main.ts             loads env, creates db, wires services, listens
 src/app.ts              buildApp(deps): composition root, registers module routes + error handler
-src/services.ts         binds repositories to a db (used by main, reset, integration tests)
+src/services.ts         binds repositories to a db; appDeps(db, config) wires the whole app (main, tests)
 src/env.ts              Zod env; refuses DEMO_MODE in production (D-165)
 src/errors.ts           AppError(status, code, message); services throw these
 src/plugins/errors.ts   renders every error as { error: { code, message, details? } }
@@ -20,14 +20,16 @@ src/modules/<m>/
   <m>.schema.ts         request/response Zod (leaf)
   index.ts              public exports
 src/db/                 client, schema/ (Drizzle, one file per area), seed/ (data + buildSeed)
-src/session/            the only code that reads the session (Better Auth in Phase I)
+src/session/            the only code that reads the session: Better Auth config, IdentityPort impl, SessionReader
 src/adapters/<port>/    interface + demo impl (+ real impl later) (ADR-0003)
 src/jobs/               pg-boss workers; thin, call services (ADR-0004)
 src/test/               factories, globalSetup (seeded test DB), useTestDb()
 drizzle/                generated migrations; commit them
 ```
 
-Reference modules: `src/modules/health` (minimal), `src/modules/catalog` (DB-backed, filtered keyset pagination, error codes). `src/modules/offers` has only a repository (`loadOfferBook`); services get it injected. `src/modules/search` reuses the catalog's `summarize` (injected) so results price like listings. `src/modules/delivery` composes serviceability, stock, lanes and flash state into the PDP estimate and resolves map pins to pincodes. `src/modules/relations` has no routes; the reset script and (later) jobs call it.
+Reference modules: `src/modules/health` (minimal), `src/modules/catalog` (DB-backed, filtered keyset pagination, error codes). `src/modules/offers` exposes `loadOfferBook` (injected into catalog) and `GET /offers/live` (home strip, D-191). `src/modules/search` reuses the catalog's `summarize` (injected) so results price like listings. `src/modules/delivery` composes serviceability, stock, lanes and flash state into the PDP estimate and resolves map pins to pincodes. `src/modules/relations` has no routes; the reset script and (later) jobs call it.
+
+Auth (Phase I): Better Auth is a library behind `IdentityPort` (declared in `modules/auth`, implemented in `src/session/betterAuth.ts`); its HTTP handler is **not** mounted, so every auth route keeps our Zod contracts, error shape and rate limits (D-190). Session cookies pass through the service as opaque `Set-Cookie` strings. Customer routes call `requireCustomerId(session, request)`; tests swap in `headerSession` (`x-test-customer`) or use real sign-in. `modules/addresses` and `modules/notifications` are the customer-scoped references (cross-customer tests at repository and route level). Outbound messages go through `adapters/notifications` (demo: inbox + log + on-screen box; otherwise inbox + log until D-104); secrets such as reset codes never reach the inbox or log (D-98). `plugins/origin.ts` refuses cookie-authenticated writes from other origins; `plugins/rateLimit.ts` is in-memory (one process).
 
 ## Rules (enforced)
 

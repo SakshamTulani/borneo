@@ -119,3 +119,14 @@ export function nearestPincode<T extends PincodeArea>(
   }
   return best?.area;
 }
+
+/**
+ * The pincode the PDP checks first (D-185): a signed-in default address's, else the one this
+ * browser last checked.
+ */
+export function startingPincode(
+  defaultAddress: string | null,
+  browser: string | null,
+): string | null {
+  return defaultAddress ?? browser;
+}

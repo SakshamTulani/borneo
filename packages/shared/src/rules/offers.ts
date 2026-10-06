@@ -1,6 +1,14 @@
 import type { CartLine } from '../contracts/cart';
 import type { ProductOffer } from '../contracts/catalog';
-import type { Coupon, Discount, PaymentOffer, PaymentSelection } from '../contracts/offers';
+import type {
+  Coupon,
+  Discount,
+  FlashSale,
+  OfferHighlight,
+  PaymentOffer,
+  PaymentSelection,
+} from '../contracts/offers';
+import { flashState } from './flash';
 import { allocate, percentOf, sumPaise, type Paise } from '../money';
 import { emiInterest } from './emi';
 
@@ -183,5 +191,65 @@ export function productOffers(input: {
         ? { status: 'notApplicable', reason: "Coupons don't apply to flash sale prices" }
         : { status: 'available' }),
     })),
+  ];
+}
+
+/** A flash sale with the product it is for, for the home strip. */
+export type FlashListing = {
+  sale: FlashSale;
+  productName: string;
+  productSlug: string;
+  sku: string;
+  /** The variant's normal selling price. */
+  regularPricePaise: Paise;
+};
+
+/**
+ * The home strip of live offers (D-191): live flash sales first (ending soonest), then payment
+ * offers, then coupons. Upcoming, ended and sold-out offers are left out.
+ */
+export function offerStrip(input: {
+  coupons: Coupon[];
+  paymentOffers: PaymentOffer[];
+  flash: FlashListing[];
+  now: number;
+}): OfferHighlight[] {
+  const { now } = input;
+  const flash = input.flash
+    .filter((f) => flashState(f.sale, now) === 'live')
+    .sort((a, b) => a.sale.endsAt - b.sale.endsAt)
+    .map((f): OfferHighlight => ({
+      kind: 'flash',
+      id: f.sale.id,
+      productName: f.productName,
+      productSlug: f.productSlug,
+      sku: f.sku,
+      salePricePaise: f.sale.salePricePaise,
+      regularPricePaise: f.regularPricePaise,
+      endsAt: f.sale.endsAt,
+    }));
+  const terms = (o: {
+    minOrderPaise?: number | undefined;
+    categoryIds?: string[] | undefined;
+    validTo: number;
+  }) => ({
+    ...(o.minOrderPaise !== undefined ? { minOrderPaise: o.minOrderPaise } : {}),
+    scoped: o.categoryIds !== undefined,
+    validTo: o.validTo,
+  });
+  return [
+    ...flash,
+    ...input.paymentOffers
+      .filter((o) => active(o, now))
+      .map((o): OfferHighlight => ({ kind: o.kind, id: o.id, name: o.name, ...terms(o) })),
+    ...input.coupons
+      .filter((c) => active(c, now))
+      .map((c): OfferHighlight => ({
+        kind: 'coupon',
+        id: c.id,
+        name: c.name,
+        code: c.code,
+        ...terms(c),
+      })),
   ];
 }

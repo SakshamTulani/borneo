@@ -233,7 +233,8 @@ function EntryPoint({
  * follow, then category banners, categories with artwork, and mindset entry points. Same for everyone; the upgrade strip for
  * signed-in customers arrives with accounts (D-121).
  */
-export function HomePage() {
+/** `offers` is the live offer strip, shown under the hero (D-191). */
+export function HomePage({ offers }: { offers?: ReactNode } = {}) {
   const categories = useCategoriesQuery();
   const newest = useNewestProductsQuery(HOME_NEWEST);
   const all = categories.data ?? [];
@@ -248,6 +249,7 @@ export function HomePage() {
     <>
       <h1 className="sr-only">Borneo: phones, audio and home tech, direct</h1>
       {newest.isPending ? <ProductHeroSkeleton /> : hero ? <ProductHero card={hero} /> : null}
+      {offers}
       <Section
         id="home-new"
         title="Latest launches"

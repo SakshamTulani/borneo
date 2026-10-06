@@ -73,3 +73,32 @@ export const flashSaleSchema = z
   })
   .refine((s) => s.endsAt > s.startsAt, 'endsAt must be after startsAt');
 export type FlashSale = z.infer<typeof flashSaleSchema>;
+
+/** One live offer in the home strip (D-191). Only real, live offers; terms as stored. */
+export const offerHighlightSchema = z.discriminatedUnion('kind', [
+  z.object({
+    kind: z.literal('flash'),
+    id: idSchema,
+    productName: z.string().min(1),
+    productSlug: z.string().min(1),
+    sku: z.string().min(1),
+    salePricePaise: paiseSchema,
+    /** The variant's normal selling price: the honest comparison (D-30, D-140). */
+    regularPricePaise: paiseSchema,
+    endsAt: epochMsSchema,
+  }),
+  z.object({
+    kind: z.enum(['bank', 'noCostEmi', 'coupon']),
+    id: idSchema,
+    name: z.string().min(1),
+    code: z.string().min(1).optional(),
+    minOrderPaise: paiseSchema.optional(),
+    /** Limited to some categories (shown as "on selected categories"). */
+    scoped: z.boolean(),
+    validTo: epochMsSchema,
+  }),
+]);
+export type OfferHighlight = z.infer<typeof offerHighlightSchema>;
+
+export const offerStripSchema = z.object({ items: z.array(offerHighlightSchema) });
+export type OfferStrip = z.infer<typeof offerStripSchema>;

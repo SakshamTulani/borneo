@@ -9,7 +9,14 @@ export default defineConfig({
   resolve: { tsconfigPaths: true },
   server: {
     port: 5173,
-    proxy: { '/api': { target: 'http://localhost:3000', rewrite: (p) => p.replace(/^\/api/, '') } },
+    proxy: {
+      // xfwd: the API rate-limits by the shopper's IP, not the proxy's (D-190).
+      '/api': {
+        target: 'http://localhost:3000',
+        xfwd: true,
+        rewrite: (p) => p.replace(/^\/api/, ''),
+      },
+    },
   },
   // Start's plugin owns the app build; unit tests only need React.
   plugins: isTest ? [react()] : [tailwindcss(), tanstackStart(), react()],

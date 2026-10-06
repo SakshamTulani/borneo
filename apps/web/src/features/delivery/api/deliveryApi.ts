@@ -21,3 +21,13 @@ export async function getPincodeAt(lat: number, lng: number): Promise<PincodeAre
     throw e;
   }
 }
+
+/** Null for a pincode we don't know (404 PINCODE_NOT_FOUND). */
+export async function getPincodeArea(pincode: string): Promise<PincodeArea | null> {
+  try {
+    return await getJson(`/pincodes/${encodeURIComponent(pincode)}`, pincodeAreaSchema);
+  } catch (e) {
+    if (isApiError(e, 404)) return null;
+    throw e;
+  }
+}

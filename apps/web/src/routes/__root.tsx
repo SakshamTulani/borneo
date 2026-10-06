@@ -1,6 +1,7 @@
 import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
+import { AccountLink, sessionQuery } from '../features/auth';
 import { categoriesQuery, CategoryNav } from '../features/catalog';
 import { SearchBox } from '../features/search';
 import appCss from '../index.css?url';
@@ -22,8 +23,12 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       links: [{ rel: 'stylesheet', href: appCss }],
     };
   },
-  // Header navigation lists categories on every page.
-  loader: ({ context }) => context.queryClient.prefetchQuery(categoriesQuery),
+  // Header navigation lists categories and the account link on every page; SSR forwards the cookie.
+  loader: ({ context }) =>
+    Promise.all([
+      context.queryClient.prefetchQuery(categoriesQuery),
+      context.queryClient.prefetchQuery(sessionQuery),
+    ]),
   shellComponent: RootDocument,
   errorComponent: ({ reset }) => (
     <AppShell>
@@ -38,7 +43,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     </Container>
   ),
   component: () => (
-    <AppShell nav={<CategoryNav />} search={<SearchBox />}>
+    <AppShell nav={<CategoryNav />} search={<SearchBox />} account={<AccountLink />}>
       <Outlet />
     </AppShell>
   ),

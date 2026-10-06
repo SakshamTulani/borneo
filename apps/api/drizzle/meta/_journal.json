@@ -36,6 +36,13 @@
       "when": 1791290212064,
       "tag": "0004_pincode_area",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1791291840847,
+      "tag": "0005_auth",
+      "breakpoints": true
     }
   ]
 }

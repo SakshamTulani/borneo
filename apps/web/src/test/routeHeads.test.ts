@@ -1,5 +1,11 @@
 import { describe, expect, it } from 'vitest';
+import { Route as AccountRoute } from '../routes/account';
+import { Route as AddressesRoute } from '../routes/account.addresses.index';
+import { Route as InboxRoute } from '../routes/account.inbox';
 import { Route as CategoriesRoute } from '../routes/categories.index';
+import { Route as ForgotRoute } from '../routes/forgot-password';
+import { Route as SignInRoute } from '../routes/sign-in';
+import { Route as SignUpRoute } from '../routes/sign-up';
 import { Route as CategoryRoute } from '../routes/categories.$slug';
 import { Route as HomeRoute } from '../routes/index';
 import { Route as ProductRoute } from '../routes/products.$slug';
@@ -41,5 +47,20 @@ describe('route heads', () => {
     expect(description(h)).toBe('A 120 Hz screen.');
     expect(canonical(h)).toBe('http://localhost:5173/products/pulse-4');
     expect(h.meta).toContainEqual({ property: 'og:type', content: 'product' });
+  });
+
+  it('account and sign-in pages are never indexed and have no canonical URL', () => {
+    for (const route of [
+      AccountRoute,
+      AddressesRoute,
+      InboxRoute,
+      SignInRoute,
+      SignUpRoute,
+      ForgotRoute,
+    ]) {
+      const h = head(route, {});
+      expect(h.meta).toContainEqual({ name: 'robots', content: 'noindex, nofollow' });
+      expect(canonical(h)).toBeUndefined();
+    }
   });
 });

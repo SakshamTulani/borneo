@@ -7,7 +7,7 @@ import { PINCODE_STORAGE_KEY } from '../hooks/useDeliveryForm';
 import { ProductDelivery } from './ProductDelivery';
 
 // Leaflet needs a real browser; the stand-in reports a fixed centre like a moved map would.
-vi.mock('./LeafletMap', () => ({
+vi.mock('@/shared/ui/map/LeafletMap', () => ({
   LeafletMap: ({
     onCentreChange,
   }: {
@@ -60,12 +60,12 @@ beforeEach(() => {
 });
 afterEach(() => vi.unstubAllGlobals());
 
-const renderDelivery = (sku = 'BP4-6-128-FOR') =>
+const renderDelivery = (sku = 'BP4-6-128-FOR', defaultPincode: string | null = null) =>
   render(
     <QueryClientProvider
       client={new QueryClient({ defaultOptions: { queries: { retry: false } } })}
     >
-      <ProductDelivery sku={sku} />
+      <ProductDelivery sku={sku} defaultPincode={defaultPincode} />
     </QueryClientProvider>,
   );
 
@@ -80,7 +80,10 @@ describe('ProductDelivery', () => {
     check('560 001');
     expect(await screen.findByText(/Estimated delivery/)).toBeTruthy();
     expect(screen.getByText('Bengaluru, Karnataka')).toBeTruthy();
-    expect(fetchMock).toHaveBeenCalledWith('/api/delivery?sku=BP4-6-128-FOR&pincode=560001');
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/delivery?sku=BP4-6-128-FOR&pincode=560001',
+      expect.anything(),
+    );
     expect(await axe(container)).toHaveNoViolations();
   });
 
@@ -105,6 +108,25 @@ describe('ProductDelivery', () => {
     expect(window.localStorage.getItem(PINCODE_STORAGE_KEY)).toBe('560034');
   });
 
+  it('D-185: signed in, the default address pincode comes before the remembered one', async () => {
+    window.localStorage.setItem(PINCODE_STORAGE_KEY, '560001');
+    renderDelivery('BP4-6-128-FOR', '560034');
+    expect(await screen.findByText(/Estimated delivery/)).toBeTruthy();
+    expect((screen.getByLabelText('Delivery pincode') as HTMLInputElement).value).toBe('560034');
+    expect(fetchMock).toHaveBeenCalledWith(
+      '/api/delivery?sku=BP4-6-128-FOR&pincode=560034',
+      expect.anything(),
+    );
+    // Checking another pincode still works.
+    check('560001');
+    await waitFor(() =>
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/delivery?sku=BP4-6-128-FOR&pincode=560001',
+        expect.anything(),
+      ),
+    );
+  });
+
   it('D-185: a remembered pincode is checked on arrival', async () => {
     window.localStorage.setItem(PINCODE_STORAGE_KEY, '560001');
     renderDelivery();
@@ -127,7 +149,10 @@ describe('ProductDelivery', () => {
       </QueryClientProvider>,
     );
     await waitFor(() =>
-      expect(fetchMock).toHaveBeenCalledWith('/api/delivery?sku=B&pincode=560001'),
+      expect(fetchMock).toHaveBeenCalledWith(
+        '/api/delivery?sku=B&pincode=560001',
+        expect.anything(),
+      ),
     );
   });
 

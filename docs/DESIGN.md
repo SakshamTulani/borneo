@@ -51,7 +51,7 @@ shadcn semantic names (`primary`, `secondary`, `muted-foreground`, `destructive`
 
 **Space**: 4px grid (4–80); 48–64px between home sections. **Radius**: 8 (compact utility), 11 (inputs, selects), 18 (cards, image wells), full (buttons are pills, chips, badges). **Elevation**: none on cards, buttons or text; surfaces separate by colour. One shadow, `productShadow`, under product imagery only. **Motion**: short; buttons and chips press to `scale(0.97)`; off under `prefers-reduced-motion`.
 
-**Layout**: mobile-first. Breakpoints 640 / 1024 / 1280. Mobile gets a bottom nav and a sticky purchase bar on product pages (built in later phases).
+**Layout**: mobile-first. Breakpoints 640 / 1024 / 1280. Desktop header: logo, search and account on one row, categories on a second row. Mobile gets a bottom nav (Home, Categories, Search, Account) and a sticky purchase bar on product pages (built in later phases).
 
 ## Components
 
@@ -61,6 +61,8 @@ Every component has a render test and a vitest-axe check per state.
 | ----------------------- | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
 | Base (shadcn, restyled) | `shared/ui/base/`       | Button (variants, disabled, loading, ≥ 44px), Badge (9 tones), Card, Dialog, Input, Label, RadioGroup, Separator, Skeleton, Table         |
 | Feedback                | `shared/ui/feedback/`   | EmptyState, ErrorState (retry, `role=alert`), DemoBox                                                                                     |
+| Forms                   | `shared/ui/forms/`      | TextField (label + hint/error wired to the input), PasswordField (show/hide), CheckboxField (never pre-ticked), FormAlert                 |
+| Map                     | `shared/ui/map/`        | LeafletMap (client-only, keyboard pan/zoom), PinPickerDialog (fixed pin over a movable map, "Use my location")                            |
 | Brand                   | `shared/ui/brand/`      | Logo                                                                                                                                      |
 | Navigation              | `shared/ui/navigation/` | BottomNav (mobile, `aria-current`), Breadcrumbs; `AppShell` has a skip link and sticky header                                             |
 | Commerce                | `shared/ui/commerce/`   | PriceBlock, Rating, StatusBadge, ProductCard + skeleton, VariantSelector, DeliveryChecker, OfferCard, Countdown, SpecTable, OrderTimeline |

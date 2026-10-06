@@ -23,7 +23,9 @@ src/shared/ui/tokens.ts  design tokens; index.css must match (tokens.test.ts)
 src/shared/lib           http (api/ only), seo pageHead, format, useNow, cn
 ```
 
-Reference slices: `src/features/health` (minimal), `src/features/catalog` (infinite list, filters in URL), `src/features/product`. UI tests that render router `Link`s use `renderWithRouter` from `src/test/router.tsx`; API-shaped fixtures live in `src/test/fixtures.ts`. Living component reference: `/design-system` (`features/design-system`).
+Reference slices: `src/features/health` (minimal), `src/features/catalog` (infinite list, filters in URL), `src/features/product`, `src/features/addresses` (RHF form with the API's Zod schema, mutations, map pin).
+
+Session (Phase I): `sessionQuery` (`features/auth`) is prefetched by the root route; during SSR `shared/lib/http.ts` forwards the shopper's cookie to Fastify and passes refreshed `Set-Cookie` back (`shared/lib/ssrRequest.ts`, via `createIsomorphicFn`). Customer data uses query keys under `['me', …]`, dropped on sign-in/out. `/account` guards in `beforeLoad` and redirects to `/sign-in?redirect=` (same-site paths only, `safeRedirectPath`). Web tests stub the API with `stubApi` (`src/test/api.ts`). UI tests that render router `Link`s use `renderWithRouter` from `src/test/router.tsx`; API-shaped fixtures live in `src/test/fixtures.ts`. Living component reference: `/design-system` (`features/design-system`).
 
 ## Rules (enforced)
 

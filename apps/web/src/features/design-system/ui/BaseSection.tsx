@@ -16,6 +16,10 @@ import { Skeleton } from '@/shared/ui/base/skeleton';
 import { DemoBox } from '@/shared/ui/feedback/DemoBox';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
+import { CheckboxField } from '@/shared/ui/forms/CheckboxField';
+import { FormAlert } from '@/shared/ui/forms/FormAlert';
+import { PasswordField } from '@/shared/ui/forms/PasswordField';
+import { TextField } from '@/shared/ui/forms/TextField';
 import { Specimen, State } from './Specimen';
 
 const noop = () => {};
@@ -102,6 +106,30 @@ export function BaseSection() {
               <Input id="ds-disabled" disabled defaultValue="+91 98xxxxxx10" />
             </div>
           </div>
+        </State>
+      </Specimen>
+
+      <Specimen
+        title="Form fields"
+        note="Label, hint and error are tied to the input for screen readers."
+      >
+        <State label="Text field with hint">
+          <TextField label="Mobile number" type="tel" hint="The courier calls this number." />
+        </State>
+        <State label="Error">
+          <TextField label="Email" defaultValue="asha@" error="Enter a valid email address" />
+        </State>
+        <State label="Password (show / hide)">
+          <PasswordField label="Password" hint="At least 8 characters." />
+        </State>
+        <State label="Optional field">
+          <TextField label="Landmark" aside="Optional" />
+        </State>
+        <State label="Checkbox (never pre-ticked)">
+          <CheckboxField label="Make this my default address" hint="Used first at checkout." />
+        </State>
+        <State label="Form alert">
+          <FormAlert>Email or password is incorrect.</FormAlert>
         </State>
       </Specimen>
 

@@ -1,18 +1,10 @@
 import { searchResultSchema, type SearchResult } from '@borneo/shared';
 import { describe, expect, it } from 'vitest';
-import { buildApp } from '../../app';
-import { catalogService, searchService, deliveryService } from '../../services';
-import { TEST_NOW, useTestDb } from '../../test/db';
-import { createHealthService } from '../health/index';
+import { testApp } from '../../test/app';
+import { useTestDb } from '../../test/db';
 
 const db = useTestDb();
-const catalog = catalogService(db, () => TEST_NOW.getTime());
-const app = buildApp({
-  health: createHealthService({ demoMode: false, pingDatabase: async () => true }),
-  catalog,
-  search: searchService(db, catalog),
-  delivery: deliveryService(db, () => TEST_NOW.getTime()),
-});
+const app = testApp(db);
 
 async function search(q: string, limit = 24): Promise<SearchResult> {
   const res = await app.inject({

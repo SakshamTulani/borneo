@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import type { CartLine } from '../contracts/cart';
-import type { Coupon, PaymentOffer } from '../contracts/offers';
+import type { Coupon, Coupon as StripCoupon, FlashSale, PaymentOffer } from '../contracts/offers';
 import { emiInterest } from './emi';
-import { discountAmount, priceOrder, productOffers } from './offers';
+import { discountAmount, offerStrip, priceOrder, productOffers, type FlashListing } from './offers';
 
 const now = 1_500;
 const window = { validFrom: 0, validTo: 10_000 };
@@ -283,5 +283,95 @@ describe('offers', () => {
         true,
       );
     });
+  });
+});
+
+const stripNow = Date.UTC(2026, 9, 6, 6, 30);
+const stripHour = 3_600_000;
+
+const stripSale = (id: string, over: Partial<FlashSale> = {}): FlashListing => ({
+  sale: {
+    id,
+    variantId: 'v',
+    salePricePaise: 199_900,
+    startsAt: stripNow - stripHour,
+    endsAt: stripNow + 2 * stripHour,
+    cap: 50,
+    sold: 10,
+    perCustomerLimit: 1,
+    ...over,
+  },
+  productName: `Product ${id}`,
+  productSlug: `product-${id}`,
+  sku: `SKU-${id}`,
+  regularPricePaise: 299_900,
+});
+
+const stripCoupon = (id: string, over: Partial<StripCoupon> = {}): StripCoupon => ({
+  id,
+  code: id.toUpperCase(),
+  name: `Coupon ${id}`,
+  discount: { kind: 'flat', amountPaise: 50_000 },
+  validFrom: stripNow - stripHour,
+  validTo: stripNow + 24 * stripHour,
+  ...over,
+});
+
+const stripBank: PaymentOffer = {
+  kind: 'bank',
+  id: 'hdfc',
+  name: '10% off with HDFC cards',
+  methods: ['card'],
+  discount: { kind: 'percent', bps: 1000, maxPaise: 150_000 },
+  appliesToAll: false,
+  minOrderPaise: 1_000_000,
+  validFrom: stripNow - stripHour,
+  validTo: stripNow + 48 * stripHour,
+};
+
+describe('offer strip', () => {
+  it('D-191: live flash sales first, ending soonest, then payment offers, then coupons', () => {
+    const items = offerStrip({
+      flash: [
+        stripSale('late', { endsAt: stripNow + 5 * stripHour }),
+        stripSale('soon', { endsAt: stripNow + stripHour }),
+      ],
+      paymentOffers: [stripBank],
+      coupons: [stripCoupon('audio', { categoryIds: ['audio'] })],
+      now: stripNow,
+    });
+    expect(items.map((i) => i.id)).toEqual(['soon', 'late', 'hdfc', 'audio']);
+    expect(items[2]).toEqual({
+      kind: 'bank',
+      id: 'hdfc',
+      name: '10% off with HDFC cards',
+      minOrderPaise: 1_000_000,
+      scoped: false,
+      validTo: stripNow + 48 * stripHour,
+    });
+    expect(items[3]).toMatchObject({ kind: 'coupon', code: 'AUDIO', scoped: true });
+    expect(items[0]).toMatchObject({
+      kind: 'flash',
+      salePricePaise: 199_900,
+      regularPricePaise: 299_900,
+    });
+  });
+
+  it('D-191: never shows upcoming, ended or sold-out offers', () => {
+    expect(
+      offerStrip({
+        flash: [
+          stripSale('upcoming', {
+            startsAt: stripNow + stripHour,
+            endsAt: stripNow + 2 * stripHour,
+          }),
+          stripSale('ended', { startsAt: stripNow - 2 * stripHour, endsAt: stripNow }),
+          stripSale('soldOut', { sold: 50 }),
+        ],
+        paymentOffers: [{ ...stripBank, validFrom: stripNow + stripHour }],
+        coupons: [stripCoupon('old', { validTo: stripNow - 1 })],
+        now: stripNow,
+      }),
+    ).toEqual([]);
   });
 });

@@ -1,4 +1,4 @@
-import { isValidPincode } from '@borneo/shared';
+import { isValidPincode, startingPincode } from '@borneo/shared';
 import { useState, useSyncExternalStore } from 'react';
 
 /** Browser-only memory of the last checked pincode (D-185). */
@@ -39,9 +39,14 @@ function save(pincode: string) {
 /**
  * The pincode field and the pincode last submitted. The server renders no saved pincode, so
  * the server and first client render match; the saved one applies right after hydration.
+ * A signed-in default address's pincode comes before the browser's saved one (D-185).
  */
-export function useDeliveryForm() {
-  const saved = useSyncExternalStore(subscribe, readSaved, () => null);
+export function useDeliveryForm(defaultPincode: string | null = null) {
+  const stored = useSyncExternalStore(subscribe, readSaved, () => null);
+  const saved = startingPincode(
+    defaultPincode !== null && isValidPincode(defaultPincode) ? defaultPincode : null,
+    stored,
+  );
   const [draft, setDraft] = useState<string | null>(null);
   const [submitted, setSubmitted] = useState<string | null>(null);
 

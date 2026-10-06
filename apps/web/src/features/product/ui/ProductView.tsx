@@ -65,7 +65,7 @@ export function ProductView({ product, variant, onVariantChange, delivery }: Pro
         />
 
         <div className="grid gap-8 lg:grid-cols-[1.15fr_1fr] lg:gap-14">
-          <div className="lg:sticky lg:top-20 lg:self-start">
+          <div className="lg:sticky lg:top-32 lg:self-start">
             <ProductGallery key={product.id} images={product.images} />
           </div>
 

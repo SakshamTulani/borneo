@@ -5,18 +5,21 @@ import { Container } from './layout/Container';
 import { BottomNav } from './navigation/BottomNav';
 
 /**
- * Page frame: skip link, frosted header (logo, `nav` on desktop, `search`), full-width main (pages use
+ * Page frame: skip link, frosted header (logo, `search`, `account` on desktop; `nav` on a second desktop row), full-width main (pages use
  * `Container`; full-bleed tiles don't), parchment footer, and the mobile bottom nav.
- * `nav` and `search` are composed by the root route (they come from features).
+ * `nav`, `search` and `account` are composed by the root route (they come from features).
  */
 export function AppShell({
   children,
   nav,
   search,
+  account,
 }: {
   children: ReactNode;
   nav?: ReactNode;
   search?: ReactNode;
+  /** Sign-in / account link (desktop; mobile uses the bottom nav). */
+  account?: ReactNode;
 }) {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
@@ -31,11 +34,15 @@ export function AppShell({
           <Link to="/" aria-label="Borneo home" className="inline-flex shrink-0 rounded-sm">
             <Logo />
           </Link>
-          {nav ? <div className="hidden min-w-0 lg:block">{nav}</div> : null}
-          {search ? (
-            <div className="ml-auto w-full max-w-xs min-w-0 xl:max-w-sm">{search}</div>
-          ) : null}
+          {search ? <div className="mx-auto w-full max-w-xl min-w-0">{search}</div> : null}
+          {account ? <div className="hidden shrink-0 lg:block">{account}</div> : null}
         </Container>
+        {/* Categories get their own row so they never crowd the search (owner feedback, Phase I). */}
+        {nav ? (
+          <div className="hidden border-t border-line/50 lg:block">
+            <Container className="flex h-11 items-center overflow-x-auto">{nav}</Container>
+          </div>
+        ) : null}
       </header>
       <main id="main" tabIndex={-1} className="w-full flex-1 pb-24 outline-none lg:pb-16">
         {children}

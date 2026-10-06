@@ -1,5 +1,6 @@
 import { sql } from 'drizzle-orm';
 import { bigint, text, timestamp, uuid } from 'drizzle-orm/pg-core';
+import { user } from './auth';
 
 // Column helpers so every table follows DATA_MODEL conventions.
 
@@ -15,8 +16,8 @@ export const updatedAt = () =>
     .$onUpdate(() => new Date());
 /** Indian PIN code: 6 digits, first 1–9. */
 export const pincodeCheck = (column: unknown) => sql`${column} ~ '^[1-9][0-9]{5}$'`;
-/**
- * Customer identity (ADR-0005). `text` to match Better Auth's user id type (its default schema
- * uses text ids); the FK to its user table is added with auth in Phase I.
- */
-export const customerId = () => text('customer_id').notNull();
+/** Customer identity (ADR-0005): the Better Auth user id. */
+export const customerId = () =>
+  text('customer_id')
+    .notNull()
+    .references(() => user.id);

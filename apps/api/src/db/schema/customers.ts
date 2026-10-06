@@ -1,3 +1,4 @@
+import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
@@ -7,20 +8,15 @@ import {
   pgTable,
   primaryKey,
   text,
+  uniqueIndex,
   uuid,
 } from 'drizzle-orm/pg-core';
 import { at, createdAt, customerId, id, pincodeCheck } from './columns';
 import { variant } from './catalog';
 
-// Better Auth tables (user, session, account, verification) arrive with auth in Phase I.
+// The customer's name, email and phone live on the Better Auth `user` (auth.ts).
 
-export const customerProfile = pgTable('customer_profile', {
-  customerId: customerId().primaryKey(),
-  name: text('name'),
-  phone: text('phone'),
-});
-
-/** Every address stores an exact map pin (D-53). */
+/** Every address stores an exact map pin (D-53). At most one default per customer (D-188). */
 export const address = pgTable(
   'address',
   {
@@ -37,9 +33,13 @@ export const address = pgTable(
     lat: doublePrecision('lat').notNull(),
     lng: doublePrecision('lng').notNull(),
     isDefault: boolean('is_default').notNull().default(false),
+    createdAt: createdAt(),
   },
   (t) => [
-    index('address_customer').on(t.customerId),
+    index('address_customer').on(t.customerId, t.createdAt),
+    uniqueIndex('address_one_default')
+      .on(t.customerId)
+      .where(sql`${t.isDefault}`),
     check('address_pincode', pincodeCheck(t.pincode)),
   ],
 );

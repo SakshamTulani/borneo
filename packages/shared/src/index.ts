@@ -11,7 +11,12 @@ export * from './contracts/offers';
 export * from './contracts/cart';
 export * from './contracts/delivery';
 export * from './contracts/orders';
+export * from './contracts/account';
+export * from './contracts/addresses';
+export * from './contracts/notifications';
 
+export * from './rules/account';
+export * from './rules/addresses';
 export * from './rules/catalog';
 export * from './rules/cod';
 export * from './rules/compatibility';

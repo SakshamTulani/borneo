@@ -2,7 +2,7 @@
 
 Implemented in `apps/api/src/db/schema/` (Phase E). Conventions: `uuid` ids, `timestamptz`, money as `bigint` paise (`*_paise`), customer rows carry `customer_id` (ADR-0005). Snake case in DB. Enums are Postgres enums. Invariants that must never break are also `CHECK` constraints (price ≤ MRP, non-negative money, reserved ≤ on hand, sold ≤ cap, pre-order sold ≤ cap, photos for defect/damage returns, compat never on text, COD only where deliverable, no COD on pre-orders, flash and bundle never combined in a cart line).
 
-`customer_id` is `text` (Better Auth's id type) with no FK yet: Better Auth tables arrive in Phase I and add it.
+`customer_id` is `text`, a foreign key to Better Auth's `user.id` (Phase I, migration 0005).
 
 ## Catalog
 
@@ -53,13 +53,12 @@ Types: `accessory, compatible, complementary, replacement, consumable, upgrade, 
 
 ## Customers
 
-| Table              | Key columns                                                                                      | Notes                    |
-| ------------------ | ------------------------------------------------------------------------------------------------ | ------------------------ |
-| Better Auth tables | user, session, account, verification                                                             | email = identifier       |
-| `customer_profile` | customer_id, name, phone                                                                         |                          |
-| `address`          | id, customer_id, name, phone, line1, line2, landmark, city, state, pincode, lat, lng, is_default | exact map pin            |
-| `watch`            | customer_id, variant_id, created_at                                                              | on-site only             |
-| `notification`     | id, customer_id, kind, title, body, payload jsonb, created_at, read_at                           | demo inbox + adapter log |
+| Table              | Key columns                                                                                                                                                                                  | Notes                                                                                                           |
+| ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| Better Auth tables | `user` (id, name, email unique, email_verified, phone, image), `session` (token, expires_at, user_id), `account` (password hash, provider `credential`), `verification` (hashed reset codes) | email = identifier (D-91); phone collected at sign-up (D-99). Written only through Better Auth (`src/session/`) |
+| `address`          | id, customer_id, name, phone, line1, line2, landmark, city, state, pincode, lat, lng, is_default, created_at                                                                                 | exact map pin (D-53); at most one default per customer (partial unique index, D-188)                            |
+| `watch`            | customer_id, variant_id, created_at                                                                                                                                                          | on-site only                                                                                                    |
+| `notification`     | id, customer_id, kind, title, body, payload jsonb, created_at, read_at                                                                                                                       | demo inbox + adapter log                                                                                        |
 
 ## Cart & orders
 

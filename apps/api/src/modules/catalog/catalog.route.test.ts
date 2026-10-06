@@ -6,20 +6,12 @@ import {
   type ProductSummary,
 } from '@borneo/shared';
 import { describe, expect, it } from 'vitest';
-import { buildApp } from '../../app';
 import { seedData } from '../../db/seed/index';
-import { catalogService, searchService, deliveryService } from '../../services';
+import { testApp } from '../../test/app';
 import { TEST_NOW, useTestDb } from '../../test/db';
-import { createHealthService } from '../health/index';
 
 const db = useTestDb();
-const catalog = catalogService(db, () => TEST_NOW.getTime());
-const app = buildApp({
-  health: createHealthService({ demoMode: false, pingDatabase: async () => true }),
-  catalog,
-  search: searchService(db, catalog),
-  delivery: deliveryService(db, () => TEST_NOW.getTime()),
-});
+const app = testApp(db);
 const get = (url: string) => app.inject({ method: 'GET', url });
 
 async function allProducts(query: string, limit: number): Promise<ProductSummary[]> {

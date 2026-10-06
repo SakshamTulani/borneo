@@ -1,4 +1,35 @@
+import type { AppDeps } from './app';
+import {
+  createDemoNotifier,
+  createInboxOnlyNotifier,
+  type NotifierDeps,
+} from './adapters/notifications/index';
 import type { Db } from './db/client';
+import {
+  createAddressesService,
+  deleteAddress,
+  insertAddress,
+  listAddresses,
+  setDefaultAddress,
+  updateAddress,
+} from './modules/addresses/index';
+import { createAuthService } from './modules/auth/index';
+import { createHealthService, pingDatabase } from './modules/health/index';
+import {
+  countUnread,
+  createNotificationsService,
+  insertNotification,
+  listNotifications,
+  markAllNotificationsRead,
+  markNotificationRead,
+} from './modules/notifications/index';
+import { createRateLimiter } from './plugins/rateLimit';
+import {
+  betterAuthIdentity,
+  betterAuthSession,
+  createBetterAuth,
+  type AuthConfig,
+} from './session/index';
 import {
   createCatalogService,
   findCategoryBySlug,
@@ -24,7 +55,7 @@ import {
   loadWarehouseStock,
   pincodeAreasNear,
 } from './modules/delivery/index';
-import { loadOfferBook } from './modules/offers/index';
+import { createOffersService, listFlashListings, loadOfferBook } from './modules/offers/index';
 import {
   createSearchService,
   findExactCandidates,
@@ -88,4 +119,85 @@ export function deliveryService(db: Db, now: () => number = Date.now) {
     listLanes: () => listDeliveryLanes(db),
     loadFlashSales: (variantId) => loadFlashSales(db, variantId),
   });
+}
+
+/** Demo: on-screen box + inbox + log (D-95, D-101). Otherwise inbox + log until D-104. */
+export function notificationAdapter(db: Db, demoMode: boolean, log: NotifierDeps['log']) {
+  const deps: NotifierDeps = {
+    saveToInbox: (customerId, entry) => insertNotification(customerId, db, entry),
+    log,
+  };
+  return demoMode ? createDemoNotifier(deps) : createInboxOnlyNotifier(deps);
+}
+
+export function offersService(db: Db, now: () => number = Date.now) {
+  return createOffersService({
+    now,
+    loadOfferBook: (at) => loadOfferBook(db, new Date(at)),
+    listFlashListings: (at) => listFlashListings(db, new Date(at)),
+  });
+}
+
+export function addressesService(db: Db) {
+  return createAddressesService({
+    list: (customerId) => listAddresses(customerId, db),
+    insert: (customerId, values, decide) => insertAddress(customerId, db, values, decide),
+    update: (customerId, id, values) => updateAddress(customerId, db, id, values),
+    setDefault: (customerId, id) => setDefaultAddress(customerId, db, id),
+    remove: (customerId, id, next) => deleteAddress(customerId, db, id, next),
+    pincodeCentre: (pincode) => findPincodeArea(db, pincode),
+  });
+}
+
+export function notificationsService(db: Db, now: () => number = Date.now) {
+  return createNotificationsService({
+    now,
+    list: (customerId, page) => listNotifications(customerId, db, page),
+    countUnread: (customerId) => countUnread(customerId, db),
+    markRead: (customerId, id, at) => markNotificationRead(customerId, db, id, at),
+    markAllRead: (customerId, at) => markAllNotificationsRead(customerId, db, at),
+  });
+}
+
+export type AppConfig = {
+  demoMode: boolean;
+  auth: AuthConfig;
+  webOrigin: string;
+  /** See Env.TRUST_PROXY. */
+  trustProxy?: string;
+  /** Clock for prices, offers and flash sales; tests pin it. */
+  now?: () => number;
+  log?: NotifierDeps['log'];
+};
+
+const consoleLog: NotifierDeps['log'] = {
+  info: (obj, msg) => console.info(msg, obj),
+  warn: (obj, msg) => console.warn(msg, obj),
+};
+
+/** Every service the app needs, bound to one database. */
+export function appDeps(db: Db, config: AppConfig): AppDeps {
+  const now = config.now ?? Date.now;
+  const catalog = catalogService(db, now);
+  const betterAuth = createBetterAuth(db, config.auth);
+  return {
+    health: createHealthService({
+      demoMode: config.demoMode,
+      pingDatabase: () => pingDatabase(db),
+    }),
+    catalog,
+    search: searchService(db, catalog),
+    delivery: deliveryService(db, now),
+    offers: offersService(db, now),
+    auth: createAuthService({
+      identity: betterAuthIdentity(betterAuth),
+      notifications: notificationAdapter(db, config.demoMode, config.log ?? consoleLog),
+    }),
+    addresses: addressesService(db),
+    notifications: notificationsService(db, now),
+    session: betterAuthSession(betterAuth),
+    rateLimiter: createRateLimiter(),
+    allowedOrigins: [config.webOrigin],
+    trustProxy: config.trustProxy ?? '127.0.0.1,::1,::ffff:127.0.0.1',
+  };
 }

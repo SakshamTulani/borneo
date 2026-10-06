@@ -131,7 +131,7 @@ export function CategoryView(props: CategoryViewProps) {
             id={panelId}
             aria-labelledby={`${panelId}-h`}
             className={cn(
-              'mb-4 rounded-xl bg-surface p-5 lg:sticky lg:top-20 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mb-0 lg:block lg:self-start lg:bg-transparent lg:p-0',
+              'mb-4 rounded-xl bg-surface p-5 lg:sticky lg:top-32 lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mb-0 lg:block lg:self-start lg:bg-transparent lg:p-0',
               filtersOpen ? 'block' : 'hidden',
             )}
           >

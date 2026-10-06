@@ -3,13 +3,14 @@ import type { Map as LeafletMapInstance } from 'leaflet';
 import type { MapTiles } from '@/shared/lib/mapTiles';
 
 export type MapCentre = { lat: number; lng: number };
+export type MapView = MapCentre & { zoom: number };
 
 type Props = {
   tiles: MapTiles;
   /** Where the map opens. Read once, on mount. */
-  initial: MapCentre & { zoom: number };
+  initial: MapView;
   /** Moves the map when it changes (e.g. "Use my location"). */
-  focus?: (MapCentre & { zoom: number }) | undefined;
+  focus?: MapView | undefined;
   /** The centre after every pan or zoom; the pin is drawn at the centre. */
   onCentreChange: (centre: MapCentre) => void;
   label: string;

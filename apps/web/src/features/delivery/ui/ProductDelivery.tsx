@@ -7,9 +7,18 @@ import { useDeliveryQuery } from '../hooks/useDeliveryQuery';
 import { deliveryViewFor } from '../mappers/toDeliveryView';
 import { MapPinDialog } from './MapPinDialog';
 
-/** PDP delivery estimate for the selected variant (D-50–55); rechecks when the variant changes. */
-export function ProductDelivery({ sku }: { sku: string }) {
-  const form = useDeliveryForm();
+/**
+ * PDP delivery estimate for the selected variant (D-50–55); rechecks when the variant changes.
+ * `defaultPincode` (the signed-in default address) is checked first (D-185).
+ */
+export function ProductDelivery({
+  sku,
+  defaultPincode = null,
+}: {
+  sku: string;
+  defaultPincode?: string | null;
+}) {
+  const form = useDeliveryForm(defaultPincode);
   const query = useDeliveryQuery(sku, form.pincode);
   const [mapOpen, setMapOpen] = useState(false);
   const view = deliveryViewFor({

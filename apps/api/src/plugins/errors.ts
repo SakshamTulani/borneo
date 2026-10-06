@@ -23,6 +23,8 @@ export function registerErrorHandler(app: FastifyInstance) {
     let body: ErrorResponse;
     if (err instanceof AppError) {
       status = err.statusCode;
+      const retry = (err.details as { retryAfterSeconds?: unknown } | undefined)?.retryAfterSeconds;
+      if (status === 429 && typeof retry === 'number') void reply.header('retry-after', retry);
       body = {
         error: {
           code: err.code,

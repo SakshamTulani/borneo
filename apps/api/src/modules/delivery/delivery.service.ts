@@ -111,6 +111,13 @@ export function createDeliveryService(deps: DeliveryDeps) {
       }
       return area;
     },
+
+    /** A known pincode's place and centre, to fill an address and centre its map (D-189). */
+    async pincodeArea(pincode: string): Promise<PincodeArea> {
+      const area = await deps.findArea(pincode);
+      if (!area) throw notFound('PINCODE_NOT_FOUND', `We don't know pincode ${pincode}`);
+      return area;
+    },
   };
 }
 

@@ -1,14 +1,15 @@
-import { gt } from 'drizzle-orm';
+import { and, eq, gt, inArray, lte } from 'drizzle-orm';
 import {
   couponSchema,
   emiPlanSchema,
   paymentOfferSchema,
   type Coupon,
   type EmiPlan,
+  type FlashListing,
   type PaymentOffer,
 } from '@borneo/shared';
 import type { Db } from '../../db/client';
-import { emiPlan, offer } from '../../db/schema/index';
+import { emiPlan, flashSale, offer, product, variant } from '../../db/schema/index';
 
 /** Every price-relevant offer and EMI plan. Rules decide which are live and in scope (D-32–35). */
 export type OfferBook = { coupons: Coupon[]; paymentOffers: PaymentOffer[]; emiPlans: EmiPlan[] };
@@ -42,4 +43,39 @@ export async function loadOfferBook(db: Db, now: Date): Promise<OfferBook> {
       ),
     emiPlans: plans.map((p) => emiPlanSchema.parse(p)),
   };
+}
+
+/** Flash sales running at `now`, with their product (sold-out ones included; the rule drops them). */
+export async function listFlashListings(db: Db, now: Date): Promise<FlashListing[]> {
+  const rows = await db
+    .select({
+      sale: flashSale,
+      productName: product.name,
+      productSlug: product.slug,
+      sku: variant.sku,
+      regularPricePaise: variant.pricePaise,
+    })
+    .from(flashSale)
+    .innerJoin(variant, eq(variant.id, flashSale.variantId))
+    .innerJoin(product, eq(product.id, variant.productId))
+    .where(
+      and(
+        lte(flashSale.startsAt, now),
+        gt(flashSale.endsAt, now),
+        inArray(product.status, ['live', 'preorder']),
+      ),
+    );
+  return rows.map(({ sale, ...rest }) => ({
+    ...rest,
+    sale: {
+      id: sale.id,
+      variantId: sale.variantId,
+      salePricePaise: sale.salePricePaise,
+      startsAt: sale.startsAt.getTime(),
+      endsAt: sale.endsAt.getTime(),
+      cap: sale.cap,
+      sold: sale.sold,
+      perCustomerLimit: 1 as const,
+    },
+  }));
 }

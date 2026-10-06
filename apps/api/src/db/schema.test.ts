@@ -1,6 +1,6 @@
 import { readFileSync } from 'node:fs';
 import { sql } from 'drizzle-orm';
-import { describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import { useTestDb } from '../test/db';
 import { seedId } from './seed/index';
 
@@ -47,6 +47,13 @@ describe('migrations', () => {
 });
 
 describe('constraints', () => {
+  // Customer rows reference a Better Auth user.
+  beforeAll(async () => {
+    await db.execute(
+      sql`insert into "user" (id, name, email) values ('c1', 'C1', 'c1@example.com') on conflict do nothing`,
+    );
+  });
+
   const pulse4 = seedId('product', 'pulse-4');
   const blr = seedId('warehouse', 'blr');
   const sku = seedId('variant', 'BP4-6-128-FOR');

@@ -6,6 +6,7 @@ import {
   errorResponseSchema,
   pincodeAtQuery,
   pincodeAtResponse,
+  pincodeParams,
 } from './delivery.schema';
 import type { DeliveryService } from './delivery.service';
 
@@ -31,6 +32,16 @@ export function deliveryRoutes(service: DeliveryService): FastifyPluginAsync {
         },
       },
       (request) => service.pincodeAt(request.query),
+    );
+    r.get(
+      '/pincodes/:pincode',
+      {
+        schema: {
+          params: pincodeParams,
+          response: { 200: pincodeAtResponse, 400: errorResponseSchema, 404: errorResponseSchema },
+        },
+      },
+      (request) => service.pincodeArea(request.params.pincode),
     );
   };
 }

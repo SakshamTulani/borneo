@@ -6,6 +6,7 @@ import {
   distanceKm,
   nearestPincode,
   PIN_MATCH_MAX_KM,
+  startingPincode,
 } from './serviceability';
 
 const now = Date.parse('2026-10-06T06:30:00Z'); // 6 Oct, noon IST
@@ -154,5 +155,11 @@ describe('serviceability', () => {
     );
     expect(distanceKm({ lat: 10, lng: 10 }, { lat: 10, lng: 10 })).toBe(0);
     expect(PIN_MATCH_MAX_KM).toBeGreaterThan(0);
+  });
+
+  it('D-185: the default address pincode comes before the browser one', () => {
+    expect(startingPincode('560034', '560001')).toBe('560034');
+    expect(startingPincode(null, '560001')).toBe('560001');
+    expect(startingPincode(null, null)).toBeNull();
   });
 });

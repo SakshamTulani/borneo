@@ -1,3 +1,4 @@
+import { useDefaultPincodeQuery } from '@/features/addresses';
 import { ProductDelivery } from '@/features/delivery';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
@@ -14,6 +15,8 @@ type Props = {
 
 export function ProductPage({ slug, sku, onSkuChange }: Props) {
   const query = useProductQuery(slug);
+  // Signed in with a default address: delivery starts from its pincode (D-185).
+  const defaultPincode = useDefaultPincodeQuery().data ?? null;
   if (query.isError) {
     return (
       <ErrorState
@@ -34,7 +37,7 @@ export function ProductPage({ slug, sku, onSkuChange }: Props) {
       product={query.data}
       variant={variant}
       onVariantChange={onSkuChange}
-      delivery={<ProductDelivery sku={variant.sku} />}
+      delivery={<ProductDelivery sku={variant.sku} defaultPincode={defaultPincode} />}
     />
   );
 }

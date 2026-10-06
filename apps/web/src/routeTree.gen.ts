@@ -10,15 +10,29 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AccountRouteImport } from './routes/account'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as SearchRouteImport } from './routes/search'
+import { Route as SignInRouteImport } from './routes/sign-in'
+import { Route as SignUpRouteImport } from './routes/sign-up'
+import { Route as AccountIndexRouteImport } from './routes/account.index'
+import { Route as AccountInboxRouteImport } from './routes/account.inbox'
 import { Route as CategoriesIndexRouteImport } from './routes/categories.index'
 import { Route as CategoriesSlugRouteImport } from './routes/categories.$slug'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
+import { Route as AccountAddressesIndexRouteImport } from './routes/account.addresses.index'
+import { Route as AccountAddressesIdRouteImport } from './routes/account.addresses.$id'
+import { Route as AccountAddressesNewRouteImport } from './routes/account.addresses.new'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountRoute = AccountRouteImport.update({
+  id: '/account',
+  path: '/account',
   getParentRoute: () => rootRouteImport,
 } as any)
 const DesignSystemRoute = DesignSystemRouteImport.update({
@@ -26,10 +40,35 @@ const DesignSystemRoute = DesignSystemRouteImport.update({
   path: '/design-system',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
   getParentRoute: () => rootRouteImport,
+} as any)
+const SignInRoute = SignInRouteImport.update({
+  id: '/sign-in',
+  path: '/sign-in',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SignUpRoute = SignUpRouteImport.update({
+  id: '/sign-up',
+  path: '/sign-up',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AccountIndexRoute = AccountIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountInboxRoute = AccountInboxRouteImport.update({
+  id: '/inbox',
+  path: '/inbox',
+  getParentRoute: () => AccountRoute,
 } as any)
 const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
   id: '/categories/',
@@ -46,63 +85,134 @@ const ProductsSlugRoute = ProductsSlugRouteImport.update({
   path: '/products/$slug',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AccountAddressesIndexRoute = AccountAddressesIndexRouteImport.update({
+  id: '/addresses/',
+  path: '/addresses/',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountAddressesIdRoute = AccountAddressesIdRouteImport.update({
+  id: '/addresses/$id',
+  path: '/addresses/$id',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountAddressesNewRoute = AccountAddressesNewRouteImport.update({
+  id: '/addresses/new',
+  path: '/addresses/new',
+  getParentRoute: () => AccountRoute,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/account': typeof AccountRouteWithChildren
   '/design-system': typeof DesignSystemRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/search': typeof SearchRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/account/inbox': typeof AccountInboxRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/account/': typeof AccountIndexRoute
   '/categories/': typeof CategoriesIndexRoute
+  '/account/addresses/$id': typeof AccountAddressesIdRoute
+  '/account/addresses/new': typeof AccountAddressesNewRoute
+  '/account/addresses/': typeof AccountAddressesIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/design-system': typeof DesignSystemRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/search': typeof SearchRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/account/inbox': typeof AccountInboxRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/account': typeof AccountIndexRoute
   '/categories': typeof CategoriesIndexRoute
+  '/account/addresses/$id': typeof AccountAddressesIdRoute
+  '/account/addresses/new': typeof AccountAddressesNewRoute
+  '/account/addresses': typeof AccountAddressesIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/account': typeof AccountRouteWithChildren
   '/design-system': typeof DesignSystemRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/search': typeof SearchRoute
+  '/sign-in': typeof SignInRoute
+  '/sign-up': typeof SignUpRoute
+  '/account/inbox': typeof AccountInboxRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
+  '/account/': typeof AccountIndexRoute
   '/categories/': typeof CategoriesIndexRoute
+  '/account/addresses/$id': typeof AccountAddressesIdRoute
+  '/account/addresses/new': typeof AccountAddressesNewRoute
+  '/account/addresses/': typeof AccountAddressesIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/account'
     | '/design-system'
+    | '/forgot-password'
     | '/search'
+    | '/sign-in'
+    | '/sign-up'
+    | '/account/inbox'
     | '/categories/$slug'
     | '/products/$slug'
+    | '/account/'
     | '/categories/'
+    | '/account/addresses/$id'
+    | '/account/addresses/new'
+    | '/account/addresses/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/design-system'
+    | '/forgot-password'
     | '/search'
+    | '/sign-in'
+    | '/sign-up'
+    | '/account/inbox'
     | '/categories/$slug'
     | '/products/$slug'
+    | '/account'
     | '/categories'
+    | '/account/addresses/$id'
+    | '/account/addresses/new'
+    | '/account/addresses'
   id:
     | '__root__'
     | '/'
+    | '/account'
     | '/design-system'
+    | '/forgot-password'
     | '/search'
+    | '/sign-in'
+    | '/sign-up'
+    | '/account/inbox'
     | '/categories/$slug'
     | '/products/$slug'
+    | '/account/'
     | '/categories/'
+    | '/account/addresses/$id'
+    | '/account/addresses/new'
+    | '/account/addresses/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AccountRoute: typeof AccountRouteWithChildren
   DesignSystemRoute: typeof DesignSystemRoute
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   SearchRoute: typeof SearchRoute
+  SignInRoute: typeof SignInRoute
+  SignUpRoute: typeof SignUpRoute
   CategoriesSlugRoute: typeof CategoriesSlugRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
@@ -117,11 +227,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account': {
+      id: '/account'
+      path: '/account'
+      fullPath: '/account'
+      preLoaderRoute: typeof AccountRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/design-system': {
       id: '/design-system'
       path: '/design-system'
       fullPath: '/design-system'
       preLoaderRoute: typeof DesignSystemRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/search': {
@@ -130,6 +254,34 @@ declare module '@tanstack/react-router' {
       fullPath: '/search'
       preLoaderRoute: typeof SearchRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/sign-in': {
+      id: '/sign-in'
+      path: '/sign-in'
+      fullPath: '/sign-in'
+      preLoaderRoute: typeof SignInRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/sign-up': {
+      id: '/sign-up'
+      path: '/sign-up'
+      fullPath: '/sign-up'
+      preLoaderRoute: typeof SignUpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/account/': {
+      id: '/account/'
+      path: '/'
+      fullPath: '/account/'
+      preLoaderRoute: typeof AccountIndexRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/inbox': {
+      id: '/account/inbox'
+      path: '/inbox'
+      fullPath: '/account/inbox'
+      preLoaderRoute: typeof AccountInboxRouteImport
+      parentRoute: typeof AccountRoute
     }
     '/categories/': {
       id: '/categories/'
@@ -152,13 +304,57 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProductsSlugRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/account/addresses/': {
+      id: '/account/addresses/'
+      path: '/addresses'
+      fullPath: '/account/addresses/'
+      preLoaderRoute: typeof AccountAddressesIndexRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/addresses/$id': {
+      id: '/account/addresses/$id'
+      path: '/addresses/$id'
+      fullPath: '/account/addresses/$id'
+      preLoaderRoute: typeof AccountAddressesIdRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/addresses/new': {
+      id: '/account/addresses/new'
+      path: '/addresses/new'
+      fullPath: '/account/addresses/new'
+      preLoaderRoute: typeof AccountAddressesNewRouteImport
+      parentRoute: typeof AccountRoute
+    }
   }
 }
 
+interface AccountRouteChildren {
+  AccountInboxRoute: typeof AccountInboxRoute
+  AccountIndexRoute: typeof AccountIndexRoute
+  AccountAddressesIdRoute: typeof AccountAddressesIdRoute
+  AccountAddressesNewRoute: typeof AccountAddressesNewRoute
+  AccountAddressesIndexRoute: typeof AccountAddressesIndexRoute
+}
+
+const AccountRouteChildren: AccountRouteChildren = {
+  AccountInboxRoute: AccountInboxRoute,
+  AccountIndexRoute: AccountIndexRoute,
+  AccountAddressesIdRoute: AccountAddressesIdRoute,
+  AccountAddressesNewRoute: AccountAddressesNewRoute,
+  AccountAddressesIndexRoute: AccountAddressesIndexRoute,
+}
+
+const AccountRouteWithChildren =
+  AccountRoute._addFileChildren(AccountRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AccountRoute: AccountRouteWithChildren,
   DesignSystemRoute: DesignSystemRoute,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   SearchRoute: SearchRoute,
+  SignInRoute: SignInRoute,
+  SignUpRoute: SignUpRoute,
   CategoriesSlugRoute: CategoriesSlugRoute,
   ProductsSlugRoute: ProductsSlugRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
