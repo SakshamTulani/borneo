@@ -27,7 +27,7 @@ src/test/               factories, globalSetup (seeded test DB), useTestDb()
 drizzle/                generated migrations; commit them
 ```
 
-Reference modules: `src/modules/health` (minimal), `src/modules/catalog` (DB-backed, filtered keyset pagination, error codes). `src/modules/offers` has only a repository (`loadOfferBook`); services get it injected. `src/modules/relations` has no routes; the reset script and (later) jobs call it.
+Reference modules: `src/modules/health` (minimal), `src/modules/catalog` (DB-backed, filtered keyset pagination, error codes). `src/modules/offers` has only a repository (`loadOfferBook`); services get it injected. `src/modules/search` reuses the catalog's `summarize` (injected) so results price like listings. `src/modules/relations` has no routes; the reset script and (later) jobs call it.
 
 ## Rules (enforced)
 
@@ -55,6 +55,7 @@ Services call these; never re-implement them. Each cites its `D-xx` IDs.
 | Compatibility, relations, cross-sell | `compatibilityFacts`, `materializeRelations`, `pickSuggestions`                                                                                           |
 | Cancel, Watch                        | `canCustomerCancel`, `canWatch`                                                                                                                           |
 | Listing, PDP display                 | `parseListingFilters`, `filterFacets`, `specGroups`, `formatAttributeValue`, `variantAvailability`, `productAvailability`, `cardVariant`, `productOffers` |
+| Search reading and ranking           | `searchIntent` (normalise, price intent, synonyms), `namedCategory`, `exactMatch`, `keepRelevant`                                                         |
 
 Rules take `now` as a parameter: services pass the clock, so rules stay pure and testable.
 

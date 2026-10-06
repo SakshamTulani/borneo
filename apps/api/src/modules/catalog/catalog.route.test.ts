@@ -8,14 +8,16 @@ import {
 import { describe, expect, it } from 'vitest';
 import { buildApp } from '../../app';
 import { seedData } from '../../db/seed/index';
-import { catalogService } from '../../services';
+import { catalogService, searchService } from '../../services';
 import { TEST_NOW, useTestDb } from '../../test/db';
 import { createHealthService } from '../health/index';
 
 const db = useTestDb();
+const catalog = catalogService(db, () => TEST_NOW.getTime());
 const app = buildApp({
   health: createHealthService({ demoMode: false, pingDatabase: async () => true }),
-  catalog: catalogService(db, () => TEST_NOW.getTime()),
+  catalog,
+  search: searchService(db, catalog),
 });
 const get = (url: string) => app.inject({ method: 'GET', url });
 

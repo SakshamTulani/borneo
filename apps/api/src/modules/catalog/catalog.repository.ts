@@ -75,7 +75,7 @@ export async function findCategoryBySlug(
 }
 
 /** Each product's lowest regular variant price: what sorting and the price filter use (D-18, D-19). */
-function cheapestVariant(db: Db) {
+export function cheapestVariant(db: Db) {
   return db
     .selectDistinctOn([variant.productId], {
       productId: variant.productId,

@@ -84,6 +84,8 @@ Still to design, in later phases: payment hold timer, upgrade strip, compare tab
 
 Home (D-181): product hero (newest launch), launches grid, photo banners per category, category tiles with artwork. PDP: square gallery with thumbnail buttons (`aria-pressed`). Photos come sized from `imageSource` (srcSet).
 
+Search (D-112): header combobox on every page (full-width on `/search` from the mobile Search tab). Suggestions list categories, then products with photo, price and stock, then "See all results". Arrow keys, Enter, Escape. Results page states the reading ("Smartphones under ₹30,000") and links to the category with filters; no-results shows alternatives, categories and "Browse all categories" (D-114).
+
 Global states for every data view: loading (skeleton), empty, error (with retry).
 
 ## Copy

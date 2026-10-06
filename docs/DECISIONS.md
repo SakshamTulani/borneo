@@ -216,6 +216,8 @@ Rule: if two decisions conflict, the latest wins (see §Resolved conflicts).
 | D-179 | Visual language follows the Apple store reference (parchment/white surfaces, pill actions, 18px hairline cards, 17px body, product-only shadow) with Borneo green as the single accent.                    | v1         |
 | D-180 | Product photos are hosted sample photos (Unsplash, no visible third-party logos) stored as absolute https URLs in `media.url`; every listed product has one. Replaced by Borneo photography before launch. | v1         |
 | D-181 | Home opens on products: the hero is the newest launch (photo, real price, CTA), then the next launches, then category banners. No slogan hero.                                                             | v1         |
+| D-182 | Search relevance: a product matches at `word_similarity` ≥ 0.4 over name, line, category and model number; hits below 60% of the best hit are dropped. A typed SKU or model-number prefix ranks first.     | assumption |
+| D-183 | Search: until there is sales data, "popular categories" in the no-results fallback are the first four in configured category order. Result pages are `noindex`.                                            | assumption |
 
 ## Services & tax
 

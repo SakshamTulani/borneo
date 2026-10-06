@@ -16,6 +16,12 @@ import {
 } from './modules/catalog/index';
 import { loadOfferBook } from './modules/offers/index';
 import {
+  createSearchService,
+  findExactCandidates,
+  listSynonyms,
+  searchProducts,
+} from './modules/search/index';
+import {
   createRelationsService,
   loadRelationInputs,
   replaceRelations,
@@ -47,5 +53,16 @@ export function relationsService(db: Db) {
   return createRelationsService({
     loadInputs: () => loadRelationInputs(db),
     replaceRelations: (edges) => replaceRelations(db, edges),
+  });
+}
+
+/** Search reuses the catalog's card builder so results price exactly like listings. */
+export function searchService(db: Db, catalog: ReturnType<typeof catalogService>) {
+  return createSearchService({
+    listSynonyms: () => listSynonyms(db),
+    listCategories: () => listCategories(db),
+    searchProducts: (query) => searchProducts(db, query),
+    findExactCandidates: (query) => findExactCandidates(db, query),
+    summarize: (rows) => catalog.summarize(rows),
   });
 }

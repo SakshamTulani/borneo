@@ -1,11 +1,11 @@
 import { Link } from '@tanstack/react-router';
-import { HomeIcon, LayoutGridIcon } from 'lucide-react';
+import { HomeIcon, LayoutGridIcon, SearchIcon } from 'lucide-react';
 
 const item =
   'flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-[11px] text-ink-muted outline-none focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-brand data-[status=active]:font-semibold data-[status=active]:text-brand';
 
 /**
- * Mobile bottom navigation (D-160). Search, cart and account join it in their phases (G, J, I).
+ * Mobile bottom navigation (D-160). Cart and account join it in their phases (J, I).
  * Hidden from 1024px, where the header carries navigation.
  */
 export function BottomNav() {
@@ -25,6 +25,12 @@ export function BottomNav() {
           <Link to="/categories" className={item}>
             <LayoutGridIcon className="size-5" aria-hidden />
             Categories
+          </Link>
+        </li>
+        <li className="flex flex-1">
+          <Link to="/search" className={item}>
+            <SearchIcon className="size-5" aria-hidden />
+            Search
           </Link>
         </li>
       </ul>

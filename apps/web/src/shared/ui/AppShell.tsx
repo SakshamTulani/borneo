@@ -5,11 +5,19 @@ import { Container } from './layout/Container';
 import { BottomNav } from './navigation/BottomNav';
 
 /**
- * Page frame: skip link, frosted header (logo + `nav` on desktop), full-width main (pages use
+ * Page frame: skip link, frosted header (logo, `nav` on desktop, `search`), full-width main (pages use
  * `Container`; full-bleed tiles don't), parchment footer, and the mobile bottom nav.
- * `nav` is composed by the root route (category links come from the catalog feature).
+ * `nav` and `search` are composed by the root route (they come from features).
  */
-export function AppShell({ children, nav }: { children: ReactNode; nav?: ReactNode }) {
+export function AppShell({
+  children,
+  nav,
+  search,
+}: {
+  children: ReactNode;
+  nav?: ReactNode;
+  search?: ReactNode;
+}) {
   return (
     <div className="flex min-h-dvh flex-col bg-canvas text-ink">
       <a
@@ -19,11 +27,14 @@ export function AppShell({ children, nav }: { children: ReactNode; nav?: ReactNo
         Skip to content
       </a>
       <header className="sticky top-0 z-20 border-b border-line/70 bg-surface/80 backdrop-blur-xl backdrop-saturate-150">
-        <Container className="flex h-14 items-center gap-8">
+        <Container className="flex h-16 items-center gap-4 lg:gap-8">
           <Link to="/" aria-label="Borneo home" className="inline-flex shrink-0 rounded-sm">
             <Logo />
           </Link>
           {nav ? <div className="hidden min-w-0 lg:block">{nav}</div> : null}
+          {search ? (
+            <div className="ml-auto w-full max-w-xs min-w-0 xl:max-w-sm">{search}</div>
+          ) : null}
         </Container>
       </header>
       <main id="main" tabIndex={-1} className="w-full flex-1 pb-24 outline-none lg:pb-16">

@@ -6,6 +6,7 @@ export { addIstDays, endOfIstDayAfter, istDate } from './time';
 
 export * from './contracts/common';
 export * from './contracts/catalog';
+export * from './contracts/search';
 export * from './contracts/offers';
 export * from './contracts/cart';
 export * from './contracts/delivery';
@@ -23,6 +24,7 @@ export * from './rules/pricing';
 export * from './rules/relations';
 export * from './rules/returns';
 export * from './rules/serviceability';
+export * from './rules/search';
 export * from './rules/suggestions';
 export * from './rules/upgrade';
 export * from './rules/watch';

@@ -2,6 +2,7 @@ import type { QueryClient } from '@tanstack/react-query';
 import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanstack/react-router';
 import type { ReactNode } from 'react';
 import { categoriesQuery, CategoryNav } from '../features/catalog';
+import { SearchBox } from '../features/search';
 import appCss from '../index.css?url';
 import { pageHead } from '../shared/lib/seo';
 import { AppShell } from '../shared/ui/AppShell';
@@ -37,7 +38,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     </Container>
   ),
   component: () => (
-    <AppShell nav={<CategoryNav />}>
+    <AppShell nav={<CategoryNav />} search={<SearchBox />}>
       <Outlet />
     </AppShell>
   ),

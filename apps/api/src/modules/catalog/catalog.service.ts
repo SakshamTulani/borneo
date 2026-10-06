@@ -166,6 +166,9 @@ export function createCatalogService(deps: CatalogDeps) {
   }
 
   return {
+    /** Cards for listing rows, priced and badged by the shared rules; other modules reuse it. */
+    summarize,
+
     async listCategories(): Promise<CategoryListResponse> {
       return { items: await deps.listCategories() };
     },
