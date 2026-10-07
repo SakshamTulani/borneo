@@ -65,6 +65,7 @@ describe('AccountOverview', () => {
             },
           ],
           reviews: [],
+          nextCursor: null,
         },
       ],
     });
@@ -81,7 +82,7 @@ describe('AccountOverview', () => {
     stubApi({
       'GET /me/summary': [200, { ...summary, orders: 0, activeOrders: 0 }],
       'GET /me/orders': [200, { items: [], nextCursor: null }],
-      'GET /me/reviews': [200, { prompts: [], reviews: [] }],
+      'GET /me/reviews': [200, { prompts: [], reviews: [], nextCursor: null }],
     });
     await renderWithRouter(<AccountOverview />, { queryClient: client() });
     expect(await screen.findByRole('link', { name: 'Start shopping' })).toBeTruthy();

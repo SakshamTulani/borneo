@@ -13,6 +13,8 @@ const result = (over: Partial<SearchResult> = {}): SearchResult => ({
   },
   categories: [{ slug: 'smartphones', name: 'Smartphones' }],
   products: [summaryFixture()],
+  total: 1,
+  nextCursor: null,
   fallback: null,
   ...over,
 });

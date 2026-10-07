@@ -16,6 +16,7 @@ export {
   listAttributeDefs,
   listCategories,
   listCategoryProducts,
+  countProducts,
   listLineProducts,
   findUpgradeTarget,
   listedProductFacts,

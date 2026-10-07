@@ -1,3 +1,4 @@
+import { SEARCH_CANDIDATES_MAX } from '@borneo/shared';
 import type { CategoryDto, ProductSummary } from '@borneo/shared';
 import { describe, expect, it } from 'vitest';
 import { emptySearchDeps } from '../../test/factories';
@@ -50,7 +51,7 @@ describe('search service', () => {
     );
     const r = await service.search('Phone under 20k', 10);
     expect(calls).toEqual([
-      { terms: [], categoryId: 'c-phones', maxPricePaise: 2_000_000, limit: 10 },
+      { terms: [], categoryId: 'c-phones', maxPricePaise: 2_000_000, limit: SEARCH_CANDIDATES_MAX },
     ]);
     expect(r.interpretation.category?.slug).toBe('smartphones');
     expect(r.products.map((p) => p.slug)).toEqual(['pulse-4']);

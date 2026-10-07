@@ -4,6 +4,8 @@ import { productSummarySchema } from './catalog';
 
 export const SEARCH_QUERY_MAX = 100;
 export const SEARCH_LIMIT_MAX = 24;
+/** Most matches a query ranks before paging (relevance is relative to the best hit, D-182). */
+export const SEARCH_CANDIDATES_MAX = 200;
 
 export const searchCategorySchema = z.object({
   slug: z.string().min(1),
@@ -24,8 +26,11 @@ export const searchResultSchema = z.object({
   }),
   /** Matching categories (D-112). */
   categories: z.array(searchCategorySchema),
-  /** Listed products, best match first, with price and stock (D-112). */
+  /** Listed products, best match first, with price and stock (D-112): this page of them. */
   products: z.array(productSummarySchema),
+  /** Relevant matches across all pages, and the next page's cursor (null on the last). */
+  total: z.number().int().nonnegative(),
+  nextCursor: z.string().nullable(),
   /** Only when nothing matched (D-114): same-category alternatives and categories to browse. */
   fallback: z
     .object({

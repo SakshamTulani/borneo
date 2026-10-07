@@ -25,7 +25,8 @@ export function ReturnsPage() {
   if (query.isError && !query.data)
     return <ErrorState title="Couldn't load your returns" onRetry={() => void query.refetch()} />;
   if (!query.data) return <Skeleton className="h-40 w-full" aria-label="Loading your returns" />;
-  if (query.data.items.length === 0)
+  const items = query.data.pages.flatMap((p) => p.items);
+  if (items.length === 0)
     return (
       <EmptyState
         icon={<RotateCcwIcon className="size-9" strokeWidth={1.5} />}
@@ -34,42 +35,53 @@ export function ReturnsPage() {
       />
     );
   return (
-    <ul className="space-y-3">
-      {query.data.items.map((r) => (
-        <li key={r.id} className="space-y-2 rounded-xl border border-line bg-surface p-5">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="font-semibold">
-              {kindLabel(r.kind)} · {r.productName}
+    <div className="space-y-4">
+      <ul className="space-y-3">
+        {items.map((r) => (
+          <li key={r.id} className="space-y-2 rounded-xl border border-line bg-surface p-5">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <p className="font-semibold">
+                {kindLabel(r.kind)} · {r.productName}
+              </p>
+              <Badge variant={tone[r.status]}>{RETURN_STATUS_LABELS[r.status]}</Badge>
+            </div>
+            <p className="text-sm text-ink-muted">
+              {reasonLabel(r.reason)} · asked {formatDay(new Date(r.createdAt).toISOString())} ·{' '}
+              <Link
+                to="/account/orders/$orderId"
+                params={{ orderId: r.orderId }}
+                className="text-brand hover:underline"
+              >
+                order {r.orderNumber}
+              </Link>
             </p>
-            <Badge variant={tone[r.status]}>{RETURN_STATUS_LABELS[r.status]}</Badge>
-          </div>
-          <p className="text-sm text-ink-muted">
-            {reasonLabel(r.reason)} · asked {formatDay(new Date(r.createdAt).toISOString())} ·{' '}
-            <Link
-              to="/account/orders/$orderId"
-              params={{ orderId: r.orderId }}
-              className="text-brand hover:underline"
-            >
-              order {r.orderNumber}
-            </Link>
-          </p>
-          {r.details ? <p className="text-[15px]">“{r.details}”</p> : null}
-          {r.refundPaise ? (
-            <p className="text-sm font-semibold text-success">
-              {formatInr(r.refundPaise)} refunded to your original payment method
-            </p>
-          ) : null}
-          {r.demoNextStatus ? (
-            <Button
-              variant="secondary"
-              loading={advance.isPending && advance.variables === r.id}
-              onClick={() => advance.mutate(r.id)}
-            >
-              Demo: mark {RETURN_STATUS_LABELS[r.demoNextStatus].split(':')[0]!.toLowerCase()}
-            </Button>
-          ) : null}
-        </li>
-      ))}
-    </ul>
+            {r.details ? <p className="text-[15px]">“{r.details}”</p> : null}
+            {r.refundPaise ? (
+              <p className="text-sm font-semibold text-success">
+                {formatInr(r.refundPaise)} refunded to your original payment method
+              </p>
+            ) : null}
+            {r.demoNextStatus ? (
+              <Button
+                variant="secondary"
+                loading={advance.isPending && advance.variables === r.id}
+                onClick={() => advance.mutate(r.id)}
+              >
+                Demo: mark {RETURN_STATUS_LABELS[r.demoNextStatus].split(':')[0]!.toLowerCase()}
+              </Button>
+            ) : null}
+          </li>
+        ))}
+      </ul>
+      {query.hasNextPage ? (
+        <Button
+          variant="secondary"
+          loading={query.isFetchingNextPage}
+          onClick={() => void query.fetchNextPage()}
+        >
+          Show older requests
+        </Button>
+      ) : null}
+    </div>
   );
 }

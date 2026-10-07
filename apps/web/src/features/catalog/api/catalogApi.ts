@@ -2,8 +2,7 @@ import { z } from 'zod';
 import {
   categoryDetailSchema,
   categoryDtoSchema,
-  pageSchema,
-  productSummarySchema,
+  productListResponseSchema,
   type CategoryDetail,
   type CategoryDto,
   type ProductSummary,
@@ -11,8 +10,8 @@ import {
 import { getJson, isApiError } from '../../../shared/lib/http';
 
 const categoryList = z.object({ items: z.array(categoryDtoSchema) });
-const productPage = pageSchema(productSummarySchema);
-export type ProductPageDto = { items: ProductSummary[]; nextCursor: string | null };
+const productPage = productListResponseSchema;
+export type ProductPageDto = { items: ProductSummary[]; nextCursor: string | null; total: number };
 
 export async function getCategories(): Promise<CategoryDto[]> {
   return (await getJson('/categories', categoryList)).items;

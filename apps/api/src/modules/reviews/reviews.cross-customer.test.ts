@@ -55,6 +55,10 @@ describe('reviews are written and listed only by their author (D-96, D-150)', ()
     });
     expect(res.statusCode).toBe(404);
     const mine = await app.inject({ method: 'GET', url: '/me/reviews', headers: as(other) });
-    expect(myReviewsSchema.parse(mine.json())).toEqual({ prompts: [], reviews: [] });
+    expect(myReviewsSchema.parse(mine.json())).toEqual({
+      prompts: [],
+      reviews: [],
+      nextCursor: null,
+    });
   });
 });

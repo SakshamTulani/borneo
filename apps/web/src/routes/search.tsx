@@ -10,7 +10,7 @@ export const Route = createFileRoute('/search')({
   loaderDeps: ({ search }) => ({ q: search.q ?? '' }),
   loader: async ({ context: { queryClient }, deps: { q } }) => {
     if (!q) return;
-    const view = await queryClient.ensureQueryData(searchResultsQuery(q));
+    const view = (await queryClient.ensureInfiniteQueryData(searchResultsQuery(q))).pages[0]!;
     // Exact model name, model number or SKU: straight to the product (D-110).
     if (view.exactMatch)
       throw redirect({

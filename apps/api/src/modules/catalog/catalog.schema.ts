@@ -8,11 +8,10 @@ import {
   finderQuerySchema,
   finderViewSchema,
   MAX_PAGE_LIMIT,
-  pageSchema,
   paiseSchema,
   productDetailSchema,
+  productListResponseSchema,
   productSortSchema,
-  productSummarySchema,
   reviewPageSchema,
 } from '@borneo/shared';
 
@@ -46,7 +45,7 @@ export const productListQuery = z
   }));
 export type ProductListQuery = z.output<typeof productListQuery>;
 
-export const productListResponse = pageSchema(productSummarySchema);
+export const productListResponse = productListResponseSchema;
 export type ProductListResponse = z.infer<typeof productListResponse>;
 
 export const categoryDetailResponse = categoryDetailSchema;

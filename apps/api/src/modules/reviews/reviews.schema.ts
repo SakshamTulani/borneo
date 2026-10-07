@@ -1,4 +1,9 @@
-import { errorResponseSchema, myReviewsSchema, reviewInputSchema } from '@borneo/shared';
+import {
+  accountPageQuerySchema,
+  errorResponseSchema,
+  myReviewsSchema,
+  reviewInputSchema,
+} from '@borneo/shared';
 
 export const errors = {
   400: errorResponseSchema,
@@ -8,4 +13,4 @@ export const errors = {
   422: errorResponseSchema,
 };
 
-export { myReviewsSchema, reviewInputSchema };
+export { accountPageQuerySchema, myReviewsSchema, reviewInputSchema };

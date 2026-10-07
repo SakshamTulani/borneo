@@ -39,6 +39,8 @@ export function toSearchView(r: SearchResult): SearchView {
       : {}),
     categories: r.categories,
     cards: r.products.map(toCatalogCard),
+    total: r.total,
+    nextCursor: r.nextCursor,
     fallback: r.fallback
       ? { cards: r.fallback.alternatives.map(toCatalogCard), categories: r.fallback.categories }
       : null,

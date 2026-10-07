@@ -1,15 +1,17 @@
-import { queryOptions } from '@tanstack/react-query';
+import { infiniteQueryOptions, queryOptions } from '@tanstack/react-query';
 import { getSearch } from '../api/searchApi';
 import { toSearchView, toSuggestions } from '../mappers/toSearchView';
 
 export const RESULTS_LIMIT = 24;
 export const SUGGESTIONS_LIMIT = 5;
 
-/** The results page for a query (D-110–114). */
+/** The results page for a query (D-110–114), 24 at a time; the first page decides the redirect. */
 export const searchResultsQuery = (q: string) =>
-  queryOptions({
+  infiniteQueryOptions({
     queryKey: ['search', 'results', q],
-    queryFn: async () => toSearchView(await getSearch(q, RESULTS_LIMIT)),
+    queryFn: async ({ pageParam }) => toSearchView(await getSearch(q, RESULTS_LIMIT, pageParam)),
+    initialPageParam: undefined as string | undefined,
+    getNextPageParam: (last) => last.nextCursor ?? undefined,
     staleTime: 30_000,
   });
 

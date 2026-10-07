@@ -77,7 +77,7 @@ export function AccountOverview() {
   const reviews = useMyReviewsQuery();
   if (!customer) return null;
   const recent = orders.data?.pages[0]?.items.slice(0, 3) ?? [];
-  const prompts = reviews.data?.prompts.slice(0, 2) ?? [];
+  const prompts = reviews.data?.pages[0]?.prompts.slice(0, 2) ?? [];
 
   return (
     <div className="space-y-6">

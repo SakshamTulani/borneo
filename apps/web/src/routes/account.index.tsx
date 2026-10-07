@@ -8,7 +8,7 @@ export const Route = createFileRoute('/account/')({
     Promise.all([
       queryClient.prefetchQuery(summaryQuery),
       queryClient.prefetchInfiniteQuery(ordersQuery),
-      queryClient.prefetchQuery(myReviewsQuery),
+      queryClient.prefetchInfiniteQuery(myReviewsQuery),
     ]),
   component: AccountOverview,
 });

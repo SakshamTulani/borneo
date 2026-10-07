@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import { returnsQuery } from '../repository/ordersRepository';
 
 export function useReturnsQuery() {
-  return useQuery(returnsQuery);
+  return useInfiniteQuery(returnsQuery);
 }

@@ -1,12 +1,16 @@
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, sql } from 'drizzle-orm';
 import type { CustomerId } from '@borneo/shared';
 import type { Db } from '../../db/client';
 import { order, orderItem, product, review, user, variant } from '../../db/schema/index';
 
 // Customer-scoped (ADR-0005): reviews are read and written only as their author.
 
-/** The customer's own reviews, newest first. */
-export async function listMyReviews(customerId: CustomerId, db: Db) {
+/** The customer's own reviews, newest first, one keyset page (`limit + 1` rows). */
+export async function listMyReviews(
+  customerId: CustomerId,
+  db: Db,
+  page: { limit: number; after?: { at: Date; id: string } } = { limit: 50 },
+) {
   return db
     .select({
       review,
@@ -15,8 +19,25 @@ export async function listMyReviews(customerId: CustomerId, db: Db) {
     })
     .from(review)
     .innerJoin(product, eq(product.id, review.productId))
-    .where(eq(review.customerId, customerId))
-    .orderBy(desc(review.createdAt));
+    .where(
+      and(
+        eq(review.customerId, customerId),
+        page.after
+          ? sql`(${review.createdAt}, ${review.id}) < (${page.after.at}, ${page.after.id})`
+          : undefined,
+      ),
+    )
+    .orderBy(desc(review.createdAt), desc(review.id))
+    .limit(page.limit + 1);
+}
+
+/** Every product the customer has reviewed (one review per product, D-221). */
+export async function listReviewedProductIds(customerId: CustomerId, db: Db): Promise<Set<string>> {
+  const rows = await db
+    .select({ productId: review.productId })
+    .from(review)
+    .where(eq(review.customerId, customerId));
+  return new Set(rows.map((r) => r.productId));
 }
 
 /** A delivered line of this customer's, with what a review needs (D-150, D-221). */

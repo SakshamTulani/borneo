@@ -31,13 +31,17 @@ export const productListQuery = (params: Record<string, string>) =>
     queryKey: ['products', params],
     queryFn: async ({
       pageParam,
-    }): Promise<{ cards: CatalogCard[]; nextCursor: string | null }> => {
+    }): Promise<{ cards: CatalogCard[]; nextCursor: string | null; total: number }> => {
       const page = await getProducts({
         ...params,
         limit: String(PAGE_SIZE),
         ...(pageParam ? { cursor: pageParam } : {}),
       });
-      return { cards: page.items.map(toCatalogCard), nextCursor: page.nextCursor };
+      return {
+        cards: page.items.map(toCatalogCard),
+        nextCursor: page.nextCursor,
+        total: page.total,
+      };
     },
     initialPageParam: null as string | null,
     getNextPageParam: (last) => last.nextCursor,

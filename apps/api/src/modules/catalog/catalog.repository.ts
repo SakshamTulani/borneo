@@ -187,6 +187,24 @@ export async function listProducts(db: Db, q: ListingQuery): Promise<ListingRow[
     .limit(q.limit + 1);
 }
 
+/** How many listed products match the listing's filters (all pages), for "24 of 45". */
+export async function countProducts(db: Db, q: Omit<ListingQuery, 'after' | 'limit' | 'sort'>) {
+  const cheapest = cheapestVariant(db);
+  const [row] = await db
+    .select({ n: sql<number>`count(*)::int` })
+    .from(product)
+    .innerJoin(cheapest, eq(cheapest.productId, product.id))
+    .where(
+      and(
+        inArray(product.status, [...LISTED]),
+        q.categoryId ? eq(product.categoryId, q.categoryId) : undefined,
+        q.maxPricePaise !== undefined ? lte(cheapest.pricePaise, q.maxPricePaise) : undefined,
+        ...q.filters.map(filterCondition),
+      ),
+    );
+  return row?.n ?? 0;
+}
+
 /** Listing rows for given products (suggestions), listed ones only (D-17). */
 export async function listProductsByIds(db: Db, ids: string[]): Promise<ListingRow[]> {
   if (ids.length === 0) return [];

@@ -1,7 +1,9 @@
 import type { SearchResult } from '@borneo/shared';
 import { QueryClient } from '@tanstack/react-query';
 import { screen } from '@testing-library/react';
-import { describe, expect, it } from 'vitest';
+import userEvent from '@testing-library/user-event';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import { stubApi } from '@/test/api';
 import { axe } from 'vitest-axe';
 import { summaryFixture } from '@/test/fixtures';
 import { renderWithRouter } from '@/test/router';
@@ -11,7 +13,10 @@ import { SearchPage } from './SearchPage';
 
 function client(r: SearchResult) {
   const queryClient = new QueryClient();
-  queryClient.setQueryData(searchResultsQuery(r.query).queryKey, toSearchView(r));
+  queryClient.setQueryData(searchResultsQuery(r.query).queryKey, {
+    pages: [toSearchView({ ...r, total: r.products.length })],
+    pageParams: [undefined],
+  });
   return queryClient;
 }
 
@@ -25,6 +30,8 @@ const phonesUnder = (over: Partial<SearchResult>): SearchResult => ({
   },
   categories: [{ slug: 'smartphones', name: 'Smartphones' }],
   products: [],
+  total: 1,
+  nextCursor: null,
   fallback: null,
   ...over,
 });
@@ -79,5 +86,33 @@ describe('SearchPage', () => {
     expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('Search');
     expect(document.activeElement).toBe(screen.getByRole('combobox'));
     expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('D-182: more results load a page at a time with "N of total"', async () => {
+    afterEach(() => vi.unstubAllGlobals());
+    const r = phonesUnder({
+      products: [summaryFixture({ id: 'a', name: 'Pulse 4', slug: 'pulse-4' })],
+    });
+    const qc = new QueryClient();
+    qc.setQueryData(searchResultsQuery(r.query).queryKey, {
+      pages: [toSearchView({ ...r, total: 2, nextCursor: '1' })],
+      pageParams: [undefined],
+    });
+    stubApi({
+      'GET /search': [
+        200,
+        {
+          ...r,
+          products: [summaryFixture({ id: 'b', name: 'Nova 3', slug: 'nova-3' })],
+          total: 2,
+          nextCursor: null,
+        },
+      ],
+    });
+    await renderWithRouter(<SearchPage q={r.query} />, { queryClient: qc });
+    expect(screen.getByText('Showing 1 of 2')).toBeTruthy();
+    await userEvent.click(screen.getByRole('button', { name: 'Show more results' }));
+    expect(await screen.findByText('Nova 3')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Show more results' })).toBeNull();
   });
 });

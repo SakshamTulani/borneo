@@ -6,13 +6,18 @@ import {
   type ProductImage,
   type ReviewInput,
 } from '@borneo/shared';
+import { readTimeCursor, timeCursor } from '../../cursor';
 import { AppError, notFound } from '../../errors';
 import type { DeliveredLineRow } from '../orders/index';
 
 export type ReviewsDeps = {
   now: () => number;
   listDelivered: (customerId: CustomerId) => Promise<DeliveredLineRow[]>;
-  listMine: (customerId: CustomerId) => Promise<
+  reviewedProductIds: (customerId: CustomerId) => Promise<Set<string>>;
+  listMine: (
+    customerId: CustomerId,
+    page: { limit: number; after?: { at: Date; id: string } },
+  ) => Promise<
     {
       review: {
         id: string;
@@ -46,18 +51,32 @@ export type ReviewsDeps = {
   loadImages: (productIds: string[]) => Promise<Map<string, ProductImage[]>>;
 };
 
+/** Written reviews per page. */
+const REVIEWS_PAGE = 10;
+
 /** Review prompts and verified reviews written in the account (D-150, D-151, D-221). */
 export function createReviewsService(deps: ReviewsDeps) {
-  async function mine(customerId: CustomerId): Promise<MyReviews> {
-    const [delivered, written] = await Promise.all([
-      deps.listDelivered(customerId),
-      deps.listMine(customerId),
+  /** Prompts on the first page only, then the written reviews a page at a time. */
+  async function mine(
+    customerId: CustomerId,
+    query: { cursor?: string | undefined; limit: number } = { limit: REVIEWS_PAGE },
+  ): Promise<MyReviews> {
+    const first = !query.cursor;
+    const [delivered, reviewed, rows] = await Promise.all([
+      first ? deps.listDelivered(customerId) : Promise.resolve([]),
+      first ? deps.reviewedProductIds(customerId) : Promise.resolve(new Set<string>()),
+      deps.listMine(customerId, {
+        limit: query.limit,
+        ...(query.cursor ? { after: readTimeCursor(query.cursor) } : {}),
+      }),
     ]);
     const prompts = reviewPrompts(
       delivered.map((l) => ({ ...l, deliveredAt: l.deliveredAt!.getTime() })),
-      new Set(written.map((w) => w.review.productId)),
+      reviewed,
     );
     const images = await deps.loadImages(prompts.map((p) => p.productId));
+    const page = rows.slice(0, query.limit);
+    const last = page.at(-1);
     return {
       prompts: prompts.map((p) => ({
         orderItemId: p.orderItemId,
@@ -67,7 +86,7 @@ export function createReviewsService(deps: ReviewsDeps) {
         image: images.get(p.productId)?.[0] ?? null,
         deliveredAt: p.deliveredAt,
       })),
-      reviews: written.map((w) => ({
+      reviews: page.map((w) => ({
         id: w.review.id,
         productName: w.productName,
         slug: w.slug,
@@ -77,6 +96,10 @@ export function createReviewsService(deps: ReviewsDeps) {
         authorName: w.review.authorName,
         createdAt: w.review.createdAt.getTime(),
       })),
+      nextCursor:
+        rows.length > query.limit && last
+          ? timeCursor(last.review.createdAt, last.review.id)
+          : null,
     };
   }
 

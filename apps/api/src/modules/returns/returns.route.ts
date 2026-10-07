@@ -2,6 +2,7 @@ import type { FastifyPluginAsync, FastifyReply } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { requireCustomerId, type SessionReader } from '../../session/index';
 import {
+  accountPageQuerySchema,
   errors,
   imageResponse,
   itemParams,
@@ -45,11 +46,16 @@ export function returnsRoutes(service: ReturnsService, session: SessionReader): 
 
     r.get(
       '/me/returns',
-      { schema: { response: { 200: returnPageSchema, ...errors } } },
+      {
+        schema: {
+          querystring: accountPageQuerySchema,
+          response: { 200: returnPageSchema, ...errors },
+        },
+      },
       async (request, reply) => {
         const customerId = await requireCustomerId(session, request);
         noStore(reply);
-        return service.list(customerId);
+        return service.list(customerId, request.query);
       },
     );
 

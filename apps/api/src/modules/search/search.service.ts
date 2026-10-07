@@ -1,4 +1,5 @@
 import {
+  SEARCH_CANDIDATES_MAX,
   exactMatch,
   keepRelevant,
   namedCategory,
@@ -39,7 +40,7 @@ export function createSearchService(deps: SearchDeps) {
      * Exact model/SKU → PDP (D-110), synonyms (D-111), products with price and stock plus
      * categories (D-112), price intent (D-113), and a fallback when nothing matches (D-114).
      */
-    async search(raw: string, limit: number): Promise<SearchResult> {
+    async search(raw: string, limit: number, offset = 0): Promise<SearchResult> {
       const [synonyms, categories] = await Promise.all([
         deps.listSynonyms(),
         deps.listCategories(),
@@ -62,10 +63,12 @@ export function createSearchService(deps: SearchDeps) {
               terms: named ? [] : intent.terms,
               ...(named ? { categoryId: named.id } : {}),
               ...price,
-              limit,
+              // Rank every candidate, then page: the relevance cut is relative to the best hit.
+              limit: SEARCH_CANDIDATES_MAX,
             });
       const [candidates, hits] = await Promise.all([exactLookup, rowsLookup]);
-      const rows = keepRelevant(hits);
+      const relevant = keepRelevant(hits);
+      const rows = relevant.slice(offset, offset + limit);
 
       const exact = candidates
         .map((c) => ({ slug: c.slug, hit: exactMatch(raw, c) }))
@@ -80,7 +83,7 @@ export function createSearchService(deps: SearchDeps) {
       const matchedCategories = [...new Map(matched.map((c) => [c.slug, toCategory(c)])).values()];
 
       let fallback: SearchResult['fallback'] = null;
-      if (products.length === 0 && !exact) {
+      if (relevant.length === 0 && !exact) {
         const alternatives = named
           ? await deps.summarize(
               await deps.searchProducts({
@@ -108,6 +111,8 @@ export function createSearchService(deps: SearchDeps) {
         },
         categories: matchedCategories.slice(0, MAX_SEARCH_CATEGORIES),
         products,
+        total: relevant.length,
+        nextCursor: offset + limit < relevant.length ? String(offset + limit) : null,
         fallback,
       };
     },

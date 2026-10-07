@@ -110,7 +110,12 @@ export const returnRequestInputSchema = z.object({
 });
 export type ReturnRequestInput = z.input<typeof returnRequestInputSchema>;
 
-export const returnPageSchema = z.object({ items: z.array(returnRequestViewSchema) });
+export const returnPageSchema = pageSchema(returnRequestViewSchema);
+/** `?cursor=&limit=` for the account's own lists (returns, written reviews). */
+export const accountPageQuerySchema = z.object({
+  cursor: z.string().max(200).optional(),
+  limit: z.coerce.number().int().min(1).max(50).default(10),
+});
 
 /** A product the customer can review: received and not yet reviewed (D-151, D-221). */
 export const reviewPromptSchema = z.object({
@@ -135,10 +140,11 @@ export const myReviewSchema = z.object({
 });
 export type MyReview = z.infer<typeof myReviewSchema>;
 
-/** `GET /me/reviews`: prompts and the reviews already written. */
+/** `GET /me/reviews`: prompts (first page only) and a page of the reviews already written. */
 export const myReviewsSchema = z.object({
   prompts: z.array(reviewPromptSchema),
   reviews: z.array(myReviewSchema),
+  nextCursor: z.string().nullable(),
 });
 export type MyReviews = z.infer<typeof myReviewsSchema>;
 

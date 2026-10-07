@@ -15,6 +15,9 @@ export type SearchView = {
   };
   categories: SearchCategoryLink[];
   cards: CatalogCard[];
+  /** Relevant matches across all pages, and where the next page starts. */
+  total: number;
+  nextCursor: string | null;
   /** Only when nothing matched (D-114). */
   fallback: { cards: CatalogCard[]; categories: SearchCategoryLink[] } | null;
 };

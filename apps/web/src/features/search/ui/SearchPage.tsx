@@ -1,5 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { ArrowRightIcon, SearchXIcon } from 'lucide-react';
+import { Button } from '@/shared/ui/base/button';
 import { ProductGrid, ProductGridSkeleton } from '@/features/catalog';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
 import { Container } from '@/shared/ui/layout/Container';
@@ -77,8 +78,9 @@ function Results({ q }: { q: string }) {
     return (
       <ErrorState title="Search isn't working right now" onRetry={() => void results.refetch()} />
     );
-  const view = results.data;
-  const count = view.cards.length;
+  const view = results.data.pages[0]!;
+  const cards = results.data.pages.flatMap((p) => p.cards);
+  const count = view.total;
   return (
     <div className="space-y-8">
       <div className="space-y-4">
@@ -114,7 +116,21 @@ function Results({ q }: { q: string }) {
           <h2 id="search-products" className="sr-only">
             Products
           </h2>
-          <ProductGrid cards={view.cards} eager={4} />
+          <ProductGrid cards={cards} eager={4} />
+          {results.hasNextPage ? (
+            <div className="flex flex-col items-center gap-2 pt-6">
+              <p className="text-sm text-ink-muted">
+                Showing {cards.length} of {view.total}
+              </p>
+              <Button
+                variant="outline"
+                loading={results.isFetchingNextPage}
+                onClick={() => void results.fetchNextPage()}
+              >
+                Show more results
+              </Button>
+            </div>
+          ) : null}
         </section>
       ) : (
         <NoResults view={view} />

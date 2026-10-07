@@ -1,10 +1,11 @@
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { PlusIcon, ShieldCheckIcon, SmartphoneIcon } from 'lucide-react';
 import { formatInr } from '@borneo/shared';
 import { formatDay } from '@/shared/lib/format';
 import { imageSource } from '@/shared/lib/image';
 import { useNow } from '@/shared/lib/useNow';
-import { buttonVariants } from '@/shared/ui/base/button';
+import { Button, buttonVariants } from '@/shared/ui/base/button';
 import { Skeleton } from '@/shared/ui/base/skeleton';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
@@ -94,8 +95,11 @@ function Device({ device, now }: { device: OwnedDevice; now: number | undefined 
 }
 
 /** What the customer owns, from delivered orders only (D-24, D-220). */
+const STEP = 10;
+
 export function DevicesPage() {
   const query = useDevicesQuery();
+  const [shown, setShown] = useState(STEP);
   const now = useNow();
   if (query.isError && !query.data)
     return <ErrorState title="Couldn't load your devices" onRetry={() => void query.refetch()} />;
@@ -113,11 +117,19 @@ export function DevicesPage() {
         }
       />
     );
+  const items = query.data.items;
   return (
-    <ul className="space-y-4">
-      {query.data.items.map((d) => (
-        <Device key={d.productId} device={d} now={now} />
-      ))}
-    </ul>
+    <div className="space-y-4">
+      <ul className="space-y-4">
+        {items.slice(0, shown).map((d) => (
+          <Device key={d.productId} device={d} now={now} />
+        ))}
+      </ul>
+      {items.length > shown ? (
+        <Button variant="secondary" onClick={() => setShown(shown + STEP)}>
+          Show more devices ({items.length - shown})
+        </Button>
+      ) : null}
+    </div>
   );
 }

@@ -44,6 +44,8 @@ export type CategoryViewProps = {
     | {
         status: 'success';
         cards: CatalogCard[];
+        /** Matches across all pages. */
+        total?: number;
         hasMore: boolean;
         loadingMore: boolean;
         onLoadMore: () => void;
@@ -94,7 +96,9 @@ export function CategoryView(props: CategoryViewProps) {
             ) : null}
             {list.status === 'success' && list.cards.length ? (
               <p role="status" className="sr-only text-sm text-ink-muted sm:not-sr-only">
-                Showing {list.cards.length} product{list.cards.length === 1 ? '' : 's'}
+                Showing {list.cards.length}
+                {list.total && list.total > list.cards.length ? ` of ${list.total}` : ''} product
+                {(list.total ?? list.cards.length) === 1 ? '' : 's'}
               </p>
             ) : null}
             <div className="ml-auto flex items-center gap-3">
@@ -229,6 +233,7 @@ function Results({
         <div className="flex justify-center pt-4">
           <Button variant="outline" loading={list.loadingMore} onClick={list.onLoadMore}>
             Show more products
+            {list.total ? ` (${list.total - list.cards.length} more)` : ''}
           </Button>
         </div>
       ) : null}

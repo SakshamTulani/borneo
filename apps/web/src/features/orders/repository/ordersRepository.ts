@@ -23,9 +23,12 @@ export const ordersQuery = infiniteQueryOptions({
 export const orderDetailQuery = (id: string) =>
   queryOptions({ queryKey: ['me', 'orders', id], queryFn: () => getOrder(id) });
 
-export const returnsQuery = queryOptions({
+/** Return and replacement requests, newest first, ten at a time. */
+export const returnsQuery = infiniteQueryOptions({
   queryKey: ['me', 'returns'],
-  queryFn: getReturns,
+  queryFn: ({ pageParam }) => getReturns(pageParam),
+  initialPageParam: undefined as string | undefined,
+  getNextPageParam: (last) => last.nextCursor ?? undefined,
 });
 
 export const cancelOrder = postCancel;

@@ -103,15 +103,28 @@ const returnColumns = {
   ),
 };
 
-/** The customer's requests, newest first. */
-export async function listReturns(customerId: CustomerId, db: Db) {
+/** The customer's requests, newest first, one keyset page (`limit + 1` rows to tell if more). */
+export async function listReturns(
+  customerId: CustomerId,
+  db: Db,
+  page: { limit: number; after?: { at: Date; id: string } } = { limit: 50 },
+) {
   return db
     .select(returnColumns)
     .from(returnRequest)
     .innerJoin(orderItem, eq(orderItem.id, returnRequest.orderItemId))
     .innerJoin(order, eq(order.id, orderItem.orderId))
-    .where(and(eq(returnRequest.customerId, customerId), eq(order.customerId, customerId)))
-    .orderBy(desc(returnRequest.createdAt), desc(returnRequest.id));
+    .where(
+      and(
+        eq(returnRequest.customerId, customerId),
+        eq(order.customerId, customerId),
+        page.after
+          ? sql`(${returnRequest.createdAt}, ${returnRequest.id}) < (${page.after.at}, ${page.after.id})`
+          : undefined,
+      ),
+    )
+    .orderBy(desc(returnRequest.createdAt), desc(returnRequest.id))
+    .limit(page.limit + 1);
 }
 
 export type ReturnRecord = Awaited<ReturnType<typeof listReturns>>[number];

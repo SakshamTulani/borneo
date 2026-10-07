@@ -1,7 +1,12 @@
 import type { FastifyPluginAsync } from 'fastify';
 import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { requireCustomerId, type SessionReader } from '../../session/index';
-import { errors, myReviewsSchema, reviewInputSchema } from './reviews.schema';
+import {
+  accountPageQuerySchema,
+  errors,
+  myReviewsSchema,
+  reviewInputSchema,
+} from './reviews.schema';
 import type { ReviewsService } from './reviews.service';
 
 export function reviewsRoutes(service: ReviewsService, session: SessionReader): FastifyPluginAsync {
@@ -10,11 +15,16 @@ export function reviewsRoutes(service: ReviewsService, session: SessionReader): 
 
     r.get(
       '/me/reviews',
-      { schema: { response: { 200: myReviewsSchema, ...errors } } },
+      {
+        schema: {
+          querystring: accountPageQuerySchema,
+          response: { 200: myReviewsSchema, ...errors },
+        },
+      },
       async (request, reply) => {
         const customerId = await requireCustomerId(session, request);
         void reply.header('cache-control', 'private, no-store');
-        return service.mine(customerId);
+        return service.mine(customerId, request.query);
       },
     );
 

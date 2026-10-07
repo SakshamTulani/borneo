@@ -7,7 +7,7 @@ export function useWriteReviewMutation() {
   return useMutation({
     mutationFn: writeReview,
     onSuccess: async (mine) => {
-      queryClient.setQueryData(myReviewsQuery.queryKey, mine);
+      queryClient.setQueryData(myReviewsQuery.queryKey, { pages: [mine], pageParams: [undefined] });
       await queryClient.invalidateQueries({ queryKey: ['me', 'summary'] });
       await queryClient.invalidateQueries({ queryKey: ['product'] });
     },

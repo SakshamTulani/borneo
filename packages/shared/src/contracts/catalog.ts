@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { epochMsSchema, idSchema, paiseSchema } from './common';
+import { epochMsSchema, idSchema, pageSchema, paiseSchema } from './common';
 
 /** Per-category config (D-89): phones and TVs are seeded replacementOnly (D-81), the rest return (D-83). */
 export const returnPolicySchema = z.enum(['return', 'replacementOnly']);
@@ -226,6 +226,11 @@ export const productSummarySchema = z.object({
   image: productImageSchema.nullable(),
 });
 export type ProductSummary = z.infer<typeof productSummarySchema>;
+
+/** `GET /products`: one keyset page plus how many match across all pages ("24 of 45"). */
+export const productListResponseSchema = pageSchema(productSummarySchema).extend({
+  total: z.number().int().nonnegative(),
+});
 
 /** Category filters (D-18), parsed from query params named by attribute key. */
 export type ListingFilter =

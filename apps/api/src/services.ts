@@ -47,6 +47,7 @@ import {
   listAttributeDefs,
   listCategories,
   listCategoryProducts,
+  countProducts,
   listLineProducts,
   findUpgradeTarget,
   listedProductFacts,
@@ -130,6 +131,7 @@ import {
   findReviewableLine,
   insertReview,
   listMyReviews,
+  listReviewedProductIds,
 } from './modules/reviews/index';
 import {
   addWatch,
@@ -163,6 +165,7 @@ export function catalogService(db: Db, now: () => number = Date.now) {
     loadReviews: (productId, page) => loadReviews(db, productId, page),
     loadRatingCounts: (productId) => loadRatingCounts(db, productId),
     listCategoryProducts: (categoryId) => listCategoryProducts(db, categoryId),
+    countProducts: (query) => countProducts(db, query),
   });
 }
 
@@ -350,7 +353,7 @@ export function postPurchaseServices(
       findTarget: (customerId, orderId, itemId) =>
         findReturnTarget(customerId, db, orderId, itemId),
       create: (customerId, input) => createReturnRequest(customerId, db, input),
-      list: (customerId) => listReturns(customerId, db),
+      list: (customerId, page) => listReturns(customerId, db, page),
       find: (customerId, id) => findReturn(customerId, db, id),
       findPhoto: (customerId, id, photoId) => findReturnPhoto(customerId, db, id, photoId),
       advance: (customerId, input) =>
@@ -362,7 +365,8 @@ export function postPurchaseServices(
     reviews: createReviewsService({
       now,
       listDelivered,
-      listMine: (customerId) => listMyReviews(customerId, db),
+      listMine: (customerId, page) => listMyReviews(customerId, db, page),
+      reviewedProductIds: (customerId) => listReviewedProductIds(customerId, db),
       findLine: (customerId, itemId) => findReviewableLine(customerId, db, itemId),
       insert: (customerId, values) => insertReview(customerId, db, values),
       loadImages: (ids) => loadImages(db, ids),
@@ -388,8 +392,7 @@ export function postPurchaseServices(
     account: createAccountService({
       listDelivered,
       countOrders: (customerId) => countOrders(customerId, db),
-      reviewedProductIds: async (customerId) =>
-        new Set((await listMyReviews(customerId, db)).map((r) => r.review.productId)),
+      reviewedProductIds: (customerId) => listReviewedProductIds(customerId, db),
       countWatch: (customerId) => countWatch(customerId, db),
       countOpenReturns: (customerId) => countOpenReturns(customerId, db),
       memberSince: (customerId) => findMemberSince(customerId, db),

@@ -14,6 +14,7 @@ import {
   type ReturnRequestView,
 } from '@borneo/shared';
 import type { NotificationAdapter } from '../../adapters/notifications/index';
+import { readTimeCursor, timeCursor } from '../../cursor';
 import { AppError, notFound } from '../../errors';
 import type { NewReturnRequest, ReturnRecord } from './returns.repository';
 
@@ -42,7 +43,10 @@ export type ReturnsDeps = {
     orderItemId: string,
   ) => Promise<Target | undefined>;
   create: (customerId: CustomerId, input: NewReturnRequest) => Promise<string | null>;
-  list: (customerId: CustomerId) => Promise<ReturnRecord[]>;
+  list: (
+    customerId: CustomerId,
+    page: { limit: number; after?: { at: Date; id: string } },
+  ) => Promise<ReturnRecord[]>;
   find: (customerId: CustomerId, id: string) => Promise<ReturnRecord | undefined>;
   findPhoto: (
     customerId: CustomerId,
@@ -177,8 +181,24 @@ export function createReturnsService(deps: ReturnsDeps) {
       return view(customerId, id);
     },
 
-    async list(customerId: CustomerId): Promise<{ items: ReturnRequestView[] }> {
-      return { items: (await deps.list(customerId)).map(toView) };
+    /** Newest first, a page at a time. */
+    async list(
+      customerId: CustomerId,
+      query: { cursor?: string | undefined; limit: number },
+    ): Promise<{ items: ReturnRequestView[]; nextCursor: string | null }> {
+      const rows = await deps.list(customerId, {
+        limit: query.limit,
+        ...(query.cursor ? { after: readTimeCursor(query.cursor) } : {}),
+      });
+      const page = rows.slice(0, query.limit);
+      const last = page.at(-1);
+      return {
+        items: page.map(toView),
+        nextCursor:
+          rows.length > query.limit && last
+            ? timeCursor(last.request.createdAt, last.request.id)
+            : null,
+      };
     },
 
     async photo(customerId: CustomerId, returnId: string, photoId: string) {

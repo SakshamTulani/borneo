@@ -255,6 +255,7 @@ describe('ReturnsPage', () => {
           items: [
             request({ status: 'completed', refundPaise: 279_900, details: 'Left bud silent' }),
           ],
+          nextCursor: null,
         },
       ],
     });
@@ -266,8 +267,21 @@ describe('ReturnsPage', () => {
   });
 
   it('says so when there are none', async () => {
-    stubApi({ 'GET /me/returns': [200, { items: [] }] });
+    stubApi({ 'GET /me/returns': [200, { items: [], nextCursor: null }] });
     await renderWithRouter(<ReturnsPage />, { queryClient: client() });
     expect(await screen.findByText('No returns')).toBeTruthy();
+  });
+
+  it('pages older requests ten at a time', async () => {
+    stubApi({
+      'GET /me/returns': (_b, url) =>
+        url.searchParams.get('cursor')
+          ? [200, { items: [request({ id: 'r2', productName: 'Older item' })], nextCursor: null }]
+          : [200, { items: [request()], nextCursor: 'c1' }],
+    });
+    await renderWithRouter(<ReturnsPage />, { queryClient: client() });
+    await userEvent.click(await screen.findByRole('button', { name: 'Show older requests' }));
+    expect(await screen.findByText('Return · Older item')).toBeTruthy();
+    expect(screen.queryByRole('button', { name: 'Show older requests' })).toBeNull();
   });
 });

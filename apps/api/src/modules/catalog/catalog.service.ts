@@ -75,6 +75,7 @@ export type CatalogDeps = {
     page: { limit: number; after?: { createdAt: Date; id: string } },
   ) => Promise<ReviewRow[]>;
   loadRatingCounts: (productId: string) => Promise<{ rating: number; count: number }[]>;
+  countProducts: (query: Omit<ListingQuery, 'after' | 'limit' | 'sort'>) => Promise<number>;
   listCategoryProducts: (
     categoryId: string,
   ) => Promise<(ListingRow & { attributes: Record<string, unknown> })[]>;
@@ -358,17 +359,24 @@ export function createCatalogService(deps: CatalogDeps) {
         const key = Object.keys(raw)[0]!;
         throw new AppError(400, 'UNKNOWN_FILTER', `Filter "${key}" needs a category`, { key });
       }
-      const rows = await deps.listProducts({
+      const where = {
         filters,
-        sort,
-        limit,
         ...(categoryId ? { categoryId } : {}),
         ...(maxPricePaise !== undefined ? { maxPricePaise } : {}),
-        ...(cursor ? { after: decodeCursor(cursor, sort) } : {}),
-      });
+      };
+      const [rows, total] = await Promise.all([
+        deps.listProducts({
+          ...where,
+          sort,
+          limit,
+          ...(cursor ? { after: decodeCursor(cursor, sort) } : {}),
+        }),
+        deps.countProducts(where),
+      ]);
       const page = rows.slice(0, limit);
       const last = page.at(-1);
       return {
+        total,
         items: await summarize(page),
         nextCursor:
           rows.length > limit && last ? encodeCursor(sortKey(last, sort), last.slug) : null,

@@ -37,8 +37,10 @@ export const postReturn = (
     returnRequestViewSchema,
   );
 
-export const getReturns = (): Promise<{ items: ReturnRequestView[] }> =>
-  getJson('/me/returns', returnPageSchema);
+export const getReturns = (
+  cursor?: string,
+): Promise<{ items: ReturnRequestView[]; nextCursor: string | null }> =>
+  getJson(`/me/returns?limit=10${cursor ? `&cursor=${id(cursor)}` : ''}`, returnPageSchema);
 
 /** Demo only: the demo support desk's next step (D-219). */
 export const postReturnAdvance = (returnId: string): Promise<ReturnRequestView> =>

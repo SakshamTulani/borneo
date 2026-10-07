@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import {
+  accountPageQuerySchema,
   errorResponseSchema,
   returnPageSchema,
   returnRequestInputSchema,
@@ -23,4 +24,9 @@ export const errors = {
   422: errorResponseSchema,
 };
 
-export { returnPageSchema, returnRequestInputSchema, returnRequestViewSchema };
+export {
+  accountPageQuerySchema,
+  returnPageSchema,
+  returnRequestInputSchema,
+  returnRequestViewSchema,
+};

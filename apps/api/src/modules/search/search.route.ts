@@ -14,7 +14,8 @@ export function searchRoutes(service: SearchService): FastifyPluginAsync {
           response: { 200: searchResponse, 400: errorResponseSchema },
         },
       },
-      (request) => service.search(request.query.q, request.query.limit),
+      (request) =>
+        service.search(request.query.q, request.query.limit, Number(request.query.cursor ?? 0)),
     );
   };
 }

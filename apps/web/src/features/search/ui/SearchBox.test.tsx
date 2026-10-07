@@ -18,6 +18,8 @@ function seeded() {
       interpretation: { text: 'echo' },
       categories: [{ slug: 'audio', name: 'Audio' }],
       products: [summaryFixture()],
+      total: 1,
+      nextCursor: null,
       fallback: null,
     }),
   );

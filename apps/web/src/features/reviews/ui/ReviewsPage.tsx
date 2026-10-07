@@ -1,7 +1,9 @@
+import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { StarIcon } from 'lucide-react';
 import { formatDay } from '@/shared/lib/format';
 import { imageSource } from '@/shared/lib/image';
+import { Button } from '@/shared/ui/base/button';
 import { Skeleton } from '@/shared/ui/base/skeleton';
 import { Rating } from '@/shared/ui/commerce/Rating';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
@@ -10,14 +12,18 @@ import { useMyReviewsQuery } from '../hooks/useMyReviewsQuery';
 import { ReviewForm } from './ReviewForm';
 
 const iso = (ms: number) => new Date(ms).toISOString();
+/** Prompts shown before "Show more". */
+const PROMPTS_STEP = 5;
 
 /** Review prompts after delivery, inside the account only (D-151), and reviews written (D-221). */
 export function ReviewsPage() {
   const query = useMyReviewsQuery();
+  const [promptsShown, setPromptsShown] = useState(PROMPTS_STEP);
   if (query.isError && !query.data)
     return <ErrorState title="Couldn't load your reviews" onRetry={() => void query.refetch()} />;
   if (!query.data) return <Skeleton className="h-60 w-full" aria-label="Loading your reviews" />;
-  const { prompts, reviews } = query.data;
+  const prompts = query.data.pages[0]?.prompts ?? [];
+  const reviews = query.data.pages.flatMap((p) => p.reviews);
   if (prompts.length === 0 && reviews.length === 0)
     return (
       <EmptyState
@@ -34,7 +40,7 @@ export function ReviewsPage() {
             Waiting for your review ({prompts.length})
           </h3>
           <ul className="space-y-3">
-            {prompts.map((p) => (
+            {prompts.slice(0, promptsShown).map((p) => (
               <li key={p.orderItemId} className="rounded-xl border border-line bg-surface p-5">
                 <div className="mb-4 flex items-center gap-4">
                   {p.image ? (
@@ -62,6 +68,14 @@ export function ReviewsPage() {
               </li>
             ))}
           </ul>
+          {prompts.length > promptsShown ? (
+            <Button
+              variant="secondary"
+              onClick={() => setPromptsShown(promptsShown + PROMPTS_STEP)}
+            >
+              Show more to review ({prompts.length - promptsShown})
+            </Button>
+          ) : null}
         </section>
       ) : null}
       {reviews.length ? (
@@ -88,6 +102,15 @@ export function ReviewsPage() {
               </li>
             ))}
           </ul>
+          {query.hasNextPage ? (
+            <Button
+              variant="secondary"
+              loading={query.isFetchingNextPage}
+              onClick={() => void query.fetchNextPage()}
+            >
+              Show older reviews
+            </Button>
+          ) : null}
         </section>
       ) : null}
     </div>

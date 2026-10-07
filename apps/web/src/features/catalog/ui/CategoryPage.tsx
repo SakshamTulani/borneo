@@ -56,6 +56,7 @@ export function CategoryPage({ slug, search, onSearchChange }: Props) {
       : {
           status: 'success',
           cards: products.data.pages.flatMap((p) => p.cards),
+          total: products.data.pages[0]?.total ?? 0,
           hasMore: products.hasNextPage,
           loadingMore: products.isFetchingNextPage,
           onLoadMore: () => void products.fetchNextPage(),

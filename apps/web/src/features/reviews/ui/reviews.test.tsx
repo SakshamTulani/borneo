@@ -37,7 +37,9 @@ const client = () => {
 
 describe('ReviewsPage', () => {
   it('D-151: prompts each delivered product; written reviews show the shown name; axe clean', async () => {
-    stubApi({ 'GET /me/reviews': [200, { prompts: [prompt], reviews: [written] }] });
+    stubApi({
+      'GET /me/reviews': [200, { prompts: [prompt], reviews: [written], nextCursor: null }],
+    });
     const { container } = await renderWithRouter(<ReviewsPage />, { queryClient: client() });
     expect(await screen.findByText('Waiting for your review (1)')).toBeTruthy();
     expect(screen.getByText(/Shown as Asha R\./)).toBeTruthy();
@@ -45,9 +47,13 @@ describe('ReviewsPage', () => {
   });
 
   it('D-221: a rating is required (none chosen for you); the review posts with optional words', async () => {
-    const after: MyReviews = { prompts: [], reviews: [{ ...written, productName: 'Echo Buds 2' }] };
+    const after: MyReviews = {
+      prompts: [],
+      reviews: [{ ...written, productName: 'Echo Buds 2' }],
+      nextCursor: null,
+    };
     const api = stubApi({
-      'GET /me/reviews': [200, { prompts: [prompt], reviews: [] }],
+      'GET /me/reviews': [200, { prompts: [prompt], reviews: [], nextCursor: null }],
       'POST /me/reviews': [201, after],
       'GET /me/summary': [200, {}],
     });
@@ -68,8 +74,28 @@ describe('ReviewsPage', () => {
   });
 
   it('says so when there is nothing to review', async () => {
-    stubApi({ 'GET /me/reviews': [200, { prompts: [], reviews: [] }] });
+    stubApi({ 'GET /me/reviews': [200, { prompts: [], reviews: [], nextCursor: null }] });
     await renderWithRouter(<ReviewsPage />, { queryClient: client() });
     expect(await screen.findByText('Nothing to review yet')).toBeTruthy();
+  });
+
+  it('D-221: written reviews page; prompts come with the first page only', async () => {
+    stubApi({
+      'GET /me/reviews': (_b, url) =>
+        url.searchParams.get('cursor')
+          ? [
+              200,
+              {
+                prompts: [],
+                reviews: [{ ...written, id: 'old', productName: 'Old phone' }],
+                nextCursor: null,
+              },
+            ]
+          : [200, { prompts: [prompt], reviews: [written], nextCursor: 'c1' }],
+    });
+    await renderWithRouter(<ReviewsPage />, { queryClient: client() });
+    await userEvent.click(await screen.findByRole('button', { name: 'Show older reviews' }));
+    expect(await screen.findByText('Old phone')).toBeTruthy();
+    expect(screen.getAllByText('Echo Buds 2')).toHaveLength(1);
   });
 });
