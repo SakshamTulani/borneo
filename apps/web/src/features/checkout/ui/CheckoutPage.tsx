@@ -26,7 +26,7 @@ import {
 import { newIdempotencyKey } from '../repository/checkoutRepository';
 import type { CheckoutChoice, CheckoutView, OrderView, PaymentMethod } from '../model';
 import { CheckoutSignUp } from './CheckoutSignUp';
-import { ChoiceList } from './ChoiceList';
+import { ChoiceList } from '@/shared/ui/forms/ChoiceList';
 
 type Props = {
   choice: CheckoutChoice;

@@ -283,6 +283,7 @@ export const orderFixture = (over: Partial<OrderView> = {}): OrderView => ({
   },
   items: [
     {
+      id: '5a6b7c8d-0000-4000-8000-000000000001',
       sku: 'BP4-6-128-FOR',
       name: 'Borneo Pulse 4',
       slug: 'borneo-pulse-4',
@@ -294,6 +295,10 @@ export const orderFixture = (over: Partial<OrderView> = {}): OrderView => ({
       bundleName: null,
       isFlash: false,
       isPreorder: false,
+      image: null,
+      returnWindowEndsAt: null,
+      returnRequest: null,
+      returnOptions: [],
     },
   ],
   subtotalPaise: 2_499_900,
@@ -313,5 +318,21 @@ export const orderFixture = (over: Partial<OrderView> = {}): OrderView => ({
   isPreorder: false,
   invoiceNumber: null,
   notice: null,
+  canCancel: true,
+  tracking: {
+    steps: [
+      { step: 'placed', at: Date.UTC(2026, 9, 6, 6, 30), state: 'done' },
+      { step: 'confirmed', at: null, state: 'current' },
+      { step: 'packed', at: null, state: 'upcoming' },
+      { step: 'shipped', at: null, state: 'upcoming' },
+      { step: 'outForDelivery', at: null, state: 'upcoming' },
+      { step: 'delivered', at: null, state: 'upcoming' },
+    ],
+    courier: null,
+    trackingNo: null,
+  },
+  deliveredAt: null,
+  refunds: [],
+  demoNextStep: null,
   ...over,
 });

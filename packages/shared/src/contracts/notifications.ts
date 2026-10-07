@@ -1,13 +1,17 @@
 import { z } from 'zod';
 import { idSchema, pageSchema } from './common';
 
-/** Messages the NotificationAdapter sends (D-101). Returns join later. */
+/** Messages the NotificationAdapter sends (D-101). */
 export const notificationKindSchema = z.enum([
   'password_reset',
   'password_changed',
   'order_confirmed',
   'order_cancelled',
   'order_refunded',
+  'order_shipped',
+  'order_delivered',
+  'return_requested',
+  'return_updated',
 ]);
 export type NotificationKind = z.infer<typeof notificationKindSchema>;
 

@@ -3,6 +3,7 @@ import type { AddressSnapshot, CustomerId, PaymentMethod } from '@borneo/shared'
 import type { Db } from '../../db/client';
 import {
   bundle,
+  category,
   flashPurchase,
   flashSale,
   inventory,
@@ -10,11 +11,14 @@ import {
   invoiceNumberSeq,
   offer,
   order,
+  orderEvent,
   orderItem,
   orderNumberSeq,
   payment,
   product,
   refund,
+  returnRequest,
+  shipment,
   stockHold,
   user,
   variant,
@@ -242,6 +246,14 @@ export async function placeOrder(
           status: holdStatus,
         });
       }
+      await tx
+        .insert(orderEvent)
+        .values([
+          { orderId, step: 'placed', at: input.now },
+          ...(input.hold.kind === 'allocate'
+            ? [{ orderId, step: 'confirmed' as const, at: input.now }]
+            : []),
+        ]);
       let attemptId: string | null = null;
       if (input.hold.kind === 'hold') {
         const [attempt] = await tx
@@ -287,36 +299,62 @@ export async function findOrder(customerId: CustomerId, db: Db, orderId: string)
     .from(order)
     .where(and(eq(order.customerId, customerId), eq(order.id, orderId)));
   if (!row) return undefined;
-  const [items, holds, attempts, invoices] = await Promise.all([
-    db
-      .select({
-        item: orderItem,
-        slug: product.slug,
-        options: variant.options,
-        bundleName: bundle.name,
-        bundleSlug: bundle.slug,
-        isPreorder: sql<boolean>`${product.status} = 'preorder'`,
-        warehouseState: warehouse.state,
-        warehouseName: warehouse.name,
-        warehousePincode: warehouse.pincode,
-        warehouseGstin: warehouse.gstin,
-      })
-      .from(orderItem)
-      .innerJoin(variant, eq(variant.id, orderItem.variantId))
-      .innerJoin(product, eq(product.id, variant.productId))
-      .leftJoin(bundle, eq(bundle.id, orderItem.bundleId))
-      .leftJoin(warehouse, eq(warehouse.id, orderItem.warehouseId))
-      .where(eq(orderItem.orderId, orderId))
-      .orderBy(asc(orderItem.bundleId), desc(orderItem.unitPricePaise), asc(orderItem.sku)),
-    db.select().from(stockHold).where(eq(stockHold.orderId, orderId)),
-    db
-      .select()
-      .from(payment)
-      .where(eq(payment.orderId, orderId))
-      .orderBy(desc(payment.startedAt), desc(payment.id)),
-    db.select().from(invoice).where(eq(invoice.orderId, orderId)),
-  ]);
-  return { ...row, items, holds, attempts, invoice: invoices[0] ?? null };
+  const [items, holds, attempts, invoices, events, shipments, refunds, returns] = await Promise.all(
+    [
+      db
+        .select({
+          item: orderItem,
+          productId: product.id,
+          slug: product.slug,
+          options: variant.options,
+          bundleName: bundle.name,
+          bundleSlug: bundle.slug,
+          isPreorder: sql<boolean>`${product.status} = 'preorder'`,
+          warehouseState: warehouse.state,
+          warehouseName: warehouse.name,
+          warehousePincode: warehouse.pincode,
+          warehouseGstin: warehouse.gstin,
+        })
+        .from(orderItem)
+        .innerJoin(variant, eq(variant.id, orderItem.variantId))
+        .innerJoin(product, eq(product.id, variant.productId))
+        .leftJoin(bundle, eq(bundle.id, orderItem.bundleId))
+        .leftJoin(warehouse, eq(warehouse.id, orderItem.warehouseId))
+        .where(eq(orderItem.orderId, orderId))
+        .orderBy(asc(orderItem.bundleId), desc(orderItem.unitPricePaise), asc(orderItem.sku)),
+      db.select().from(stockHold).where(eq(stockHold.orderId, orderId)),
+      db
+        .select()
+        .from(payment)
+        .where(eq(payment.orderId, orderId))
+        .orderBy(desc(payment.startedAt), desc(payment.id)),
+      db.select().from(invoice).where(eq(invoice.orderId, orderId)),
+      db
+        .select()
+        .from(orderEvent)
+        .where(eq(orderEvent.orderId, orderId))
+        .orderBy(asc(orderEvent.at)),
+      db.select().from(shipment).where(eq(shipment.orderId, orderId)),
+      db.select().from(refund).where(eq(refund.orderId, orderId)).orderBy(asc(refund.createdAt)),
+      db
+        .select()
+        .from(returnRequest)
+        .innerJoin(orderItem, eq(orderItem.id, returnRequest.orderItemId))
+        .where(and(eq(orderItem.orderId, orderId), eq(returnRequest.customerId, customerId)))
+        .orderBy(desc(returnRequest.createdAt)),
+    ],
+  );
+  return {
+    ...row,
+    items,
+    holds,
+    attempts,
+    invoice: invoices[0] ?? null,
+    events,
+    shipment: shipments[0] ?? null,
+    refunds,
+    returns: returns.map((r) => r.return_request),
+  };
 }
 
 /**
@@ -437,11 +475,11 @@ export async function settlePayment(
     decide: SettleDecision;
     at: Date;
   },
-): Promise<'confirmed' | 'confirmedLate' | 'refunded' | 'unchanged'> {
+): Promise<'confirmed' | 'confirmedLate' | 'refunded' | 'refundedCancelled' | 'unchanged'> {
   const { orderId, at } = input;
   return db.transaction(async (tx) => {
     const [row] = await tx
-      .select({ status: order.status, total: order.totalPaise })
+      .select({ status: order.status, total: order.totalPaise, notice: order.notice })
       .from(order)
       .where(and(eq(order.customerId, customerId), eq(order.id, orderId)))
       .for('update');
@@ -458,6 +496,18 @@ export async function settlePayment(
       )
       .returning({ id: payment.id });
     if (claimed.length === 0) return 'unchanged';
+    if (row.status === 'cancelled' && row.notice === 'CANCELLED_BY_CUSTOMER') {
+      // The customer cancelled while this payment was on its way: it is paid straight back.
+      await tx.insert(refund).values({
+        orderId,
+        paymentId: input.attemptId,
+        amountPaise: row.total,
+        reason: 'Payment arrived after the customer cancelled the order (D-216).',
+        status: 'processed',
+        createdAt: at,
+      });
+      return 'refundedCancelled';
+    }
 
     const holds = await tx.select().from(stockHold).where(eq(stockHold.orderId, orderId));
     const active = holds.filter((h) => h.status === 'active');
@@ -475,6 +525,7 @@ export async function settlePayment(
         .update(order)
         .set({ status: 'confirmed', notice: null })
         .where(eq(order.id, orderId));
+      await tx.insert(orderEvent).values({ orderId, step: 'confirmed', at }).onConflictDoNothing();
       return 'confirmed';
     }
     if (row.status === 'pending_payment' && active.length) {
@@ -552,6 +603,7 @@ export async function settlePayment(
         .update(order)
         .set({ status: 'confirmed', notice: 'CONFIRMED_AFTER_EXPIRY' })
         .where(eq(order.id, orderId));
+      await tx.insert(orderEvent).values({ orderId, step: 'confirmed', at }).onConflictDoNothing();
       return outcome;
     }
     await tx
@@ -712,3 +764,250 @@ export async function countFlashPurchases(
     .groupBy(flashPurchase.flashSaleId);
   return new Map(rows.map((r) => [r.saleId, r.n]));
 }
+
+/** One page of the customer's orders, newest first (keyset on placed time, then id). */
+export async function listOrders(
+  customerId: CustomerId,
+  db: Db,
+  page: { limit: number; after?: { placedAt: Date; id: string } },
+) {
+  const rows = await db
+    .select({
+      order,
+      // Qualified by hand: Drizzle leaves single-table columns unqualified, and inside the
+      // subquery a bare "id" would mean order_item.id.
+      itemCount: sql<number>`(select coalesce(sum(oi.qty), 0)::int from ${orderItem} oi where oi.order_id = "order"."id")`,
+    })
+    .from(order)
+    .where(
+      and(
+        eq(order.customerId, customerId),
+        page.after
+          ? sql`(${order.placedAt}, ${order.id}) < (${page.after.placedAt}, ${page.after.id})`
+          : undefined,
+      ),
+    )
+    .orderBy(desc(order.placedAt), desc(order.id))
+    .limit(page.limit + 1);
+  const ids = rows.map((r) => r.order.id);
+  const items = ids.length
+    ? await db
+        .select({
+          orderId: orderItem.orderId,
+          productId: product.id,
+          name: orderItem.productName,
+        })
+        .from(orderItem)
+        .innerJoin(variant, eq(variant.id, orderItem.variantId))
+        .innerJoin(product, eq(product.id, variant.productId))
+        .where(inArray(orderItem.orderId, ids))
+        .orderBy(asc(orderItem.orderId), desc(orderItem.unitPricePaise), asc(orderItem.sku))
+    : [];
+  return {
+    rows: rows.slice(0, page.limit).map((r) => ({
+      ...r,
+      items: items.filter((i) => i.orderId === r.order.id),
+    })),
+    hasMore: rows.length > page.limit,
+  };
+}
+
+/** Orders by status, for the account overview. */
+export async function countOrders(customerId: CustomerId, db: Db) {
+  const rows = await db
+    .select({ status: order.status, n: sql<number>`count(*)::int` })
+    .from(order)
+    .where(eq(order.customerId, customerId))
+    .groupBy(order.status);
+  return new Map(rows.map((r) => [r.status, r.n]));
+}
+
+export type CancelDecision = (facts: {
+  status: (typeof order.$inferSelect)['status'];
+  prepaid: boolean;
+  totalPaise: number;
+}) => { ok: false } | { ok: true; refundPaise: number };
+
+/**
+ * Cancels the customer's order (D-149, D-216) under a lock on it: `decide` (the shared rule)
+ * says whether it may and what to refund. Every reservation still in place goes back (stock,
+ * pre-order cap, flash units), open payment attempts end, a refund is recorded against the
+ * successful payment, and the order is cancelled. Null when it can't be cancelled.
+ */
+export async function cancelOrder(
+  customerId: CustomerId,
+  db: Db,
+  orderId: string,
+  decide: CancelDecision,
+  now: Date,
+): Promise<{ refundPaise: number } | null> {
+  return db.transaction(async (tx) => {
+    const [row] = await tx
+      .select()
+      .from(order)
+      .where(and(eq(order.customerId, customerId), eq(order.id, orderId)))
+      .for('update');
+    if (!row) return null;
+    const decision = decide({
+      status: row.status,
+      prepaid: row.paymentMethod !== 'cod',
+      totalPaise: row.totalPaise,
+    });
+    if (!decision.ok) return null;
+    const holds = await tx
+      .select()
+      .from(stockHold)
+      .where(
+        and(eq(stockHold.orderId, orderId), inArray(stockHold.status, ['active', 'converted'])),
+      );
+    if (holds.length) await release(tx, customerId, orderId, holds);
+    await tx
+      .update(stockHold)
+      .set({ status: 'released' })
+      .where(
+        and(eq(stockHold.orderId, orderId), inArray(stockHold.status, ['active', 'converted'])),
+      );
+    await tx
+      .update(payment)
+      .set({ status: 'expired' })
+      .where(and(eq(payment.orderId, orderId), eq(payment.status, 'started')));
+    if (decision.refundPaise > 0) {
+      const [paid] = await tx
+        .select({ id: payment.id })
+        .from(payment)
+        .where(and(eq(payment.orderId, orderId), eq(payment.status, 'succeeded')))
+        .limit(1);
+      if (paid)
+        await tx.insert(refund).values({
+          orderId,
+          paymentId: paid.id,
+          amountPaise: decision.refundPaise,
+          reason: 'Cancelled by the customer before dispatch (D-216).',
+          status: 'processed',
+          createdAt: now,
+        });
+    }
+    await tx
+      .update(order)
+      .set({ status: 'cancelled', notice: 'CANCELLED_BY_CUSTOMER', cancelledAt: now })
+      .where(eq(order.id, orderId));
+    return { refundPaise: decision.refundPaise };
+  });
+}
+
+export type TrackingStepName = (typeof orderEvent.$inferSelect)['step'];
+
+/**
+ * Moves the order one tracking step (D-215), only from the status the caller saw, so a repeated
+ * click does nothing. Shipping takes the units out of the warehouse (on hand and reserved both
+ * drop) and books the demo consignment; delivery stamps every line's return window.
+ */
+export async function advanceOrder(
+  customerId: CustomerId,
+  db: Db,
+  input: {
+    orderId: string;
+    from: (typeof order.$inferSelect)['status'];
+    step: TrackingStepName;
+    status: (typeof order.$inferSelect)['status'];
+    at: Date;
+    courier: { name: string; trackingNo: string };
+    returnWindowEndsAt: Date;
+  },
+): Promise<boolean> {
+  const { orderId, at } = input;
+  return db.transaction(async (tx) => {
+    const moved = await tx
+      .update(order)
+      .set({
+        status: input.status,
+        ...(input.step === 'delivered' ? { deliveredAt: at } : {}),
+      })
+      .where(
+        and(eq(order.customerId, customerId), eq(order.id, orderId), eq(order.status, input.from)),
+      )
+      .returning({ id: order.id });
+    if (moved.length === 0) return false;
+    const added = await tx
+      .insert(orderEvent)
+      .values({ orderId, step: input.step, at })
+      .onConflictDoNothing()
+      .returning({ id: orderEvent.id });
+    if (added.length === 0) throw new Error(`step ${input.step} already recorded`);
+    if (input.step === 'shipped') {
+      const holds = await tx
+        .select()
+        .from(stockHold)
+        .where(and(eq(stockHold.orderId, orderId), eq(stockHold.status, 'converted')));
+      for (const h of holds)
+        if (h.warehouseId)
+          await tx
+            .update(inventory)
+            .set({
+              onHand: sql`${inventory.onHand} - ${h.qty}`,
+              reserved: sql`${inventory.reserved} - ${h.qty}`,
+            })
+            .where(
+              and(eq(inventory.warehouseId, h.warehouseId), eq(inventory.variantId, h.variantId)),
+            );
+      await tx.insert(shipment).values({
+        orderId,
+        courier: input.courier.name,
+        trackingNo: input.courier.trackingNo,
+        status: 'in_transit',
+      });
+    }
+    if (input.step === 'outForDelivery')
+      await tx
+        .update(shipment)
+        .set({ status: 'out_for_delivery' })
+        .where(eq(shipment.orderId, orderId));
+    if (input.step === 'delivered') {
+      await tx
+        .update(shipment)
+        .set({ status: 'delivered', deliveredAt: at })
+        .where(eq(shipment.orderId, orderId));
+      await tx
+        .update(orderItem)
+        .set({ returnWindowEndsAt: input.returnWindowEndsAt })
+        .where(eq(orderItem.orderId, orderId));
+    }
+    return true;
+  });
+}
+
+/**
+ * The customer's delivered order lines (D-24): what they own, what they can review. `returned`
+ * when a return (not a replacement) for the line completed.
+ */
+export async function listDeliveredLines(customerId: CustomerId, db: Db) {
+  return db
+    .select({
+      orderItemId: orderItem.id,
+      orderId: order.id,
+      orderNumber: order.number,
+      productId: product.id,
+      productName: product.name,
+      slug: product.slug,
+      categoryName: category.name,
+      options: variant.options,
+      deliveredAt: order.deliveredAt,
+      returnWindowEndsAt: orderItem.returnWindowEndsAt,
+      returned: sql<boolean>`exists (select 1 from ${returnRequest} where ${returnRequest.orderItemId} = ${orderItem.id} and ${returnRequest.kind} = 'return' and ${returnRequest.status} = 'completed')`,
+    })
+    .from(orderItem)
+    .innerJoin(order, eq(order.id, orderItem.orderId))
+    .innerJoin(variant, eq(variant.id, orderItem.variantId))
+    .innerJoin(product, eq(product.id, variant.productId))
+    .innerJoin(category, eq(category.id, product.categoryId))
+    .where(
+      and(
+        eq(order.customerId, customerId),
+        eq(order.status, 'delivered'),
+        sql`${order.deliveredAt} is not null`,
+      ),
+    )
+    .orderBy(desc(order.deliveredAt));
+}
+
+export type DeliveredLineRow = Awaited<ReturnType<typeof listDeliveredLines>>[number];

@@ -9,7 +9,11 @@ import { healthRoutes, type HealthService } from './modules/health/index';
 import { notificationsRoutes, type NotificationsService } from './modules/notifications/index';
 import { offersRoutes, type OffersService } from './modules/offers/index';
 import { ordersRoutes, type OrdersService } from './modules/orders/index';
+import { accountRoutes, type AccountService } from './modules/account/index';
+import { returnsRoutes, type ReturnsService } from './modules/returns/index';
+import { reviewsRoutes, type ReviewsService } from './modules/reviews/index';
 import { searchRoutes, type SearchService } from './modules/search/index';
+import { watchRoutes, type WatchService } from './modules/watch/index';
 import { registerErrorHandler } from './plugins/errors';
 import { registerOriginGuard } from './plugins/origin';
 import type { RateLimiter } from './plugins/rateLimit';
@@ -26,6 +30,10 @@ export type AppDeps = {
   notifications: NotificationsService;
   cart: CartService;
   orders: OrdersService;
+  returns: ReturnsService;
+  reviews: ReviewsService;
+  watch: WatchService;
+  account: AccountService;
   session: SessionReader;
   rateLimiter: RateLimiter;
   /** Browser origins allowed to make cookie-authenticated writes. */
@@ -51,5 +59,9 @@ export function buildApp(deps: AppDeps) {
   app.register(notificationsRoutes(deps.notifications, deps.session));
   app.register(cartRoutes(deps.cart, deps.session));
   app.register(ordersRoutes(deps.orders, deps.session));
+  app.register(returnsRoutes(deps.returns, deps.session));
+  app.register(reviewsRoutes(deps.reviews, deps.session));
+  app.register(watchRoutes(deps.watch, deps.session));
+  app.register(accountRoutes(deps.account, deps.session));
   return app;
 }

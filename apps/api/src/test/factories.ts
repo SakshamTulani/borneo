@@ -1,6 +1,12 @@
 import { randomUUID } from 'node:crypto';
-import { toCustomerId, type CustomerId } from '@borneo/shared';
-import type { AppDeps } from '../app';
+import {
+  checkoutViewSchema,
+  orderViewSchema,
+  toCustomerId,
+  type CustomerId,
+  type OrderView,
+} from '@borneo/shared';
+import type { AppDeps, buildApp } from '../app';
 import type { Db } from '../db/client';
 import {
   address,
@@ -14,14 +20,19 @@ import {
   variant,
 } from '../db/schema/index';
 import { seedId } from '../db/seed/ids';
+import { createUnconfiguredCourier } from '../adapters/courier/index';
 import { noJobs } from '../jobs/index';
+import { createAccountService } from '../modules/account/index';
 import { createOrdersService } from '../modules/orders/index';
+import { createReturnsService } from '../modules/returns/index';
+import { createReviewsService } from '../modules/reviews/index';
+import { createWatchService } from '../modules/watch/index';
 import type { OrdersDeps } from '../modules/orders/orders.service';
 import type { AddressesDeps } from '../modules/addresses/addresses.service';
 import { createAddressesService } from '../modules/addresses/index';
 import { createAuthService, type IdentityPort } from '../modules/auth/index';
 import type { CartDeps } from '../modules/cart/cart.service';
-import { createCartService } from '../modules/cart/index';
+import { changeCart, createCartService } from '../modules/cart/index';
 import type { CatalogDeps } from '../modules/catalog/catalog.service';
 import { createCatalogService } from '../modules/catalog/index';
 import { createDeliveryService } from '../modules/delivery/index';
@@ -181,6 +192,8 @@ export function emptyIdentity(over: Partial<IdentityPort> = {}): IdentityPort {
     current: async () => null,
     issueResetCode: async () => null,
     resetPassword: unused,
+    updateProfile: unused,
+    changePassword: unused,
     ...over,
   };
 }
@@ -211,6 +224,48 @@ export function fakeAppDeps(over: Partial<AppDeps> = {}): AppDeps {
     notifications: createNotificationsService(emptyNotificationsDeps()),
     cart: createCartService(emptyCartDeps()),
     orders: createOrdersService(emptyOrdersDeps()),
+    returns: createReturnsService({
+      now: () => 0,
+      demoMode: false,
+      findTarget: async () => undefined,
+      create: async () => null,
+      list: async () => [],
+      find: async () => undefined,
+      findPhoto: async () => undefined,
+      advance: async () => false,
+      findCustomerEmail: async () => undefined,
+      notifications: { send: async () => null },
+      log: { warn: () => {} },
+    }),
+    reviews: createReviewsService({
+      now: () => 0,
+      listDelivered: async () => [],
+      listMine: async () => [],
+      findLine: async () => undefined,
+      insert: async () => null,
+      loadImages: async () => new Map(),
+    }),
+    watch: createWatchService({
+      now: () => 0,
+      findTarget: async () => undefined,
+      list: async () => [],
+      count: async () => 0,
+      add: async () => {},
+      remove: async () => {},
+      loadImages: async () => new Map(),
+    }),
+    account: createAccountService({
+      listDelivered: async () => [],
+      countOrders: async () => new Map(),
+      reviewedProductIds: async () => new Set(),
+      countWatch: async () => 0,
+      countOpenReturns: async () => 0,
+      memberSince: async () => undefined,
+      loadEdges: async () => [],
+      listBuyable: async () => [],
+      summarize: async () => [],
+      loadImages: async () => new Map(),
+    }),
     session: headerSession,
     rateLimiter: createRateLimiter(),
     allowedOrigins: ['http://localhost:5173'],
@@ -244,7 +299,12 @@ export function emptyOrdersDeps(over: Partial<OrdersDeps> = {}): OrdersDeps {
     startAttempt: async () => null,
     setGatewayRef: async () => {},
     issueInvoice: async () => {},
+    listOrders: async () => ({ rows: [], hasMore: false }),
+    cancelOrder: async () => null,
+    advanceOrder: async () => false,
+    loadImages: async () => new Map(),
     gateway: { available: false, startSession: async () => ({ gatewayRef: '' }) },
+    courier: createUnconfiguredCourier(),
     jobs: noJobs,
     notifications: { send: async () => null },
     renderInvoice: () => new Uint8Array(),
@@ -355,4 +415,98 @@ export async function insertShopper(db: Db, pincode = '560034') {
     })
     .returning({ id: address.id });
   return { customerId, addressId: row!.id };
+}
+
+type TestApp = Pick<ReturnType<typeof buildApp>, 'inject'>;
+type Shopper = { customerId: CustomerId; addressId: string };
+let orderKeys = 0;
+
+/** A shopper (default address in Bengaluru) whose cart holds `qty` of `cartKey`. */
+export async function insertBuyer(db: Db, cartKey: string, qty = 1): Promise<Shopper> {
+  const shopper = await insertShopper(db);
+  await putInCart(db, shopper.customerId, cartKey, qty);
+  return shopper;
+}
+
+/** Replaces the customer's cart with `qty` of `cartKey`. */
+export async function putInCart(db: Db, customerId: CustomerId, cartKey: string, qty = 1) {
+  await changeCart(customerId, db, () => ({
+    entries: [{ key: cartKey, qty }],
+    couponCode: undefined,
+  }));
+}
+
+/**
+ * Places the shopper's cart through the API (`app` with `headerSession`), at the total the
+ * checkout quotes. `pay` settles a prepaid order on the mock gateway (demo mode).
+ */
+export async function placeViaApi(
+  app: TestApp,
+  shopper: Shopper,
+  method: 'cod' | 'upi' | 'card' = 'cod',
+  options: { pay?: boolean } = {},
+): Promise<OrderView> {
+  const headers = { 'x-test-customer': shopper.customerId };
+  const quote = checkoutViewSchema.parse(
+    (await app.inject({ method: 'GET', url: `/me/checkout?method=${method}`, headers })).json(),
+  );
+  const res = await app.inject({
+    method: 'POST',
+    url: '/me/orders',
+    headers: { ...headers, 'idempotency-key': `factory-${Date.now()}-${orderKeys++}` },
+    payload: {
+      addressId: shopper.addressId,
+      payment: { method },
+      expectedTotalPaise: quote.totals.totalPaise,
+    },
+  });
+  if (res.statusCode !== 200) throw new Error(`placing failed: ${res.statusCode} ${res.body}`);
+  const order = orderViewSchema.parse(res.json());
+  if (!options.pay || method === 'cod') return order;
+  const paid = await app.inject({
+    method: 'POST',
+    url: `/me/orders/${order.id}/payments/${order.payment.attemptId}/mock`,
+    headers,
+    payload: { result: 'success' },
+  });
+  return orderViewSchema.parse(paid.json());
+}
+
+/** Presses the demo "Advance" `times` times (demo mode); the last view. */
+export async function advanceViaApi(
+  app: TestApp,
+  customerId: CustomerId,
+  orderId: string,
+  times: number,
+): Promise<OrderView> {
+  let view: OrderView | undefined;
+  for (let i = 0; i < times; i++) {
+    const res = await app.inject({
+      method: 'POST',
+      url: `/me/orders/${orderId}/demo/advance`,
+      headers: { 'x-test-customer': customerId },
+    });
+    if (res.statusCode !== 200) throw new Error(`advance failed: ${res.statusCode} ${res.body}`);
+    view = orderViewSchema.parse(res.json());
+  }
+  return view!;
+}
+
+/**
+ * A delivered order of one fresh sellable for a fresh shopper, via the API (demo mode,
+ * `headerSession`): placed (COD, or prepaid and paid) and advanced to delivered (D-215).
+ */
+export async function insertDeliveredOrder(
+  app: TestApp,
+  db: Db,
+  options: { method?: 'cod' | 'upi'; qty?: number; shopper?: Shopper; sku?: string } = {},
+) {
+  const item = options.sku
+    ? { sku: options.sku, key: `item:${options.sku}` }
+    : await insertSellable(db, { stock: { blr: 5 } });
+  const shopper = options.shopper ?? (await insertShopper(db));
+  await putInCart(db, shopper.customerId, item.key, options.qty ?? 1);
+  const placed = await placeViaApi(app, shopper, options.method ?? 'cod', { pay: true });
+  const order = await advanceViaApi(app, shopper.customerId, placed.id, 4);
+  return { item, shopper, order };
 }

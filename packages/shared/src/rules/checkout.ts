@@ -320,10 +320,17 @@ export const gstRateLabel = (rateBps: number) =>
 
 /** Words on the payment page and in the inbox when payment ends (D-57, D-59). */
 export function orderNoticeText(
-  notice: 'PAYMENT_FAILED' | 'HOLD_EXPIRED' | 'CONFIRMED_AFTER_EXPIRY' | 'REFUNDED_AFTER_EXPIRY',
+  notice:
+    | 'CANCELLED_BY_CUSTOMER'
+    | 'PAYMENT_FAILED'
+    | 'HOLD_EXPIRED'
+    | 'CONFIRMED_AFTER_EXPIRY'
+    | 'REFUNDED_AFTER_EXPIRY',
   totalPaise: Paise,
 ): string {
   switch (notice) {
+    case 'CANCELLED_BY_CUSTOMER':
+      return 'You cancelled this order.';
     case 'PAYMENT_FAILED':
       return "The payment didn't go through. Nothing was charged. Your items are still held: try again before the timer ends.";
     case 'HOLD_EXPIRED':

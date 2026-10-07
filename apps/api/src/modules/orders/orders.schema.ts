@@ -5,6 +5,8 @@ import {
   errorResponseSchema,
   idempotencyKeySchema,
   mockPaymentRequestSchema,
+  orderListQuerySchema,
+  orderPageSchema,
   orderViewSchema,
   placeOrderRequestSchema,
 } from '@borneo/shared';
@@ -33,3 +35,17 @@ export {
   orderViewSchema,
   placeOrderRequestSchema,
 };
+
+export { orderListQuerySchema, orderPageSchema };
+
+/** Keyset cursor for the order list: placed time and id, opaque to the client. */
+export function orderCursor(placedAt: Date, id: string): string {
+  return Buffer.from(`${placedAt.toISOString()}|${id}`).toString('base64url');
+}
+
+export function readOrderCursor(cursor: string): { placedAt: Date; id: string } | undefined {
+  const [at, id] = Buffer.from(cursor, 'base64url').toString().split('|');
+  const placedAt = new Date(at ?? '');
+  if (!id || Number.isNaN(placedAt.getTime()) || !z.uuid().safeParse(id).success) return undefined;
+  return { placedAt, id };
+}

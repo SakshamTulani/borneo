@@ -2,8 +2,10 @@ import { z } from 'zod';
 import {
   authResponseSchema,
   errorResponseSchema,
+  passwordChangeInputSchema,
   passwordResetInputSchema,
   passwordResetRequestResponseSchema,
+  profileInputSchema,
   passwordResetRequestSchema,
   sessionResponseSchema,
   signInInputSchema,
@@ -13,6 +15,8 @@ import {
 export {
   authResponseSchema,
   errorResponseSchema,
+  passwordChangeInputSchema,
+  profileInputSchema,
   passwordResetInputSchema,
   passwordResetRequestResponseSchema,
   passwordResetRequestSchema,

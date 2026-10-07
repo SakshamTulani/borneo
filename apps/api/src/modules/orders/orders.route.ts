@@ -7,6 +7,8 @@ import {
   checkoutViewSchema,
   errors,
   mockPaymentRequestSchema,
+  orderListQuerySchema,
+  orderPageSchema,
   orderParams,
   orderViewSchema,
   pdfResponse,
@@ -50,6 +52,42 @@ export function ordersRoutes(service: OrdersService, session: SessionReader): Fa
         const customerId = await requireCustomerId(session, request);
         noStore(reply);
         return service.place(customerId, request.headers['idempotency-key'], request.body);
+      },
+    );
+
+    r.get(
+      '/me/orders',
+      {
+        schema: {
+          querystring: orderListQuerySchema,
+          response: { 200: orderPageSchema, ...errors },
+        },
+      },
+      async (request, reply) => {
+        const customerId = await requireCustomerId(session, request);
+        noStore(reply);
+        return service.list(customerId, request.query);
+      },
+    );
+
+    r.post(
+      '/me/orders/:id/cancel',
+      { schema: { params: orderParams, response: { 200: orderViewSchema, ...errors } } },
+      async (request, reply) => {
+        const customerId = await requireCustomerId(session, request);
+        noStore(reply);
+        return service.cancel(customerId, request.params.id);
+      },
+    );
+
+    // Demo only (404 otherwise): the demo courier's "Advance" (D-215).
+    r.post(
+      '/me/orders/:id/demo/advance',
+      { schema: { params: orderParams, response: { 200: orderViewSchema, ...errors } } },
+      async (request, reply) => {
+        const customerId = await requireCustomerId(session, request);
+        noStore(reply);
+        return service.demoAdvance(customerId, request.params.id);
       },
     );
 

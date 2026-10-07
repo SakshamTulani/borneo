@@ -1,3 +1,4 @@
+import type { CustomerId } from '@borneo/shared';
 import type { AppDeps } from './app';
 import {
   createDemoNotifier,
@@ -9,6 +10,7 @@ import {
   createUnconfiguredGateway,
   type PaymentGateway,
 } from './adapters/payments/index';
+import { createDemoCourier, createUnconfiguredCourier } from './adapters/courier/index';
 import type { Db } from './db/client';
 import { renderInvoicePdf } from './documents/invoice';
 import { noJobs } from './jobs/index';
@@ -77,6 +79,8 @@ import {
   loadOfferBook,
 } from './modules/offers/index';
 import {
+  advanceOrder,
+  cancelOrder,
   countFlashPurchases,
   createOrdersService,
   expireHold,
@@ -84,7 +88,10 @@ import {
   findCustomerEmail,
   findOrder,
   findOrderIdByKey,
+  countOrders,
   issueInvoice,
+  listDeliveredLines,
+  listOrders,
   placeOrder,
   setGatewayRef,
   settlePayment,
@@ -102,6 +109,32 @@ import {
   loadRelationInputs,
   replaceRelations,
 } from './modules/relations/index';
+
+import { createAccountService, findMemberSince } from './modules/account/index';
+import {
+  advanceReturn,
+  countOpenReturns,
+  createReturnRequest,
+  createReturnsService,
+  findReturn,
+  findReturnPhoto,
+  findReturnTarget,
+  listReturns,
+} from './modules/returns/index';
+import {
+  createReviewsService,
+  findReviewableLine,
+  insertReview,
+  listMyReviews,
+} from './modules/reviews/index';
+import {
+  addWatch,
+  countWatch,
+  createWatchService,
+  findWatchTarget,
+  listWatch,
+  removeWatch,
+} from './modules/watch/index';
 
 // Binds repositories to a database. Used by main.ts, the reset script and integration tests.
 
@@ -255,7 +288,18 @@ export function ordersService(
       setGatewayRef(customerId, db, id, attemptId, ref),
     issueInvoice: (customerId, id, number, at) =>
       issueInvoice(customerId, db, id, number, new Date(at)),
+    listOrders: (customerId, page) => listOrders(customerId, db, page),
+    cancelOrder: (customerId, id, decide, at) =>
+      cancelOrder(customerId, db, id, decide, new Date(at)),
+    advanceOrder: (customerId, input) =>
+      advanceOrder(customerId, db, {
+        ...input,
+        at: new Date(input.at),
+        returnWindowEndsAt: new Date(input.returnWindowEndsAt),
+      }),
+    loadImages: (ids) => loadImages(db, ids),
     gateway: options.gateway,
+    courier: options.demoMode ? createDemoCourier() : createUnconfiguredCourier(),
     jobs: options.jobs,
     notifications: options.notifications,
     renderInvoice: renderInvoicePdf,
@@ -280,6 +324,68 @@ const consoleLog: NotifierDeps['log'] = {
   info: (obj, msg) => console.info(msg, obj),
   warn: (obj, msg) => console.warn(msg, obj),
 };
+
+/** After the order (Phase L): returns, reviews, Watch and the account overview. */
+export function postPurchaseServices(
+  db: Db,
+  catalog: ReturnType<typeof catalogService>,
+  options: {
+    demoMode: boolean;
+    notifications: ReturnType<typeof notificationAdapter>;
+    now: () => number;
+    log: NotifierDeps['log'];
+  },
+) {
+  const { now } = options;
+  const listDelivered = (customerId: CustomerId) => listDeliveredLines(customerId, db);
+  return {
+    returns: createReturnsService({
+      now,
+      demoMode: options.demoMode,
+      findTarget: (customerId, orderId, itemId) =>
+        findReturnTarget(customerId, db, orderId, itemId),
+      create: (customerId, input) => createReturnRequest(customerId, db, input),
+      list: (customerId) => listReturns(customerId, db),
+      find: (customerId, id) => findReturn(customerId, db, id),
+      findPhoto: (customerId, id, photoId) => findReturnPhoto(customerId, db, id, photoId),
+      advance: (customerId, input) =>
+        advanceReturn(customerId, db, { ...input, at: new Date(input.at) }),
+      findCustomerEmail: (customerId) => findCustomerEmail(customerId, db),
+      notifications: options.notifications,
+      log: options.log,
+    }),
+    reviews: createReviewsService({
+      now,
+      listDelivered,
+      listMine: (customerId) => listMyReviews(customerId, db),
+      findLine: (customerId, itemId) => findReviewableLine(customerId, db, itemId),
+      insert: (customerId, values) => insertReview(customerId, db, values),
+      loadImages: (ids) => loadImages(db, ids),
+    }),
+    watch: createWatchService({
+      now,
+      findTarget: (customerId, sku) => findWatchTarget(customerId, db, sku),
+      list: (customerId) => listWatch(customerId, db),
+      count: (customerId) => countWatch(customerId, db),
+      add: (customerId, variantId, at) => addWatch(customerId, db, variantId, new Date(at)),
+      remove: (customerId, variantId) => removeWatch(customerId, db, variantId),
+      loadImages: (ids) => loadImages(db, ids),
+    }),
+    account: createAccountService({
+      listDelivered,
+      countOrders: (customerId) => countOrders(customerId, db),
+      reviewedProductIds: async (customerId) =>
+        new Set((await listMyReviews(customerId, db)).map((r) => r.review.productId)),
+      countWatch: (customerId) => countWatch(customerId, db),
+      countOpenReturns: (customerId) => countOpenReturns(customerId, db),
+      memberSince: (customerId) => findMemberSince(customerId, db),
+      loadEdges: (ids) => loadRelationsFromMany(db, ids),
+      listBuyable: (ids) => listProductsByIds(db, ids),
+      summarize: (rows) => catalog.summarize(rows),
+      loadImages: (ids) => loadImages(db, ids),
+    }),
+  };
+}
 
 /** Every service the app needs, bound to one database. */
 export function appDeps(db: Db, config: AppConfig): AppDeps {
@@ -310,6 +416,12 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
       jobs: config.jobs ?? noJobs,
       // A real gateway is a production blocker (D-74): only the demo can take payments.
       gateway: config.demoMode ? createMockGateway() : createUnconfiguredGateway(),
+      notifications,
+      now,
+      log: config.log ?? consoleLog,
+    }),
+    ...postPurchaseServices(db, catalog, {
+      demoMode: config.demoMode,
       notifications,
       now,
       log: config.log ?? consoleLog,

@@ -15,6 +15,7 @@ export * from './contracts/orders';
 export * from './contracts/account';
 export * from './contracts/addresses';
 export * from './contracts/notifications';
+export * from './contracts/postPurchase';
 
 export * from './rules/account';
 export * from './rules/addresses';
@@ -28,6 +29,7 @@ export * from './rules/flash';
 export * from './rules/hold';
 export * from './rules/offers';
 export * from './rules/orders';
+export * from './rules/postPurchase';
 export * from './rules/pricing';
 export * from './rules/relations';
 export * from './rules/returns';

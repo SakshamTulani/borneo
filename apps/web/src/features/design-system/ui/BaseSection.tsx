@@ -1,3 +1,4 @@
+import { Link } from '@tanstack/react-router';
 import { Badge } from '@/shared/ui/base/badge';
 import { Button } from '@/shared/ui/base/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/shared/ui/base/card';
@@ -17,9 +18,11 @@ import { DemoBox } from '@/shared/ui/feedback/DemoBox';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
 import { CheckboxField } from '@/shared/ui/forms/CheckboxField';
+import { ChoiceList } from '@/shared/ui/forms/ChoiceList';
 import { FormAlert } from '@/shared/ui/forms/FormAlert';
 import { PasswordField } from '@/shared/ui/forms/PasswordField';
 import { TextField } from '@/shared/ui/forms/TextField';
+import { footerLinkClass, SiteFooter } from '@/shared/ui/navigation/SiteFooter';
 import { Specimen, State } from './Specimen';
 
 const noop = () => {};
@@ -131,6 +134,18 @@ export function BaseSection() {
         <State label="Form alert">
           <FormAlert>Email or password is incorrect.</FormAlert>
         </State>
+        <State label="Choice cards (nothing chosen for you)">
+          <ChoiceList
+            label="What would you like?"
+            value={undefined}
+            onChange={() => {}}
+            choices={[
+              { value: 'return', title: 'Return', detail: 'Refund to your original payment' },
+              { value: 'replacement', title: 'Replacement', detail: 'Same item, swapped' },
+              { value: 'other', title: 'Unavailable choice', disabled: true },
+            ]}
+          />
+        </State>
       </Specimen>
 
       <Specimen title="Select" note="Native select; the chevron sits inside the padding.">
@@ -212,6 +227,22 @@ export function BaseSection() {
           <DemoBox>
             Password reset code: <strong className="font-mono">482913</strong>
           </DemoBox>
+        </State>
+      </Specimen>
+
+      <Specimen title="Site footer" note="Promises, shop, help, account, ways to pay (D-224).">
+        <State label="Footer (categories come from the catalog)">
+          <SiteFooter
+            categories={
+              <ul>
+                <li>
+                  <Link to="/categories" className={footerLinkClass}>
+                    All categories
+                  </Link>
+                </li>
+              </ul>
+            }
+          />
         </State>
       </Specimen>
     </section>

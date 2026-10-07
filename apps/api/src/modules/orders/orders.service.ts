@@ -1,6 +1,8 @@
 import {
   bundleKey,
   canBuyFlash,
+  cancelOutcome,
+  cancelText,
   checkout,
   combineDeliveries,
   formatInr,
@@ -8,11 +10,18 @@ import {
   isIntraState,
   itemKey,
   liveFlashSale,
+  nextDemoReturnStatus,
+  nextDemoStep,
   orderLines,
   orderNoticeText,
   orderNumber,
   resolvePaidOrder,
+  returnOptions,
+  returnWindowEndsAt,
   startHold,
+  statusAfterStep,
+  trackingTimeline,
+  TRACKING_LABELS,
   warehousesBySpeed,
   type AddressSnapshot,
   type CheckoutQuery,
@@ -21,9 +30,14 @@ import {
   type DeliveryLane,
   type MockPaymentRequest,
   type NotificationKind,
+  type OrderPage,
   type OrderView,
   type PlaceOrderRequest,
+  type ProductImage,
+  type ReturnRequestView,
+  type TrackingEvent,
 } from '@borneo/shared';
+import type { CourierTracking } from '../../adapters/courier/index';
 import type { NotificationAdapter } from '../../adapters/notifications/index';
 import type { PaymentGateway } from '../../adapters/payments/index';
 import type { InvoiceDocument } from '../../documents/invoice';
@@ -31,7 +45,15 @@ import { AppError, notFound } from '../../errors';
 import type { AddressRow } from '../addresses/index';
 import type { CheckoutCart } from '../cart/index';
 import type { OrderFactsRow } from '../catalog/index';
-import type { NewOrder, OrderRecord, PlaceResult, SettleDecision } from './orders.repository';
+import type {
+  CancelDecision,
+  NewOrder,
+  OrderRecord,
+  PlaceResult,
+  SettleDecision,
+  TrackingStepName,
+} from './orders.repository';
+import { orderCursor, readOrderCursor } from './orders.schema';
 
 /** Background work the orders service asks for (pg-boss in the app, ADR-0004). */
 export type OrderJobs = {
@@ -74,7 +96,7 @@ export type OrdersDeps = {
       decide: SettleDecision;
       at: number;
     },
-  ) => Promise<'confirmed' | 'confirmedLate' | 'refunded' | 'unchanged'>;
+  ) => Promise<'confirmed' | 'confirmedLate' | 'refunded' | 'refundedCancelled' | 'unchanged'>;
   failAttempt: (customerId: CustomerId, orderId: string, attemptId: string) => Promise<boolean>;
   startAttempt: (customerId: CustomerId, orderId: string, now: number) => Promise<string | null>;
   setGatewayRef: (
@@ -89,12 +111,70 @@ export type OrdersDeps = {
     number: (seq: number) => string,
     now: number,
   ) => Promise<void>;
+  listOrders: (
+    customerId: CustomerId,
+    page: { limit: number; after?: { placedAt: Date; id: string } },
+  ) => Promise<{ rows: OrderListRow[]; hasMore: boolean }>;
+  cancelOrder: (
+    customerId: CustomerId,
+    orderId: string,
+    decide: CancelDecision,
+    now: number,
+  ) => Promise<{ refundPaise: number } | null>;
+  advanceOrder: (
+    customerId: CustomerId,
+    input: {
+      orderId: string;
+      from: OrderView['status'];
+      step: TrackingStepName;
+      status: OrderView['status'];
+      at: number;
+      courier: { name: string; trackingNo: string };
+      returnWindowEndsAt: number;
+    },
+  ) => Promise<boolean>;
+  loadImages: (productIds: string[]) => Promise<Map<string, ProductImage[]>>;
   gateway: PaymentGateway;
+  courier: CourierTracking;
   jobs: OrderJobs;
   notifications: NotificationAdapter;
   renderInvoice: (doc: InvoiceDocument) => Uint8Array;
   log: { warn(obj: object, msg: string): void };
 };
+
+/** A row of the account's order list (repository shape). */
+export type OrderListRow = {
+  order: OrderRecord['order'];
+  itemCount: number;
+  items: { orderId: string; productId: string; name: string }[];
+};
+
+type ReturnRow = OrderRecord['returns'][number];
+
+/** A return request as the customer sees it (D-86, D-219). */
+function returnView(
+  r: ReturnRow,
+  context: { orderId: string; orderNumber: string; productName: string },
+  refundPaise: number | null,
+  demoMode: boolean,
+): ReturnRequestView {
+  return {
+    id: r.id,
+    orderId: context.orderId,
+    orderNumber: context.orderNumber,
+    orderItemId: r.orderItemId,
+    productName: context.productName,
+    kind: r.kind,
+    reason: r.reason,
+    details: r.details,
+    photoCount: r.photoKeys.length,
+    status: r.status,
+    refundPaise,
+    createdAt: r.createdAt.getTime(),
+    updatedAt: r.updatedAt.getTime(),
+    demoNextStatus: demoMode ? nextDemoReturnStatus(r.status) : null,
+  };
+}
 
 const orderMissing = () => notFound('ORDER_NOT_FOUND', "We couldn't find that order.");
 
@@ -268,29 +348,73 @@ export function createOrdersService(deps: OrdersDeps) {
     await deps.setGatewayRef(customerId, orderId, attemptId, gatewayRef);
   }
 
-  function toView(record: OrderRecord): OrderView {
+  /** Steps recorded, plus the placing and delivery times orders from before tracking carry. */
+  function eventsOf(record: OrderRecord): TrackingEvent[] {
+    const events: TrackingEvent[] = record.events.map((e) => ({
+      step: e.step,
+      at: e.at.getTime(),
+    }));
+    const has = (step: TrackingEvent['step']) => events.some((e) => e.step === step);
+    if (!has('placed')) events.unshift({ step: 'placed', at: record.order.placedAt.getTime() });
+    if (record.order.deliveredAt && !has('delivered'))
+      events.push({ step: 'delivered', at: record.order.deliveredAt.getTime() });
+    return events;
+  }
+
+  async function toView(record: OrderRecord): Promise<OrderView> {
     const { order } = record;
+    const now = deps.now();
     const active = record.holds.find((h) => h.status === 'active');
     const open = record.attempts.find((a) => a.status === 'started');
+    const images = await deps.loadImages([...new Set(record.items.map((i) => i.productId))]);
+    const events = eventsOf(record);
+    const deliveredAt = order.deliveredAt?.getTime();
     return {
       id: order.id,
       number: order.number,
       status: order.status,
       placedAt: order.placedAt.getTime(),
       address: order.address as AddressSnapshot,
-      items: record.items.map(({ item, slug, options, bundleName, isPreorder }) => ({
-        sku: item.sku,
-        name: item.productName,
-        slug,
-        options,
-        qty: item.qty,
-        mrpPaise: item.mrpPaise,
-        unitPricePaise: item.unitPricePaise,
-        discountPaise: item.discountPaise,
-        bundleName,
-        isFlash: item.flashSaleId !== null,
-        isPreorder,
-      })),
+      items: record.items.map(({ item, productId, slug, options, bundleName, isPreorder }) => {
+        const requests = record.returns.filter((r) => r.orderItemId === item.id);
+        const current = requests.find((r) => r.status !== 'rejected') ?? requests[0] ?? null;
+        const refunded = current
+          ? record.refunds.find((f) => f.returnRequestId === current.id)
+          : undefined;
+        return {
+          id: item.id,
+          sku: item.sku,
+          name: item.productName,
+          slug,
+          options,
+          qty: item.qty,
+          mrpPaise: item.mrpPaise,
+          unitPricePaise: item.unitPricePaise,
+          discountPaise: item.discountPaise,
+          bundleName,
+          isFlash: item.flashSaleId !== null,
+          isPreorder,
+          image: images.get(productId)?.[0] ?? null,
+          returnWindowEndsAt: item.returnWindowEndsAt?.getTime() ?? null,
+          returnRequest: current
+            ? returnView(
+                current,
+                { orderId: order.id, orderNumber: order.number, productName: item.productName },
+                refunded?.amountPaise ?? null,
+                deps.demoMode,
+              )
+            : null,
+          returnOptions:
+            order.status === 'delivered'
+              ? returnOptions({
+                  policy: item.returnPolicy,
+                  deliveredAt,
+                  now,
+                  hasOpenRequest: requests.some((r) => r.status !== 'rejected'),
+                })
+              : [],
+        };
+      }),
       subtotalPaise: order.subtotalPaise,
       couponDiscountPaise: order.couponDiscountPaise,
       couponCode: record.couponCode,
@@ -309,6 +433,25 @@ export function createOrdersService(deps: OrdersDeps) {
       isPreorder: order.isPreorder,
       invoiceNumber: record.invoice?.number ?? null,
       notice: order.notice,
+      canCancel: cancelOutcome({
+        status: order.status,
+        prepaid: order.paymentMethod !== 'cod',
+        totalPaise: order.totalPaise,
+      }).ok,
+      tracking: {
+        steps: trackingTimeline(order.status, events),
+        courier: record.shipment?.courier ?? null,
+        trackingNo: record.shipment?.trackingNo ?? null,
+      },
+      deliveredAt: deliveredAt ?? null,
+      refunds: record.refunds.map((f) => ({
+        amountPaise: f.amountPaise,
+        status: f.status,
+        reason: f.reason,
+        at: f.createdAt.getTime(),
+      })),
+      demoNextStep:
+        deps.demoMode && deps.courier.available ? nextDemoStep(order.status, events) : null,
     };
   }
 
@@ -339,6 +482,18 @@ export function createOrdersService(deps: OrdersDeps) {
     });
     if (outcome === 'confirmed' || outcome === 'confirmedLate')
       return afterConfirmed(customerId, orderId);
+    if (outcome === 'refundedCancelled') {
+      try {
+        await notify(
+          customerId,
+          'order_refunded',
+          `Order ${record.order.number} refunded`,
+          `Your payment arrived after you cancelled the order, so we refunded the full ${formatInr(record.order.totalPaise)} automatically.`,
+        );
+      } catch (error) {
+        deps.log.warn({ orderId, error: String(error) }, 'refund message failed');
+      }
+    }
     if (outcome === 'refunded') {
       try {
         await notify(
@@ -564,6 +719,108 @@ export function createOrdersService(deps: OrdersDeps) {
       return view(customerId, orderId);
     },
 
+    /** `GET /me/orders`: newest first (keyset pages). */
+    async list(
+      customerId: CustomerId,
+      query: { cursor?: string | undefined; limit: number },
+    ): Promise<OrderPage> {
+      const after = query.cursor ? readOrderCursor(query.cursor) : undefined;
+      if (query.cursor && !after)
+        throw new AppError(400, 'INVALID_CURSOR', 'That page link is no longer valid.');
+      const { rows, hasMore } = await deps.listOrders(customerId, {
+        limit: query.limit,
+        ...(after ? { after } : {}),
+      });
+      const images = await deps.loadImages([
+        ...new Set(rows.flatMap((r) => r.items.slice(0, 3).map((i) => i.productId))),
+      ]);
+      const last = rows.at(-1);
+      return {
+        items: rows.map(({ order, itemCount, items }) => ({
+          id: order.id,
+          number: order.number,
+          status: order.status,
+          placedAt: order.placedAt.getTime(),
+          totalPaise: order.totalPaise,
+          itemCount,
+          items: items.slice(0, 3).map((i) => ({
+            name: i.name,
+            image: images.get(i.productId)?.[0] ?? null,
+          })),
+          eta: order.etaFrom && order.etaTo ? { from: order.etaFrom, to: order.etaTo } : null,
+          deliveredAt: order.deliveredAt?.getTime() ?? null,
+        })),
+        nextCursor: hasMore && last ? orderCursor(last.order.placedAt, last.order.id) : null,
+      };
+    },
+
+    /**
+     * Cancels the order before it ships (D-149, D-216): reservations go back, a paid order is
+     * refunded in full (mock refund in demo) and the customer is told on the page and in the inbox.
+     */
+    async cancel(customerId: CustomerId, orderId: string): Promise<OrderView> {
+      await expireIfDue(customerId, orderId);
+      const record = await deps.findOrder(customerId, orderId);
+      if (!record) throw orderMissing();
+      const done = await deps.cancelOrder(customerId, orderId, cancelOutcome, deps.now());
+      if (!done)
+        throw new AppError(
+          409,
+          'CANNOT_CANCEL',
+          'This order can no longer be cancelled. Once it has shipped you can ask for a return after delivery.',
+        );
+      try {
+        await notify(
+          customerId,
+          'order_cancelled',
+          `Order ${record.order.number} cancelled`,
+          cancelText(done.refundPaise, record.order.paymentMethod !== 'cod'),
+        );
+      } catch (error) {
+        deps.log.warn({ orderId, error: String(error) }, 'cancel message failed');
+      }
+      return view(customerId, orderId);
+    },
+
+    /**
+     * Demo courier (D-215): moves the order one tracking step, as a courier feed would. Shipping
+     * books the consignment; shipping and delivery are also sent to the inbox.
+     */
+    async demoAdvance(customerId: CustomerId, orderId: string): Promise<OrderView> {
+      if (!deps.demoMode || !deps.courier.available) throw notFound('NOT_FOUND', 'Not found');
+      const record = await deps.findOrder(customerId, orderId);
+      if (!record) throw orderMissing();
+      const { order } = record;
+      const step = nextDemoStep(order.status, eventsOf(record));
+      if (!step)
+        throw new AppError(409, 'NOTHING_TO_ADVANCE', 'This order has no next delivery step.');
+      const at = deps.now();
+      const moved = await deps.advanceOrder(customerId, {
+        orderId,
+        from: order.status,
+        step,
+        status: statusAfterStep(step, order.status),
+        at,
+        courier: deps.courier.book({ orderId, orderNumber: order.number }),
+        returnWindowEndsAt: returnWindowEndsAt(at),
+      });
+      if (moved && (step === 'shipped' || step === 'delivered')) {
+        try {
+          await notify(
+            customerId,
+            step === 'shipped' ? 'order_shipped' : 'order_delivered',
+            `Order ${order.number}: ${TRACKING_LABELS[step].toLowerCase()}`,
+            step === 'shipped'
+              ? 'Your order is on its way. Track it in your account.'
+              : 'Your order was delivered. Returns and replacements are open for 7 days, and you can review what you bought in your account.',
+          );
+        } catch (error) {
+          deps.log.warn({ orderId, error: String(error) }, 'tracking message failed');
+        }
+      }
+      return view(customerId, orderId);
+    },
+
     /** The GST invoice as a PDF, rendered from the order's snapshots (D-102, D-173, D-210). */
     async invoicePdf(customerId: CustomerId, orderId: string) {
       const record = await deps.findOrder(customerId, orderId);
@@ -605,6 +862,7 @@ export function createOrdersService(deps: OrdersDeps) {
         paymentMethod:
           METHOD_NAMES[order.paymentMethod] + (order.paymentBank ? ` (${order.paymentBank})` : ''),
         demo: deps.demoMode,
+        cancelled: order.status === 'cancelled' || order.status === 'refunded',
       };
       return { filename: `${inv.number}.pdf`, pdf: deps.renderInvoice(doc) };
     },

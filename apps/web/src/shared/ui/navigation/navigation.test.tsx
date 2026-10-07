@@ -6,6 +6,7 @@ import { renderWithRouter } from '@/test/router';
 import { AppShell } from '../AppShell';
 import { BottomNav } from './BottomNav';
 import { Breadcrumbs } from './Breadcrumbs';
+import { SiteFooter } from './SiteFooter';
 
 describe('navigation', () => {
   it('D-160: bottom nav marks the current page', async () => {
@@ -67,6 +68,31 @@ describe('navigation', () => {
       '#main',
     );
     expect(screen.getByRole('main').id).toBe('main');
+    expect(await axe(container)).toHaveNoViolations();
+  });
+
+  it('D-224: the footer carries the promises, shop, help and account links; axe clean', async () => {
+    const { container } = await renderWithRouter(
+      <SiteFooter
+        categories={
+          <ul>
+            <li>
+              <Link to="/categories">Audio</Link>
+            </li>
+          </ul>
+        }
+      />,
+    );
+    const footer = screen.getByRole('contentinfo');
+    expect(footer.textContent).toContain('Free delivery');
+    expect(footer.textContent).toContain('7-day returns');
+    expect(screen.getByRole('navigation', { name: 'Shop' }).textContent).toContain('Audio');
+    expect(
+      screen.getByRole('link', { name: 'Returns and replacements' }).getAttribute('href'),
+    ).toBe('/help#returns');
+    expect(screen.getByRole('navigation', { name: 'Your account' })).toBeTruthy();
+    expect(screen.getByRole('list', { name: 'Ways to pay' }).textContent).toContain('UPI');
+    expect(screen.queryByRole('textbox')).toBeNull();
     expect(await axe(container)).toHaveNoViolations();
   });
 });

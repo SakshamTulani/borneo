@@ -30,6 +30,8 @@ export type InvoiceDocument = {
   paymentMethod: string;
   /** Demo invoices say plainly they are not tax documents (D-210). */
   demo: boolean;
+  /** The order was cancelled after invoicing: marked, pending a credit note (D-216). */
+  cancelled?: boolean;
 };
 
 const rupees = (paise: number) =>
@@ -98,6 +100,16 @@ export function renderInvoicePdf(doc: InvoiceDocument): Uint8Array {
       bold: true,
     });
     text({ x: A4.width - MARGIN, y, text: doc.number, size: 11, bold: true, align: 'right' });
+    if (doc.cancelled) {
+      y -= 16;
+      text({
+        x: MARGIN,
+        y,
+        text: 'CANCELLED - ORDER CANCELLED AND REFUNDED',
+        size: 11,
+        bold: true,
+      });
+    }
     y -= 26;
     if (!first) return tableHeader();
 

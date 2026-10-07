@@ -28,6 +28,16 @@ describe('suggestions', () => {
     }
   });
 
+  it('D-220: owned devices get up to 4 add-ons, never alternatives', () => {
+    const picks = pickSuggestions({
+      edges: [...edges, e('next', 'upgrade'), e('older', 'prev_gen')],
+      surface: 'ownedDevice',
+      exclude: new Set(),
+    });
+    expect(picks).toHaveLength(4);
+    expect(picks.some((p) => p.productId === 'next' || p.productId === 'older')).toBe(false);
+  });
+
   it('D-73: nothing inside payment', () => {
     expect(pickSuggestions({ edges, surface: 'payment', exclude: new Set() })).toEqual([]);
   });

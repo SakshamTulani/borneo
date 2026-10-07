@@ -2,6 +2,7 @@ import { sql } from 'drizzle-orm';
 import {
   boolean,
   check,
+  customType,
   date,
   index,
   integer,
@@ -14,6 +15,7 @@ import {
   unique,
   uniqueIndex,
   uuid,
+  type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { at, createdAt, customerId, id, paise, updatedAt } from './columns';
 import { product, returnPolicy, variant } from './catalog';
@@ -48,6 +50,7 @@ export const returnKind = pgEnum('return_kind', ['return', 'replacement']);
 export const returnReason = pgEnum('return_reason', ['defect', 'damage', 'changedMind', 'other']);
 /** What the customer was told about how payment ended (D-57, D-59). */
 export const orderNotice = pgEnum('order_notice', [
+  'CANCELLED_BY_CUSTOMER',
   'PAYMENT_FAILED',
   'HOLD_EXPIRED',
   'CONFIRMED_AFTER_EXPIRY',
@@ -57,7 +60,17 @@ export const orderNotice = pgEnum('order_notice', [
 export const orderNumberSeq = pgSequence('order_number_seq', { startWith: 1 });
 /** `INV2627-000001` (D-208). */
 export const invoiceNumberSeq = pgSequence('invoice_number_seq', { startWith: 1 });
-export const holdStatus = pgEnum('hold_status', ['active', 'converted', 'expired']);
+/** Tracking steps (D-215); out for delivery is a step, not an order status. */
+export const trackingStep = pgEnum('tracking_step', [
+  'placed',
+  'confirmed',
+  'packed',
+  'shipped',
+  'outForDelivery',
+  'delivered',
+]);
+/** `released`: given back when the customer cancelled (D-216). */
+export const holdStatus = pgEnum('hold_status', ['active', 'converted', 'expired', 'released']);
 export const returnStatus = pgEnum('return_status', [
   'requested',
   'approved',
@@ -123,6 +136,9 @@ export const order = pgTable(
     /** Payment start and order placement are idempotent per customer (api-design.md). */
     idempotencyKey: text('idempotency_key').notNull(),
     placedAt: at('placed_at').notNull().defaultNow(),
+    /** Starts every line's return window (D-87, D-215). */
+    deliveredAt: at('delivered_at'),
+    cancelledAt: at('cancelled_at'),
   },
   (t) => [
     index('order_customer').on(t.customerId, t.placedAt),
@@ -249,6 +265,8 @@ export const refund = pgTable(
     paymentId: uuid('payment_id')
       .notNull()
       .references(() => payment.id),
+    /** Set when a completed return paid this back (D-219). */
+    returnRequestId: uuid('return_request_id').references((): AnyPgColumn => returnRequest.id),
     amountPaise: paise('amount_paise').notNull(),
     reason: text('reason').notNull(),
     status: refundStatus('status').notNull().default('pending'),
@@ -257,10 +275,26 @@ export const refund = pgTable(
   (t) => [check('refund_amount_positive', sql`${t.amountPaise} > 0`)],
 );
 
+/** Each tracking step an order reached, once, with its time (D-215). */
+export const orderEvent = pgTable(
+  'order_event',
+  {
+    id: id(),
+    orderId: uuid('order_id')
+      .notNull()
+      .references(() => order.id, { onDelete: 'cascade' }),
+    step: trackingStep('step').notNull(),
+    at: at('at').notNull(),
+  },
+  (t) => [unique('order_event_step').on(t.orderId, t.step)],
+);
+
+/** One per order (D-203: an order ships as one consignment in the demo courier). */
 export const shipment = pgTable('shipment', {
   id: id(),
   orderId: uuid('order_id')
     .notNull()
+    .unique()
     .references(() => order.id),
   courier: text('courier').notNull(),
   trackingNo: text('tracking_no').notNull(),
@@ -280,18 +314,44 @@ export const returnRequest = pgTable(
     kind: returnKind('kind').notNull(),
     reason: returnReason('reason').notNull(),
     details: text('details'),
-    /** MinIO keys; required for defect or damage (D-88). */
+    /** `return_photo` ids (D-218); required for defect or damage (D-88). */
     photoKeys: text('photo_keys').array().notNull().default([]),
     status: returnStatus('status').notNull().default('requested'),
     createdAt: createdAt(),
+    updatedAt: updatedAt(),
   },
   (t) => [
     index('return_request_customer').on(t.customerId),
+    // D-217: one open (or finished) request per order line; a rejected one allows another.
+    uniqueIndex('return_request_open')
+      .on(t.orderItemId)
+      .where(sql`${t.status} <> 'rejected'`),
     // D-88: defect or damage needs photos.
     check(
       'return_request_photos',
       sql`${t.reason} not in ('defect', 'damage') or cardinality(${t.photoKeys}) > 0`,
     ),
+  ],
+);
+
+const bytea = customType<{ data: Buffer; driverData: Buffer }>({ dataType: () => 'bytea' });
+
+/** Return photos (D-218): in Postgres until private S3 storage is decided (ADR-0009). */
+export const returnPhoto = pgTable(
+  'return_photo',
+  {
+    id: uuid('id').primaryKey(),
+    returnRequestId: uuid('return_request_id')
+      .notNull()
+      .references(() => returnRequest.id, { onDelete: 'cascade' }),
+    customerId: customerId(),
+    contentType: text('content_type').notNull(),
+    bytes: bytea('bytes').notNull(),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    index('return_photo_request').on(t.returnRequestId),
+    check('return_photo_size', sql`octet_length(${t.bytes}) <= 2097152`),
   ],
 );
 
@@ -333,6 +393,8 @@ export const review = pgTable(
   },
   (t) => [
     index('review_product').on(t.productId),
+    // D-221: one review per product per customer, even if bought twice.
+    uniqueIndex('review_customer_product').on(t.customerId, t.productId),
     check('review_rating', sql`${t.rating} between 1 and 5`),
   ],
 );

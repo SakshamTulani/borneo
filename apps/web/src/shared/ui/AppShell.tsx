@@ -4,10 +4,11 @@ import { Logo } from './brand/Logo';
 import { Container } from './layout/Container';
 import { BottomNav } from './navigation/BottomNav';
 import { CartLink } from './navigation/CartLink';
+import { SiteFooter } from './navigation/SiteFooter';
 
 /**
  * Page frame: skip link, shipping line, frosted header (logo, `search`, `account` and cart on desktop; `nav` on a second desktop row), full-width main (pages use
- * `Container`; full-bleed tiles don't), parchment footer, and the mobile bottom nav.
+ * `Container`; full-bleed tiles don't), site footer (D-224), and the mobile bottom nav.
  * `nav`, `search` and `account` are composed by the root route (they come from features).
  */
 export function AppShell({
@@ -16,8 +17,11 @@ export function AppShell({
   search,
   account,
   cartCount,
+  footerCategories,
 }: {
   children: ReactNode;
+  /** Category links for the footer (from the catalog). */
+  footerCategories?: ReactNode;
   nav?: ReactNode;
   search?: ReactNode;
   /** Sign-in / account link (desktop; mobile uses the bottom nav). */
@@ -68,12 +72,7 @@ export function AppShell({
       <main id="main" tabIndex={-1} className="w-full flex-1 pb-24 outline-none lg:pb-16">
         {children}
       </main>
-      <footer className="border-t border-line bg-canvas pb-20 lg:pb-0">
-        <Container className="flex flex-col gap-1 py-8 text-xs text-ink-muted sm:flex-row sm:justify-between">
-          <p>Prices include GST. Delivery across India.</p>
-          <p>© Borneo. Demo store.</p>
-        </Container>
-      </footer>
+      <SiteFooter categories={footerCategories} />
       <BottomNav cartCount={cartCount} />
     </div>
   );

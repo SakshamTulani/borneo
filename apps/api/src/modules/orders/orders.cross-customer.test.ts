@@ -1,10 +1,25 @@
-import { checkoutViewSchema, orderViewSchema } from '@borneo/shared';
+import {
+  cancelOutcome,
+  checkoutViewSchema,
+  orderPageSchema,
+  orderViewSchema,
+} from '@borneo/shared';
 import { describe, expect, it } from 'vitest';
 import { testApp } from '../../test/app';
 import { TEST_NOW, useTestDb } from '../../test/db';
 import { headerSession, insertSellable, insertShopper } from '../../test/factories';
 import { changeCart } from '../cart/index';
-import { expireHold, findOrder, findOrderIdByKey, startAttempt } from './orders.repository';
+import {
+  advanceOrder,
+  cancelOrder,
+  countOrders,
+  expireHold,
+  findOrder,
+  findOrderIdByKey,
+  listDeliveredLines,
+  listOrders,
+  startAttempt,
+} from './orders.repository';
 
 // Adds products with known stock: kept out of the shared catalog other suites list.
 const db = useTestDb('orders');
@@ -83,5 +98,46 @@ describe('orders are scoped to their customer (D-96)', () => {
       headers: as(other.customerId),
     });
     expect(res.statusCode).toBe(404);
+  });
+
+  it("repositories never list, cancel or move another customer's order (D-149, D-215)", async () => {
+    const { owner, other, order } = await ownerOrder();
+    expect((await listOrders(other.customerId, db, { limit: 10 })).rows).toEqual([]);
+    expect((await countOrders(other.customerId, db)).size).toBe(0);
+    expect(await listDeliveredLines(other.customerId, db)).toEqual([]);
+    expect(await cancelOrder(other.customerId, db, order.id, cancelOutcome, TEST_NOW)).toBeNull();
+    expect(
+      await advanceOrder(other.customerId, db, {
+        orderId: order.id,
+        from: 'pending_payment',
+        step: 'packed',
+        status: 'packed',
+        at: TEST_NOW,
+        courier: { name: 'x', trackingNo: 'y' },
+        returnWindowEndsAt: TEST_NOW,
+      }),
+    ).toBe(false);
+    expect((await findOrder(owner.customerId, db, order.id))!.order.status).toBe('pending_payment');
+    expect((await listOrders(owner.customerId, db, { limit: 10 })).rows).toHaveLength(1);
+  });
+
+  it("routes never list, cancel or advance another customer's order", async () => {
+    const { owner, other, order } = await ownerOrder();
+    const list = await app.inject({
+      method: 'GET',
+      url: '/me/orders',
+      headers: as(other.customerId),
+    });
+    expect(orderPageSchema.parse(list.json()).items).toEqual([]);
+    for (const url of [`/me/orders/${order.id}/cancel`, `/me/orders/${order.id}/demo/advance`]) {
+      const res = await app.inject({ method: 'POST', url, headers: as(other.customerId) });
+      expect(res.statusCode, url).toBe(404);
+    }
+    const mine = await app.inject({
+      method: 'GET',
+      url: `/me/orders/${order.id}`,
+      headers: as(owner.customerId),
+    });
+    expect(orderViewSchema.parse(mine.json()).status).toBe('pending_payment');
   });
 });

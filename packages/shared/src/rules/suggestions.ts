@@ -1,6 +1,7 @@
 import type { RelationEdge, RelationType } from '../contracts/catalog';
 
-export type SuggestionSurface = 'pdp' | 'addToCart' | 'cart' | 'orderConfirmation' | 'payment';
+export type SuggestionSurface =
+  'pdp' | 'addToCart' | 'cart' | 'orderConfirmation' | 'ownedDevice' | 'payment';
 
 /** Max suggestions per surface; none inside payment (D-73, D-123, D-124). */
 export const SUGGESTION_LIMITS: Record<SuggestionSurface, number> = {
@@ -8,6 +9,8 @@ export const SUGGESTION_LIMITS: Record<SuggestionSurface, number> = {
   addToCart: 3,
   cart: 4,
   orderConfirmation: 4,
+  /** Add-ons for a device the customer owns (D-220). */
+  ownedDevice: 4,
   payment: 0,
 };
 
@@ -36,7 +39,7 @@ const ADD_ON_TYPES: ReadonlySet<RelationType> = new Set([
   'replacement',
   'bundle_member',
 ]);
-const ADD_ONS_ONLY: ReadonlySet<SuggestionSurface> = new Set(['addToCart', 'cart']);
+const ADD_ONS_ONLY: ReadonlySet<SuggestionSurface> = new Set(['addToCart', 'cart', 'ownedDevice']);
 
 /**
  * Cross-sell picks (D-124, D-126): every suggestion carries a reason; excludes products already

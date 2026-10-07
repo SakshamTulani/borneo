@@ -1,5 +1,6 @@
 import { useDefaultPincodeQuery } from '@/features/addresses';
 import { BundleOffers, ProductPurchase } from '@/features/cart';
+import { WatchButton } from '@/features/watch';
 import { ProductDelivery } from '@/features/delivery';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
@@ -40,12 +41,15 @@ export function ProductPage({ slug, sku, onSkuChange }: Props) {
       onVariantChange={onSkuChange}
       delivery={<ProductDelivery sku={variant.sku} defaultPincode={defaultPincode} />}
       purchase={
-        <ProductPurchase
-          productName={query.data.name}
-          sku={variant.sku}
-          availability={variant.availability}
-          sellingPaise={variant.price.sellingPaise}
-        />
+        <div className="space-y-3">
+          <ProductPurchase
+            productName={query.data.name}
+            sku={variant.sku}
+            availability={variant.availability}
+            sellingPaise={variant.price.sellingPaise}
+          />
+          <WatchButton sku={variant.sku} availability={variant.availability} />
+        </div>
       }
       bundles={<BundleOffers bundles={query.data.bundles} />}
     />

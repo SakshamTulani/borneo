@@ -342,6 +342,7 @@ function demoReviews(data: SeedData, t: number) {
         paymentMethod: 'upi',
         idempotencyKey: `demo-${key}`,
         placedAt: new Date(deliveredAt - 3 * DAY_MS),
+        deliveredAt: new Date(deliveredAt),
       });
       rows.orderItem.push({
         id: itemId,

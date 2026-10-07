@@ -4,6 +4,12 @@ import { codBlockSchema } from './delivery';
 import { epochMsSchema, idSchema, paiseSchema } from './common';
 import { paymentMethodSchema, paymentSelectionSchema } from './offers';
 import { orderStatusSchema } from './orders';
+import {
+  orderItemAfterSaleSchema,
+  refundViewSchema,
+  trackingStepSchema,
+  trackingViewSchema,
+} from './postPurchase';
 
 /** `GET /me/checkout`: the payment the customer is considering (all optional; nothing pre-chosen, D-06). */
 export const checkoutQuerySchema = z.object({
@@ -106,6 +112,7 @@ export const idempotencyKeySchema = z
 
 /** What the customer was told about how a payment ended (D-57, D-59). */
 export const orderNoticeSchema = z.enum([
+  'CANCELLED_BY_CUSTOMER',
   'PAYMENT_FAILED',
   'HOLD_EXPIRED',
   'CONFIRMED_AFTER_EXPIRY',
@@ -113,7 +120,8 @@ export const orderNoticeSchema = z.enum([
 ]);
 export type OrderNotice = z.infer<typeof orderNoticeSchema>;
 
-export const orderItemViewSchema = z.object({
+export const orderItemViewSchema = orderItemAfterSaleSchema.extend({
+  id: idSchema,
   sku: z.string(),
   name: z.string(),
   slug: z.string().nullable(),
@@ -126,6 +134,7 @@ export const orderItemViewSchema = z.object({
   bundleName: z.string().nullable(),
   isFlash: z.boolean(),
   isPreorder: z.boolean(),
+  image: z.object({ src: z.string(), alt: z.string() }).nullable(),
 });
 export type OrderItemView = z.infer<typeof orderItemViewSchema>;
 
@@ -168,6 +177,13 @@ export const orderViewSchema = z.object({
   isPreorder: z.boolean(),
   invoiceNumber: z.string().nullable(),
   notice: orderNoticeSchema.nullable(),
+  /** Until it ships (D-149, D-216). */
+  canCancel: z.boolean(),
+  tracking: trackingViewSchema,
+  deliveredAt: epochMsSchema.nullable(),
+  refunds: z.array(refundViewSchema),
+  /** Demo only: the step the demo courier's "Advance" moves to (D-215). */
+  demoNextStep: trackingStepSchema.nullable(),
 });
 export type OrderView = z.infer<typeof orderViewSchema>;
 

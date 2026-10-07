@@ -113,6 +113,8 @@ const emailTaken = new AppError(
   'An account already uses this email. Sign in instead.',
 );
 const badCredentials = new AppError(401, 'INVALID_CREDENTIALS', 'Email or password is incorrect.');
+const signedOut = new AppError(401, 'UNAUTHENTICATED', 'Sign in to continue.');
+const wrongPassword = new AppError(400, 'WRONG_PASSWORD', 'Your current password is incorrect.');
 const badCode = new AppError(
   400,
   'INVALID_CODE',
@@ -169,6 +171,36 @@ export function betterAuthIdentity({ auth, outbox }: BetterAuth): IdentityPort {
         returnHeaders: true,
       });
       return response ? issued(response.user, headers) : null;
+    },
+
+    async updateProfile(cookieHeader, input) {
+      if (!cookieHeader) throw signedOut;
+      try {
+        await auth.api.updateUser({ headers: cookieHeaders(cookieHeader), body: input });
+      } catch (e) {
+        rethrow(e, { UNAUTHORIZED: signedOut });
+      }
+      const { response, headers } = await auth.api.getSession({
+        headers: cookieHeaders(cookieHeader),
+        query: { disableCookieCache: true },
+        returnHeaders: true,
+      });
+      if (!response) throw signedOut;
+      return issued(response.user, headers);
+    },
+
+    async changePassword(cookieHeader, input) {
+      if (!cookieHeader) throw signedOut;
+      try {
+        const { response, headers } = await auth.api.changePassword({
+          headers: cookieHeaders(cookieHeader),
+          body: { ...input, revokeOtherSessions: true },
+          returnHeaders: true,
+        });
+        return issued(response.user, headers);
+      } catch (e) {
+        rethrow(e, { INVALID_PASSWORD: wrongPassword, UNAUTHORIZED: signedOut });
+      }
     },
 
     async issueResetCode(email) {

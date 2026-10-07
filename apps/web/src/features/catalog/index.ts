@@ -1,5 +1,6 @@
 export { CategoriesPage } from './ui/CategoriesPage';
 export { CategoryNav } from './ui/CategoryNav';
+export { FooterCategories } from './ui/FooterCategories';
 export { CategoryPage } from './ui/CategoryPage';
 export { HOME_NEWEST, HomePage } from './ui/HomePage';
 export { ProductGrid, ProductGridSkeleton } from './ui/ProductGrid';

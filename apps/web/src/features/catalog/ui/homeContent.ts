@@ -41,21 +41,19 @@ export const HOME_BANNERS: HomeBanner[] = [
     title: 'Floors done before you get home.',
     body: 'Robot vacuums for every kind of floor.',
     cta: 'Shop robot vacuums',
-    image: photo('photo-1762859731349-c9ff2808b672'),
+    image: photo('photo-1762501748150-7fd88647fc2c'),
     wide: true,
   },
 ];
 
 /** Category tile artwork by slug; categories without one show a plain tile. */
-// Matching studio set (square, not resized by its host); TVs and robot vacuums have none yet.
-const scene = (name: string) => `https://cdn.scenesku.com/resources/${name}.webp`;
-
+// One light studio set, reused from the category's product photos (D-180).
 export const CATEGORY_ART: Record<string, string> = {
-  smartphones: scene('smartphones'),
-  audio: scene('electronics'),
-  wearables: scene('watches'),
-  accessories: scene('accessories'),
-  'smart-home': scene('smart-home'),
-  tvs: photo('photo-1595935736128-db1f0a261263'),
-  'robot-vacuums': photo('photo-1558317374-24793bc9f2fb'),
+  smartphones: photo('photo-1695973056909-67189edc1c9e'),
+  audio: photo('photo-1583394838336-acd977736f90'),
+  wearables: photo('photo-1660844817855-3ecc7ef21f12'),
+  accessories: photo('photo-1709236709044-159f627b7971'),
+  'smart-home': photo('photo-1730967844913-29eb5cae5f34'),
+  tvs: photo('photo-1697457643599-77b5d074121f'),
+  'robot-vacuums': photo('photo-1558317374-067fb5f30001'),
 };

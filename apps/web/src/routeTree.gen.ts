@@ -14,11 +14,17 @@ import { Route as AccountRouteImport } from './routes/account'
 import { Route as CartRouteImport } from './routes/cart'
 import { Route as DesignSystemRouteImport } from './routes/design-system'
 import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
+import { Route as HelpRouteImport } from './routes/help'
 import { Route as SearchRouteImport } from './routes/search'
 import { Route as SignInRouteImport } from './routes/sign-in'
 import { Route as SignUpRouteImport } from './routes/sign-up'
 import { Route as AccountIndexRouteImport } from './routes/account.index'
+import { Route as AccountDevicesRouteImport } from './routes/account.devices'
 import { Route as AccountInboxRouteImport } from './routes/account.inbox'
+import { Route as AccountProfileRouteImport } from './routes/account.profile'
+import { Route as AccountReturnsRouteImport } from './routes/account.returns'
+import { Route as AccountReviewsRouteImport } from './routes/account.reviews'
+import { Route as AccountWatchRouteImport } from './routes/account.watch'
 import { Route as CategoriesIndexRouteImport } from './routes/categories.index'
 import { Route as CategoriesSlugRouteImport } from './routes/categories.$slug'
 import { Route as CheckoutIndexRouteImport } from './routes/checkout.index'
@@ -26,6 +32,8 @@ import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as AccountAddressesIndexRouteImport } from './routes/account.addresses.index'
 import { Route as AccountAddressesIdRouteImport } from './routes/account.addresses.$id'
 import { Route as AccountAddressesNewRouteImport } from './routes/account.addresses.new'
+import { Route as AccountOrdersIndexRouteImport } from './routes/account.orders.index'
+import { Route as AccountOrdersOrderIdRouteImport } from './routes/account.orders.$orderId'
 import { Route as CheckoutOrderIdDoneRouteImport } from './routes/checkout.$orderId.done'
 import { Route as CheckoutOrderIdPayRouteImport } from './routes/checkout.$orderId.pay'
 
@@ -54,6 +62,11 @@ const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
   path: '/forgot-password',
   getParentRoute: () => rootRouteImport,
 } as any)
+const HelpRoute = HelpRouteImport.update({
+  id: '/help',
+  path: '/help',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const SearchRoute = SearchRouteImport.update({
   id: '/search',
   path: '/search',
@@ -74,9 +87,34 @@ const AccountIndexRoute = AccountIndexRouteImport.update({
   path: '/',
   getParentRoute: () => AccountRoute,
 } as any)
+const AccountDevicesRoute = AccountDevicesRouteImport.update({
+  id: '/devices',
+  path: '/devices',
+  getParentRoute: () => AccountRoute,
+} as any)
 const AccountInboxRoute = AccountInboxRouteImport.update({
   id: '/inbox',
   path: '/inbox',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountProfileRoute = AccountProfileRouteImport.update({
+  id: '/profile',
+  path: '/profile',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountReturnsRoute = AccountReturnsRouteImport.update({
+  id: '/returns',
+  path: '/returns',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountReviewsRoute = AccountReviewsRouteImport.update({
+  id: '/reviews',
+  path: '/reviews',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountWatchRoute = AccountWatchRouteImport.update({
+  id: '/watch',
+  path: '/watch',
   getParentRoute: () => AccountRoute,
 } as any)
 const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
@@ -114,6 +152,16 @@ const AccountAddressesNewRoute = AccountAddressesNewRouteImport.update({
   path: '/addresses/new',
   getParentRoute: () => AccountRoute,
 } as any)
+const AccountOrdersIndexRoute = AccountOrdersIndexRouteImport.update({
+  id: '/orders/',
+  path: '/orders/',
+  getParentRoute: () => AccountRoute,
+} as any)
+const AccountOrdersOrderIdRoute = AccountOrdersOrderIdRouteImport.update({
+  id: '/orders/$orderId',
+  path: '/orders/$orderId',
+  getParentRoute: () => AccountRoute,
+} as any)
 const CheckoutOrderIdDoneRoute = CheckoutOrderIdDoneRouteImport.update({
   id: '/checkout/$orderId/done',
   path: '/checkout/$orderId/done',
@@ -131,10 +179,16 @@ export interface FileRoutesByFullPath {
   '/cart': typeof CartRoute
   '/design-system': typeof DesignSystemRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/help': typeof HelpRoute
   '/search': typeof SearchRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/account/devices': typeof AccountDevicesRoute
   '/account/inbox': typeof AccountInboxRoute
+  '/account/profile': typeof AccountProfileRoute
+  '/account/returns': typeof AccountReturnsRoute
+  '/account/reviews': typeof AccountReviewsRoute
+  '/account/watch': typeof AccountWatchRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/account/': typeof AccountIndexRoute
@@ -142,19 +196,27 @@ export interface FileRoutesByFullPath {
   '/checkout/': typeof CheckoutIndexRoute
   '/account/addresses/$id': typeof AccountAddressesIdRoute
   '/account/addresses/new': typeof AccountAddressesNewRoute
+  '/account/orders/$orderId': typeof AccountOrdersOrderIdRoute
   '/checkout/$orderId/done': typeof CheckoutOrderIdDoneRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/account/addresses/': typeof AccountAddressesIndexRoute
+  '/account/orders/': typeof AccountOrdersIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/cart': typeof CartRoute
   '/design-system': typeof DesignSystemRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/help': typeof HelpRoute
   '/search': typeof SearchRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/account/devices': typeof AccountDevicesRoute
   '/account/inbox': typeof AccountInboxRoute
+  '/account/profile': typeof AccountProfileRoute
+  '/account/returns': typeof AccountReturnsRoute
+  '/account/reviews': typeof AccountReviewsRoute
+  '/account/watch': typeof AccountWatchRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/account': typeof AccountIndexRoute
@@ -162,9 +224,11 @@ export interface FileRoutesByTo {
   '/checkout': typeof CheckoutIndexRoute
   '/account/addresses/$id': typeof AccountAddressesIdRoute
   '/account/addresses/new': typeof AccountAddressesNewRoute
+  '/account/orders/$orderId': typeof AccountOrdersOrderIdRoute
   '/checkout/$orderId/done': typeof CheckoutOrderIdDoneRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/account/addresses': typeof AccountAddressesIndexRoute
+  '/account/orders': typeof AccountOrdersIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -173,10 +237,16 @@ export interface FileRoutesById {
   '/cart': typeof CartRoute
   '/design-system': typeof DesignSystemRoute
   '/forgot-password': typeof ForgotPasswordRoute
+  '/help': typeof HelpRoute
   '/search': typeof SearchRoute
   '/sign-in': typeof SignInRoute
   '/sign-up': typeof SignUpRoute
+  '/account/devices': typeof AccountDevicesRoute
   '/account/inbox': typeof AccountInboxRoute
+  '/account/profile': typeof AccountProfileRoute
+  '/account/returns': typeof AccountReturnsRoute
+  '/account/reviews': typeof AccountReviewsRoute
+  '/account/watch': typeof AccountWatchRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/account/': typeof AccountIndexRoute
@@ -184,9 +254,11 @@ export interface FileRoutesById {
   '/checkout/': typeof CheckoutIndexRoute
   '/account/addresses/$id': typeof AccountAddressesIdRoute
   '/account/addresses/new': typeof AccountAddressesNewRoute
+  '/account/orders/$orderId': typeof AccountOrdersOrderIdRoute
   '/checkout/$orderId/done': typeof CheckoutOrderIdDoneRoute
   '/checkout/$orderId/pay': typeof CheckoutOrderIdPayRoute
   '/account/addresses/': typeof AccountAddressesIndexRoute
+  '/account/orders/': typeof AccountOrdersIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -196,10 +268,16 @@ export interface FileRouteTypes {
     | '/cart'
     | '/design-system'
     | '/forgot-password'
+    | '/help'
     | '/search'
     | '/sign-in'
     | '/sign-up'
+    | '/account/devices'
     | '/account/inbox'
+    | '/account/profile'
+    | '/account/returns'
+    | '/account/reviews'
+    | '/account/watch'
     | '/categories/$slug'
     | '/products/$slug'
     | '/account/'
@@ -207,19 +285,27 @@ export interface FileRouteTypes {
     | '/checkout/'
     | '/account/addresses/$id'
     | '/account/addresses/new'
+    | '/account/orders/$orderId'
     | '/checkout/$orderId/done'
     | '/checkout/$orderId/pay'
     | '/account/addresses/'
+    | '/account/orders/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/cart'
     | '/design-system'
     | '/forgot-password'
+    | '/help'
     | '/search'
     | '/sign-in'
     | '/sign-up'
+    | '/account/devices'
     | '/account/inbox'
+    | '/account/profile'
+    | '/account/returns'
+    | '/account/reviews'
+    | '/account/watch'
     | '/categories/$slug'
     | '/products/$slug'
     | '/account'
@@ -227,9 +313,11 @@ export interface FileRouteTypes {
     | '/checkout'
     | '/account/addresses/$id'
     | '/account/addresses/new'
+    | '/account/orders/$orderId'
     | '/checkout/$orderId/done'
     | '/checkout/$orderId/pay'
     | '/account/addresses'
+    | '/account/orders'
   id:
     | '__root__'
     | '/'
@@ -237,10 +325,16 @@ export interface FileRouteTypes {
     | '/cart'
     | '/design-system'
     | '/forgot-password'
+    | '/help'
     | '/search'
     | '/sign-in'
     | '/sign-up'
+    | '/account/devices'
     | '/account/inbox'
+    | '/account/profile'
+    | '/account/returns'
+    | '/account/reviews'
+    | '/account/watch'
     | '/categories/$slug'
     | '/products/$slug'
     | '/account/'
@@ -248,9 +342,11 @@ export interface FileRouteTypes {
     | '/checkout/'
     | '/account/addresses/$id'
     | '/account/addresses/new'
+    | '/account/orders/$orderId'
     | '/checkout/$orderId/done'
     | '/checkout/$orderId/pay'
     | '/account/addresses/'
+    | '/account/orders/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -259,6 +355,7 @@ export interface RootRouteChildren {
   CartRoute: typeof CartRoute
   DesignSystemRoute: typeof DesignSystemRoute
   ForgotPasswordRoute: typeof ForgotPasswordRoute
+  HelpRoute: typeof HelpRoute
   SearchRoute: typeof SearchRoute
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
@@ -307,6 +404,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ForgotPasswordRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/help': {
+      id: '/help'
+      path: '/help'
+      fullPath: '/help'
+      preLoaderRoute: typeof HelpRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/search': {
       id: '/search'
       path: '/search'
@@ -335,11 +439,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountIndexRouteImport
       parentRoute: typeof AccountRoute
     }
+    '/account/devices': {
+      id: '/account/devices'
+      path: '/devices'
+      fullPath: '/account/devices'
+      preLoaderRoute: typeof AccountDevicesRouteImport
+      parentRoute: typeof AccountRoute
+    }
     '/account/inbox': {
       id: '/account/inbox'
       path: '/inbox'
       fullPath: '/account/inbox'
       preLoaderRoute: typeof AccountInboxRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/profile': {
+      id: '/account/profile'
+      path: '/profile'
+      fullPath: '/account/profile'
+      preLoaderRoute: typeof AccountProfileRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/returns': {
+      id: '/account/returns'
+      path: '/returns'
+      fullPath: '/account/returns'
+      preLoaderRoute: typeof AccountReturnsRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/reviews': {
+      id: '/account/reviews'
+      path: '/reviews'
+      fullPath: '/account/reviews'
+      preLoaderRoute: typeof AccountReviewsRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/watch': {
+      id: '/account/watch'
+      path: '/watch'
+      fullPath: '/account/watch'
+      preLoaderRoute: typeof AccountWatchRouteImport
       parentRoute: typeof AccountRoute
     }
     '/categories/': {
@@ -391,6 +530,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountAddressesNewRouteImport
       parentRoute: typeof AccountRoute
     }
+    '/account/orders/': {
+      id: '/account/orders/'
+      path: '/orders'
+      fullPath: '/account/orders/'
+      preLoaderRoute: typeof AccountOrdersIndexRouteImport
+      parentRoute: typeof AccountRoute
+    }
+    '/account/orders/$orderId': {
+      id: '/account/orders/$orderId'
+      path: '/orders/$orderId'
+      fullPath: '/account/orders/$orderId'
+      preLoaderRoute: typeof AccountOrdersOrderIdRouteImport
+      parentRoute: typeof AccountRoute
+    }
     '/checkout/$orderId/done': {
       id: '/checkout/$orderId/done'
       path: '/checkout/$orderId/done'
@@ -409,19 +562,33 @@ declare module '@tanstack/react-router' {
 }
 
 interface AccountRouteChildren {
+  AccountDevicesRoute: typeof AccountDevicesRoute
   AccountInboxRoute: typeof AccountInboxRoute
+  AccountProfileRoute: typeof AccountProfileRoute
+  AccountReturnsRoute: typeof AccountReturnsRoute
+  AccountReviewsRoute: typeof AccountReviewsRoute
+  AccountWatchRoute: typeof AccountWatchRoute
   AccountIndexRoute: typeof AccountIndexRoute
   AccountAddressesIdRoute: typeof AccountAddressesIdRoute
   AccountAddressesNewRoute: typeof AccountAddressesNewRoute
+  AccountOrdersOrderIdRoute: typeof AccountOrdersOrderIdRoute
   AccountAddressesIndexRoute: typeof AccountAddressesIndexRoute
+  AccountOrdersIndexRoute: typeof AccountOrdersIndexRoute
 }
 
 const AccountRouteChildren: AccountRouteChildren = {
+  AccountDevicesRoute: AccountDevicesRoute,
   AccountInboxRoute: AccountInboxRoute,
+  AccountProfileRoute: AccountProfileRoute,
+  AccountReturnsRoute: AccountReturnsRoute,
+  AccountReviewsRoute: AccountReviewsRoute,
+  AccountWatchRoute: AccountWatchRoute,
   AccountIndexRoute: AccountIndexRoute,
   AccountAddressesIdRoute: AccountAddressesIdRoute,
   AccountAddressesNewRoute: AccountAddressesNewRoute,
+  AccountOrdersOrderIdRoute: AccountOrdersOrderIdRoute,
   AccountAddressesIndexRoute: AccountAddressesIndexRoute,
+  AccountOrdersIndexRoute: AccountOrdersIndexRoute,
 }
 
 const AccountRouteWithChildren =
@@ -433,6 +600,7 @@ const rootRouteChildren: RootRouteChildren = {
   CartRoute: CartRoute,
   DesignSystemRoute: DesignSystemRoute,
   ForgotPasswordRoute: ForgotPasswordRoute,
+  HelpRoute: HelpRoute,
   SearchRoute: SearchRoute,
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,

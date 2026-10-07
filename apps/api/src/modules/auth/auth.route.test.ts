@@ -275,3 +275,103 @@ describe('rate limits', () => {
     expect((await from('198.51.100.9')).statusCode).toBe(401);
   });
 });
+
+describe('profile and password', () => {
+  it('D-223: needs a session', async () => {
+    const profile = await demo.inject({
+      method: 'PATCH',
+      url: '/me/profile',
+      payload: { name: 'Asha R', phone: '9876543210' },
+    });
+    expect(profile.statusCode).toBe(401);
+    const pw = await demo.inject({
+      method: 'POST',
+      url: '/me/password',
+      payload: { currentPassword: password, newPassword: 'another password' },
+    });
+    expect(pw.statusCode).toBe(401);
+  });
+
+  it('D-223: the customer changes their name and mobile (D-99); the email stays', async () => {
+    const { email, cookie } = await signUp(demo);
+    const res = await demo.inject({
+      method: 'PATCH',
+      url: '/me/profile',
+      headers: { cookie },
+      payload: { name: 'Asha Rao Iyer', phone: '+91 91234 56789', email: 'new@example.com' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(authResponseSchema.parse(res.json()).customer).toMatchObject({
+      name: 'Asha Rao Iyer',
+      phone: '9123456789',
+      email,
+    });
+    expect(await session(demo, cookie)).toMatchObject({
+      name: 'Asha Rao Iyer',
+      phone: '9123456789',
+      email,
+    });
+  });
+
+  it('D-99: a bad mobile is refused', async () => {
+    const { cookie } = await signUp(demo);
+    const res = await demo.inject({
+      method: 'PATCH',
+      url: '/me/profile',
+      headers: { cookie },
+      payload: { name: 'Asha Rao', phone: '12345' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+
+  it('D-223: a wrong current password is 400 WRONG_PASSWORD and nothing changes', async () => {
+    const { email, cookie } = await signUp(demo);
+    const res = await demo.inject({
+      method: 'POST',
+      url: '/me/password',
+      headers: { cookie },
+      payload: { currentPassword: 'not my password', newPassword: 'another password' },
+    });
+    expect(res.statusCode).toBe(400);
+    expect(res.json().error.code).toBe('WRONG_PASSWORD');
+    expect((await signIn(demo, email)).statusCode).toBe(200);
+  });
+
+  it('D-223: changing the password keeps this device signed in and signs out the others', async () => {
+    const { email, cookie: other } = await signUp(demo);
+    const here = cookieFrom((await signIn(demo, email)).headers['set-cookie']);
+    const res = await demo.inject({
+      method: 'POST',
+      url: '/me/password',
+      headers: { cookie: here },
+      payload: { currentPassword: password, newPassword: 'another password' },
+    });
+    expect(res.statusCode).toBe(200);
+    expect(authResponseSchema.parse(res.json()).customer.email).toBe(email);
+    const fresh = cookieFrom(res.headers['set-cookie']);
+    expect(fresh).toMatch(/borneo\.session_token=/);
+    expect(await session(demo, fresh)).toMatchObject({ email });
+    expect(await session(demo, other)).toBeNull();
+    expect((await signIn(demo, email)).statusCode).toBe(401);
+    expect((await signIn(demo, email, 'another password')).statusCode).toBe(200);
+    const inbox = await demo.inject({
+      method: 'GET',
+      url: '/me/notifications',
+      headers: { cookie: fresh },
+    });
+    expect(notificationPageSchema.parse(inbox.json()).items.map((n) => n.kind)).toContain(
+      'password_changed',
+    );
+  });
+
+  it('D-97: a new password shorter than 8 characters is refused', async () => {
+    const { cookie } = await signUp(demo);
+    const res = await demo.inject({
+      method: 'POST',
+      url: '/me/password',
+      headers: { cookie },
+      payload: { currentPassword: password, newPassword: 'short' },
+    });
+    expect(res.statusCode).toBe(400);
+  });
+});

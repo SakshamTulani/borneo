@@ -14,6 +14,32 @@
 | 2026-10-06 | I     | `phase-i/auth`          | Better Auth behind our own routes (sign-up/in/out, session, 6-digit reset code), demo box via NotificationAdapter, account inbox, address book with exact map pin, account shell, header account link + mobile Account tab, PDP uses default address pincode (D-185). Owner requests: two-row desktop header, live offers strip under the home hero (D-191). Migration 0005. D-97–99, D-188–191.                                                                                                                                                                                                                                                                                                                                       | Owner review; then Phase J (cart)          |
 | 2026-10-06 | J     | `phase-j/cart`          | Shared `priceCart` (one live flash unit then regular, coupon kept with reason, coupon and payment-offer previews, cart EMI, line status, bundle offers). `POST /cart/quote` (browser cart) + `/me/cart` (lines, coupon, merge; locked writes), delivery and COD per pincode, add-on suggestions with one-tap add. Web: PDP add to cart, sticky bar, in-cart stepper, bundles, add confirmation, `/cart`, header + bottom nav count. Owner: demo reviews (D-200) with a review list on the PDP; in-cart stepper on the PDP. Migrations 0006–0008. D-192–D-200.                                                                                                                                                                          | Owner review; then Phase K (checkout)      |
 | 2026-10-07 | K     | `phase-k/checkout`      | Checkout on the account cart: address (default first), method, bank, EMI plan and one optional payment offer in the URL; recheck on every change (D-55, D-201, D-202). In-checkout sign-up (D-92). Idempotent placing with total check; reservation per item at the fastest warehouse with stock, pre-order cap, flash cap + purchase row, all-or-nothing (D-203). Prepaid: 5-minute hold, mock gateway (pay / fail / late success), retry within the hold, pg-boss expiry + lazy expiry, late payment re-reserve or refund (D-204–D-213). COD confirmed at once. Confirmation page, inbox messages, GST invoice PDF (in-house writer, D-208–D-210). Migration 0009. Owner request: home offers ticker + shipping line (D-191, D-214). | Owner review; then Phase L (post-purchase) |
+| 2026-10-07 | L     | `phase-l/post-purchase` | Orders list + order page with tracking timeline (`order_event`, demo courier adapter, D-215), cancel before dispatch with stock release and full refund (D-216), return/replacement requests per line with photos in Postgres (D-217, D-218) and a demo support desk with refunds (D-219), owned devices with add-ons (D-220), review prompts + verified reviews (D-221), Watch on the PDP and a watch list (D-222), profile and password change (D-223). Account rebuilt: sidebar sections, overview with counts, recent orders and prompts. Site footer + `/help` (D-224). New product, banner and tile photos (owner request). Migration 0010. Fixed a flaky D-203 concurrency test and an order-list count bug.                    | Phase M                                    |
+
+## Phase L: post-purchase
+
+Built on owner request together with three extras: a fuller profile section, better images and a real footer.
+
+- **Tracking (D-215):** confirmed → packed → shipped → out for delivery → delivered, one `order_event` per step. No courier is connected, so in demo the order page has "Advance (demo)" behind a `CourierTracking` adapter (`adapters/courier`); outside demo nothing moves (blocker). Shipping takes units out of the warehouse; delivery stamps each line's return window.
+- **Cancel (D-216):** the whole order until it ships; every hold is released (status `released`), open payment attempts end, a paid order is refunded in full (mock). A payment that lands after the customer cancelled is refunded straight back. An invoiced order's PDF is marked cancelled.
+- **Returns (D-217–D-219):** per whole line, one open request per line (partial unique index), only the kinds and reasons the line's policy allows, photos checked by content (JPEG/PNG/WebP, ≤ 2 MB, 1–3 for defect/damage). Photos sit in `return_photo` (bytea) and travel as base64 JSON because S3 waits on ADR-0009 and a multipart library would need its own ADR. Demo support desk approves then completes; a completed return on a prepaid order refunds what the line cost.
+- **Owned devices (D-220), reviews (D-221), Watch (D-222):** from delivered lines only; add-ons via a new `ownedDevice` suggestion surface; one review per product per customer (unique index); Watch only for out-of-stock variants, max 50, nothing sent.
+- **Profile (D-223):** name and mobile through Better Auth's `updateUser`; password change requires the current one and signs out other devices (rate-limited like sign-in).
+- **Footer and help (D-224):** promises, catalog categories, help topics, account links, ways to pay; `/help` text comes from shared rules so it can't drift.
+- **Photos:** 32 product leads replaced with clean light-background shots of the right product type (USB-C plugs, an Indian-socket charger, distinct straps, TVs filling the frame); category tiles are now one studio set; new robot-vacuum banner. Remaining weak spots: five phone leads are blank-screen mockups; echo-max-2 and home-hub-1 still resemble known brands.
+
+## Phase L: validator results
+
+- Shared: 17 new rule tests (D-24, D-81, D-86–88, D-149, D-151, D-215–D-222). API: 315 tests incl. cross-customer suites for account, returns, reviews and watch. Web: 274 tests, every new component axe-checked.
+- End to end on the dev servers: sign up → address → UPI order → mock pay → advance ×4 → defect return with photo → approve → complete (refund ₹2,799) → review → summary, orders list, profile, wrong password, invoice.
+
+## Phase L: gaps and risks
+
+- Pre-order lines carry no warehouse, so an all-pre-order order still gets no invoice when it ships (D-208 promised one); needs a dispatch warehouse for pre-orders.
+- Cash-on-delivery refunds still wait on D-75; the UI says the team will be in touch.
+- Return photos in Postgres grow the database; move to S3 once ADR-0009 is accepted (D-218).
+- No GST credit note on cancellation of an invoiced order (blocker, D-216).
+- Fixed on the way: the D-203 parallel-order test could see 422 `NOT_DELIVERABLE` under load (a correct refusal); it now accepts that. The order list counted 0 units (an unqualified column in a subquery); fixed and covered.
 
 ## Phase K: checkout & payment
 
@@ -340,5 +366,6 @@ Each fault was planted on a green baseline, run through `pnpm check`, then rever
 - Decide D-175 (Start production host) before Phase O.
 - Review Phase K, especially D-201 (total check), D-203 (one warehouse per item), D-208 (numbering), D-209–D-210 (GST and the in-house PDF), D-212 (late payment), D-214 (shipping line wording).
 - Confirm GST data with an accountant: HSN codes and rates per category, GSTIN per warehouse.
+- Review Phase L, especially D-215 (demo courier), D-216 (cancel = whole order), D-218 (photos in Postgres), D-221 (one review per product), D-224 (footer).
 - Review Phase J, especially D-192 (browser cart + merge), D-193 (5 per line, 20 lines), D-194 (one flash unit, rest regular), D-195–D-196 (coupon and payment-offer previews), D-200 (demo reviews).
 - Decide **open** items when convenient: D-15, D-60, D-61, D-72 (COD cap is a ready parameter), D-75.

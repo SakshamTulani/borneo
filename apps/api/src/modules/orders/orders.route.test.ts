@@ -189,10 +189,11 @@ describe('placing an order', () => {
     const item = await insertSellable(db, { stock: { blr: 2 } });
     const shoppers = await Promise.all(Array.from({ length: 6 }, () => shopperWith(item.key)));
     const results = await Promise.all(shoppers.map((s) => place(app, s, { method: 'cod' })));
-    const codes = results.map((r) => r.statusCode).sort();
-    expect(codes).toEqual([200, 200, 409, 409, 409, 409]);
-    for (const r of results.filter((r) => r.statusCode === 409))
-      expect(r.json().error.code).toMatch(/OUT_OF_STOCK|CART_NEEDS_ATTENTION/);
+    // Exactly two win. A loser is refused while reserving (409) or, if the others already
+    // reserved when it priced the cart, because nothing is left to deliver (422).
+    expect(results.filter((r) => r.statusCode === 200)).toHaveLength(2);
+    for (const r of results.filter((r) => r.statusCode !== 200))
+      expect(r.json().error.code).toMatch(/OUT_OF_STOCK|CART_NEEDS_ATTENTION|NOT_DELIVERABLE/);
     expect(await reserved(item.variantId)).toBe(2);
   });
 

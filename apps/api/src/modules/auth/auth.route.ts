@@ -5,7 +5,9 @@ import {
   authResponseSchema,
   errorResponseSchema,
   noContent,
+  passwordChangeInputSchema,
   passwordResetInputSchema,
+  profileInputSchema,
   passwordResetRequestResponseSchema,
   passwordResetRequestSchema,
   sessionResponseSchema,
@@ -22,6 +24,8 @@ export const AUTH_RATE_RULES = {
   signUp: { max: 10, windowMs: 60 * MINUTE },
   resetRequest: { max: 3, windowMs: 15 * MINUTE },
   reset: { max: 10, windowMs: 15 * MINUTE },
+  /** Changing the password checks the current one: limited like sign-in (D-190). */
+  passwordChange: { max: 10, windowMs: 15 * MINUTE },
 } satisfies Record<string, RateRule>;
 
 const errors = {
@@ -80,6 +84,39 @@ export function authRoutes(service: AuthService, limiter: RateLimiter): FastifyP
         if (!current) return { customer: null };
         setCookies(reply, current.cookies);
         return { customer: current.customer };
+      },
+    );
+
+    r.patch(
+      '/me/profile',
+      { schema: { body: profileInputSchema, response: { 200: authResponseSchema, ...errors } } },
+      async (request, reply) => {
+        const { customer, cookies } = await service.updateProfile(
+          request.headers.cookie,
+          request.body,
+        );
+        setCookies(reply, cookies);
+        void reply.header('cache-control', 'private, no-store');
+        return { customer };
+      },
+    );
+
+    r.post(
+      '/me/password',
+      {
+        schema: {
+          body: passwordChangeInputSchema,
+          response: { 200: authResponseSchema, ...errors },
+        },
+      },
+      async (request, reply) => {
+        limiter.hit(`password-change:${request.ip}`, AUTH_RATE_RULES.passwordChange);
+        const { customer, cookies } = await service.changePassword(
+          request.headers.cookie,
+          request.body,
+        );
+        setCookies(reply, cookies);
+        return { customer };
       },
     );
 

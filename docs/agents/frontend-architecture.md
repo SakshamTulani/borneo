@@ -31,6 +31,8 @@ Cart (Phase J): `features/cart` keeps the signed-out cart in `localStorage` (`re
 
 Checkout (Phase K): `features/checkout`. `/checkout` keeps the customer's choices (address, method, bank, EMI plan, payment offer) in the URL and reads `GET /me/checkout` under `['me','checkout',choice]`; signed out it shows `CheckoutSignUp` (email + password with the `AddressForm`, D-92), and the browser cart merges before checkout reads (`mergeBrowserCartOnce`). Placing sends an `Idempotency-Key` (`sendJson` takes headers). `/checkout/$orderId/pay` polls the order while payment is pending and shows the hold `Countdown` and the demo mock gateway; `/checkout/$orderId/done` is the confirmation with the invoice link (`/api/me/orders/:id/invoice`).
 
+Account (Phase L): `features/account` is the shell (sidebar nav on desktop, pills on mobile), overview (`/me/summary` + recent orders + review prompts), profile and password, and owned devices. `features/orders` lists orders, shows one order (tracking timeline, cancel, return requests with photos read as base64, refunds, demo courier and support-desk controls when the API sends `demoNextStep` / `demoNextStatus`) and the returns list. `features/reviews` (prompts and the star-rating form), `features/watch` (`WatchButton` on the PDP purchase slot, watch list) and `features/help` (`/help`, text from shared rules). The site footer is `shared/ui/navigation/SiteFooter` with the catalog's `FooterCategories` in its slot. `ChoiceList` lives in `shared/ui/forms`.
+
 ## Rules (enforced)
 
 - Imports go down only: `ui → hooks → repository → mappers → api → model`. A layer never imports its own `index.ts`.

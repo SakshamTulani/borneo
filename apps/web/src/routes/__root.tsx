@@ -3,7 +3,7 @@ import { createRootRouteWithContext, HeadContent, Outlet, Scripts } from '@tanst
 import type { ReactNode } from 'react';
 import { AccountLink, sessionQuery } from '../features/auth';
 import { useCartCountQuery } from '../features/cart';
-import { categoriesQuery, CategoryNav } from '../features/catalog';
+import { categoriesQuery, CategoryNav, FooterCategories } from '../features/catalog';
 import { SearchBox } from '../features/search';
 import appCss from '../index.css?url';
 import { pageHead } from '../shared/lib/seo';
@@ -54,6 +54,7 @@ function RootLayout() {
       search={<SearchBox />}
       account={<AccountLink />}
       cartCount={cartCount}
+      footerCategories={<FooterCategories />}
     >
       <Outlet />
     </AppShell>
