@@ -28,7 +28,7 @@ type Props =
 export function InboxView(props: Props) {
   if (props.status === 'loading') {
     return (
-      <div className="space-y-3" aria-busy="true" aria-label="Loading messages">
+      <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading messages">
         {[0, 1, 2].map((i) => (
           <Skeleton key={i} className="h-24 rounded-xl" />
         ))}

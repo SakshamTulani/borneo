@@ -17,6 +17,7 @@ export * from './contracts/addresses';
 export * from './contracts/notifications';
 export * from './contracts/postPurchase';
 export * from './contracts/discovery';
+export * from './contracts/analytics';
 
 export * from './rules/account';
 export * from './rules/addresses';

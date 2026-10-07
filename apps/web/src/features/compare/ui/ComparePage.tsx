@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { track } from '@/features/analytics';
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ArrowLeftIcon, ScaleIcon, XIcon } from 'lucide-react';
@@ -28,6 +30,10 @@ export function ComparePage({
   const query = useCompareQuery(category, slugs);
   const [onlyDiff, setOnlyDiff] = useState(false);
   const view = query.data;
+  const shown = view?.products.length;
+  useEffect(() => {
+    if (shown) track('compare_view', { category, products: shown });
+  }, [category, shown]);
   if (query.isError && !view)
     return (
       <Container className="py-10">

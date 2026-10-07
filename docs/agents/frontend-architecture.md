@@ -37,6 +37,8 @@ Discovery (Phase M): `features/finder` (`/finder/$id`, answers in the URL, one q
 
 Deals (Phase N): `features/deals` (`/deals`: live and upcoming flash sales with the shared `Countdown`, refetched when a sale starts or ends) composes `OfferList` from `features/offers`. Checkout shows `BotCheck` when a line has a live flash unit and sends `X-Bot-Token`.
 
+Hardening (Phase O): `features/analytics` exports `track(name, props)` (browser only: effects and handlers; batched; random device id). `features/wishlist` (hearts through `ProductCard`'s `action` slot, composed by routes). `shared/ui/layout/Carousel` is the home hero. `src/test/pages.audit.test.ts` is the page-level axe audit (`pnpm audit:a11y`); `tooling/src/checks/budget.ts` the performance budget.
+
 ## Rules (enforced)
 
 - Imports go down only: `ui → hooks → repository → mappers → api → model`. A layer never imports its own `index.ts`.

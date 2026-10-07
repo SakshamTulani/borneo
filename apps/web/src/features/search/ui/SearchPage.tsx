@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { track } from '@/features/analytics';
 import { Link } from '@tanstack/react-router';
 import { ArrowRightIcon, SearchXIcon } from 'lucide-react';
 import { Button } from '@/shared/ui/base/button';
@@ -73,6 +75,10 @@ function NoResults({ view }: { view: SearchView }) {
 
 function Results({ q }: { q: string }) {
   const results = useSearchResultsQuery(q);
+  const total = results.data?.pages[0]?.total;
+  useEffect(() => {
+    if (total !== undefined) track('search', { query: q.slice(0, 80), results: total });
+  }, [q, total]);
   if (results.isPending) return <ProductGridSkeleton count={8} />;
   if (results.isError)
     return (

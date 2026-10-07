@@ -24,6 +24,7 @@ import { createUnconfiguredBotProtection } from '../adapters/bot/index';
 import { createUnconfiguredCourier } from '../adapters/courier/index';
 import { noJobs } from '../jobs/index';
 import { createAccountService } from '../modules/account/index';
+import { createAnalyticsService } from '../modules/analytics/index';
 import { createOrdersService } from '../modules/orders/index';
 import { createReturnsService } from '../modules/returns/index';
 import { createReviewsService } from '../modules/reviews/index';
@@ -273,6 +274,7 @@ export function fakeAppDeps(over: Partial<AppDeps> = {}): AppDeps {
       loadRows: async () => [],
       summarize: async () => [],
     }),
+    analytics: createAnalyticsService({ analytics: { track: () => {} } }),
     upgrade: createUpgradeService({
       now: () => 0,
       listOwned: async () => [],
@@ -335,6 +337,8 @@ export function emptyOrdersDeps(over: Partial<OrdersDeps> = {}): OrdersDeps {
     courier: createUnconfiguredCourier(),
     bot: createUnconfiguredBotProtection(),
     limitFlash: () => {},
+    analytics: { track: () => {} },
+    countOrders: async () => 0,
     jobs: noJobs,
     notifications: { send: async () => null },
     renderInvoice: () => new Uint8Array(),

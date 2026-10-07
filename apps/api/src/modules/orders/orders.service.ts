@@ -37,6 +37,7 @@ import {
   type ReturnRequestView,
   type TrackingEvent,
 } from '@borneo/shared';
+import type { Analytics } from '../../adapters/analytics/index';
 import type { BotProtection } from '../../adapters/bot/index';
 import type { CourierTracking } from '../../adapters/courier/index';
 import type { NotificationAdapter } from '../../adapters/notifications/index';
@@ -140,6 +141,9 @@ export type OrdersDeps = {
   bot: BotProtection;
   /** Counts a flash checkout attempt; throws 429 over the limit (D-230). */
   limitFlash: (key: string) => void;
+  /** Product analytics (D-236): the order event, with no personal data. */
+  analytics: Analytics;
+  countOrders: (customerId: CustomerId) => Promise<number>;
   jobs: OrderJobs;
   notifications: NotificationAdapter;
   renderInvoice: (doc: InvoiceDocument) => Uint8Array;
@@ -696,6 +700,26 @@ export function createOrdersService(deps: OrdersDeps) {
       if (placed.status === 'conflict')
         throw new AppError(409, placed.code, CONFLICTS[placed.code]!);
       if (placed.status === 'existing') return view(customerId, placed.orderId);
+      try {
+        deps.analytics.track([
+          {
+            name: 'order_placed',
+            source: 'api',
+            at: now,
+            props: {
+              totalPaise: result.order.totalPaise,
+              method: request.payment.method,
+              items: lines.length,
+              preorder: preorderKeys.size > 0,
+              flash: sales.length > 0,
+              // Repeat-purchase rate (D-05): never who, only whether it's a first order.
+              firstOrder: (await deps.countOrders(customerId)) === 1,
+            },
+          },
+        ]);
+      } catch (error) {
+        deps.log.warn({ orderId: placed.orderId, error: String(error) }, 'analytics failed');
+      }
 
       if (placed.attemptId && hold.kind === 'hold') {
         // The order stands: its hold must end even if the gateway call fails (D-206).

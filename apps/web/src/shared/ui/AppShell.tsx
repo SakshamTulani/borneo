@@ -38,7 +38,10 @@ export function AppShell({
         Skip to content
       </a>
       {/* Shipping line (owner request): true of every order; it scrolls away with the page. */}
-      <p className="bg-brand px-4 py-2 text-center text-xs font-medium text-brand-ink sm:text-sm">
+      <aside
+        aria-label="Store promises"
+        className="bg-brand px-4 py-2 text-center text-xs font-medium text-brand-ink sm:text-sm"
+      >
         Free delivery on every order
         <span className="hidden sm:inline">
           <span aria-hidden className="mx-2 text-brand-soft">
@@ -50,7 +53,7 @@ export function AppShell({
           </span>
           7-day returns or replacement
         </span>
-      </p>
+      </aside>
       <header className="sticky top-0 z-20 border-b border-line/70 bg-surface/80 backdrop-blur-xl backdrop-saturate-150">
         <Container className="flex h-16 items-center gap-4 lg:gap-8">
           <Link to="/" aria-label="Borneo home" className="inline-flex shrink-0 rounded-sm">

@@ -1,3 +1,4 @@
+import { track } from '@/features/analytics';
 import { useState } from 'react';
 import { itemKey, type Availability, type Paise } from '@borneo/shared';
 import { errorMessage } from '@/shared/lib/errors';
@@ -37,7 +38,10 @@ export function ProductPurchase({ productName, sku, availability, sellingPaise }
     add.mutate(
       { key: itemKey(sku), pincode: null },
       {
-        onSuccess: setResult,
+        onSuccess: (r) => {
+          setResult(r);
+          track('add_to_cart', { sku });
+        },
         onError: (e) => setError(errorMessage(e)),
       },
     );

@@ -19,7 +19,9 @@
     "db:generate": "pnpm --filter @borneo/api db:generate",
     "db:migrate": "pnpm --filter @borneo/api db:migrate",
     "db:reset": "pnpm --filter @borneo/api db:reset",
-    "prepare": "lefthook install"
+    "prepare": "lefthook install",
+    "perf:budget": "pnpm --filter @borneo/web build && node tooling/src/budget-cli.ts",
+    "audit:a11y": "pnpm --filter @borneo/web audit:a11y"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

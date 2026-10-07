@@ -79,7 +79,7 @@ export function OrdersPage() {
     return <ErrorState title="Couldn't load your orders" onRetry={() => void query.refetch()} />;
   if (!query.data)
     return (
-      <div className="space-y-3" aria-label="Loading your orders">
+      <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading your orders">
         <Skeleton className="h-24 w-full" />
         <Skeleton className="h-24 w-full" />
       </div>

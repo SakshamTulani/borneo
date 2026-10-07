@@ -10,6 +10,7 @@ import { notificationsRoutes, type NotificationsService } from './modules/notifi
 import { offersRoutes, type OffersService } from './modules/offers/index';
 import { ordersRoutes, type OrdersService } from './modules/orders/index';
 import { accountRoutes, type AccountService } from './modules/account/index';
+import { analyticsRoutes, type AnalyticsService } from './modules/analytics/index';
 import { returnsRoutes, type ReturnsService } from './modules/returns/index';
 import { reviewsRoutes, type ReviewsService } from './modules/reviews/index';
 import { searchRoutes, type SearchService } from './modules/search/index';
@@ -38,6 +39,7 @@ export type AppDeps = {
   account: AccountService;
   upgrade: UpgradeService;
   wishlist: WishlistService;
+  analytics: AnalyticsService;
   session: SessionReader;
   rateLimiter: RateLimiter;
   /** Browser origins allowed to make cookie-authenticated writes. */
@@ -69,5 +71,6 @@ export function buildApp(deps: AppDeps) {
   app.register(accountRoutes(deps.account, deps.session));
   app.register(upgradeRoutes(deps.upgrade, deps.session));
   app.register(wishlistRoutes(deps.wishlist, deps.session));
+  app.register(analyticsRoutes(deps.analytics, deps.rateLimiter));
   return app;
 }

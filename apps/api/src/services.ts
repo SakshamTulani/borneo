@@ -121,6 +121,8 @@ import {
 } from './modules/relations/index';
 
 import { createAccountService, findMemberSince } from './modules/account/index';
+import { createAnalyticsService } from './modules/analytics/index';
+import { createLogAnalytics, type Analytics } from './adapters/analytics/index';
 import { createUpgradeService, listOwnedForUpgrade } from './modules/upgrade/index';
 import {
   addToWishlist,
@@ -294,6 +296,7 @@ export function ordersService(
     log: NotifierDeps['log'];
     bot: BotProtection;
     rateLimiter: ReturnType<typeof createRateLimiter>;
+    analytics: Analytics;
   },
 ) {
   return createOrdersService({
@@ -333,6 +336,9 @@ export function ordersService(
     courier: options.demoMode ? createDemoCourier() : createUnconfiguredCourier(),
     bot: options.bot,
     limitFlash: (key) => options.rateLimiter.hit(key, FLASH_CHECKOUT_LIMIT),
+    analytics: options.analytics,
+    countOrders: async (customerId) =>
+      [...(await countOrders(customerId, db)).values()].reduce((a, b) => a + b, 0),
     jobs: options.jobs,
     notifications: options.notifications,
     renderInvoice: renderInvoicePdf,
@@ -448,6 +454,7 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
   const notifications = notificationAdapter(db, config.demoMode, config.log ?? consoleLog);
   const cart = cartService(db, catalog, delivery, now);
   const rateLimiter = createRateLimiter();
+  const analytics = createLogAnalytics(config.log ?? consoleLog);
   return {
     health: createHealthService({
       demoMode: config.demoMode,
@@ -475,7 +482,9 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
       // A real bot check is a production blocker (D-144): only the demo has a mock one.
       bot: config.demoMode ? createDemoBotProtection(now) : createUnconfiguredBotProtection(),
       rateLimiter,
+      analytics,
     }),
+    analytics: createAnalyticsService({ analytics }),
     ...postPurchaseServices(db, catalog, {
       demoMode: config.demoMode,
       notifications,

@@ -13,3 +13,4 @@ Format: MADR. Claude writes ADRs as **proposed**; the owner moves them to **acce
 | [0007](0007-layered-slices-enforced-boundaries.md) | Layered feature slices with enforced boundaries | accepted           |
 | [0008](0008-tanstack-start-ssr.md)                 | TanStack Start with SSR (supersedes 0001)       | accepted           |
 | [0009](0009-product-media-s3.md)                   | Product media in S3 storage via the AWS SDK     | proposed           |
+| [0010](0010-start-production-host.md)              | Production host for the Start server (srvx)     | proposed           |

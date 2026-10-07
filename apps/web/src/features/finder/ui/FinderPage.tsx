@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { track } from '@/features/analytics';
 import { useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ArrowLeftIcon, CheckIcon, RotateCcwIcon, SparklesIcon } from 'lucide-react';
@@ -91,6 +93,10 @@ export function FinderPage({
   const query = useFinderQuery(id, answers);
   const [shown, setShown] = useState(PAGE);
   const view = query.data;
+  const done = view?.complete ? view.results.length : undefined;
+  useEffect(() => {
+    if (done !== undefined) track('finder_complete', { finder: id, results: done });
+  }, [id, done]);
   if (query.isError && !view)
     return (
       <Container className="py-10">

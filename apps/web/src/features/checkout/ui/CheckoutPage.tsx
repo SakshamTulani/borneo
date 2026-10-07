@@ -1,4 +1,5 @@
-import { useRef, useState } from 'react';
+import { track } from '@/features/analytics';
+import { useEffect, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { AlertCircleIcon, ShoppingBagIcon, TruckIcon } from 'lucide-react';
 import { formatInr } from '@borneo/shared';
@@ -58,7 +59,12 @@ export function CheckoutPage(props: Props) {
 
 function Loading() {
   return (
-    <Container className="space-y-3 pt-6" aria-busy="true" aria-label="Loading checkout">
+    <Container
+      className="space-y-3 pt-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading checkout"
+    >
       <Skeleton className="h-10 w-48" />
       <Skeleton className="h-64 w-full" />
     </Container>
@@ -72,6 +78,7 @@ function SignedInCheckout({ choice, onChoice, onPlaced }: Props) {
   const key = useRef<string | null>(null);
   const [fresh, setFresh] = useState<number | null>(null);
   const [botToken, setBotToken] = useState<string | null>(null);
+  useEffect(() => track('begin_checkout'), []);
 
   if (query.isError && !query.data)
     return <ErrorState title="Couldn't load checkout" onRetry={() => void query.refetch()} />;

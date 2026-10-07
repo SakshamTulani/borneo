@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { track } from '@/features/analytics';
 import { useDefaultPincodeQuery } from '@/features/addresses';
 import { BundleOffers, ProductPurchase } from '@/features/cart';
 import { UpgradePanel } from '@/features/upgrade';
@@ -19,6 +21,7 @@ type Props = {
 
 export function ProductPage({ slug, sku, onSkuChange }: Props) {
   const query = useProductQuery(slug);
+  useEffect(() => track('product_view', { slug }), [slug]);
   // Signed in with a default address: delivery starts from its pincode (D-185).
   const defaultPincode = useDefaultPincodeQuery().data ?? null;
   if (query.isError) {

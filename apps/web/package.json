@@ -6,7 +6,8 @@
     "dev": "vite dev",
     "build": "vite build",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "audit:a11y": "AUDIT_URL=${AUDIT_URL:-http://localhost:5173} vitest run src/test/pages.audit.test.ts"
   },
   "dependencies": {
     "@borneo/shared": "workspace:*",

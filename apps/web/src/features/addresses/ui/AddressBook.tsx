@@ -31,7 +31,12 @@ const addLink =
 export function AddressBook(props: Props) {
   if (props.status === 'loading') {
     return (
-      <div className="grid gap-4 sm:grid-cols-2" aria-busy="true" aria-label="Loading addresses">
+      <div
+        className="grid gap-4 sm:grid-cols-2"
+        role="status"
+        aria-busy="true"
+        aria-label="Loading addresses"
+      >
         {[0, 1].map((i) => (
           <Skeleton key={i} className="h-44 rounded-xl" />
         ))}

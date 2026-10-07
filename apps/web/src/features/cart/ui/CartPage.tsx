@@ -48,7 +48,7 @@ export function CartPage() {
     body = <ErrorState title="Couldn't load your cart" onRetry={() => void query.refetch()} />;
   } else if (!query.data) {
     body = (
-      <div className="space-y-3" aria-busy="true" aria-label="Loading your cart">
+      <div className="space-y-3" role="status" aria-busy="true" aria-label="Loading your cart">
         <Skeleton className="h-28 w-full" />
         <Skeleton className="h-28 w-full" />
       </div>

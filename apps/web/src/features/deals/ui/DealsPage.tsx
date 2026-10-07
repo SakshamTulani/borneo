@@ -1,3 +1,5 @@
+import { useEffect } from 'react';
+import { track } from '@/features/analytics';
 import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import { CalendarClockIcon, ZapIcon } from 'lucide-react';
@@ -92,6 +94,7 @@ function Section({ id, title, children }: { id: string; title: ReactNode; childr
  */
 export function DealsPage({ offers }: { offers?: ReactNode }) {
   const query = useDealsQuery();
+  useEffect(() => track('deals_view'), []);
   const grid = 'grid grid-cols-2 gap-3 sm:gap-5 lg:grid-cols-4';
   return (
     <Container className="space-y-10 py-8 sm:py-10">
