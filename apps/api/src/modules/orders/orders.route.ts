@@ -3,6 +3,7 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import { requireCustomerId, type SessionReader } from '../../session/index';
 import {
   attemptParams,
+  botTokenSchema,
   checkoutQuerySchema,
   checkoutViewSchema,
   errors,
@@ -51,7 +52,21 @@ export function ordersRoutes(service: OrdersService, session: SessionReader): Fa
       async (request, reply) => {
         const customerId = await requireCustomerId(session, request);
         noStore(reply);
-        return service.place(customerId, request.headers['idempotency-key'], request.body);
+        return service.place(customerId, request.headers['idempotency-key'], request.body, {
+          ip: request.ip,
+          botToken: request.headers['x-bot-token'],
+        });
+      },
+    );
+
+    // Demo only (404 otherwise): the mock bot check's answer (D-232).
+    r.post(
+      '/me/bot-check',
+      { schema: { response: { 200: botTokenSchema, ...errors } } },
+      async (request, reply) => {
+        await requireCustomerId(session, request);
+        noStore(reply);
+        return service.demoBotToken();
       },
     );
 

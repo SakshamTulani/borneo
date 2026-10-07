@@ -16,6 +16,7 @@ import { FormAlert } from '@/shared/ui/forms/FormAlert';
 import { Container } from '@/shared/ui/layout/Container';
 import { useCheckoutQuery } from '../hooks/useCheckoutQuery';
 import { usePlaceOrderMutation } from '../hooks/usePlaceOrderMutation';
+import { BotCheck } from './BotCheck';
 import {
   METHOD_LABELS,
   blockText,
@@ -70,6 +71,7 @@ function SignedInCheckout({ choice, onChoice, onPlaced }: Props) {
   const place = usePlaceOrderMutation();
   const key = useRef<string | null>(null);
   const [fresh, setFresh] = useState<number | null>(null);
+  const [botToken, setBotToken] = useState<string | null>(null);
 
   if (query.isError && !query.data)
     return <ErrorState title="Couldn't load checkout" onRetry={() => void query.refetch()} />;
@@ -95,6 +97,7 @@ function SignedInCheckout({ choice, onChoice, onPlaced }: Props) {
     place.mutate(
       {
         key: key.current,
+        ...(botToken ? { botToken } : {}),
         request: {
           addressId: view.addressId,
           payment: {
@@ -116,6 +119,7 @@ function SignedInCheckout({ choice, onChoice, onPlaced }: Props) {
           const details = (e as { details?: { totalPaise?: number } }).details;
           if (errorCode(e) === 'PRICE_CHANGED' && details?.totalPaise !== undefined)
             setFresh(details.totalPaise);
+          if (errorCode(e) === 'BOT_CHECK_REQUIRED') setBotToken(null);
           void query.refetch();
         },
       },
@@ -158,13 +162,17 @@ function SignedInCheckout({ choice, onChoice, onPlaced }: Props) {
         <PaymentSection view={view} choice={choice} onChoice={onChoice} />
       </div>
 
-      <div className="lg:sticky lg:top-32">
+      <div className="space-y-4 lg:sticky lg:top-32">
+        {view.cart.lines.some((l) => l.flash) ? (
+          <BotCheck token={botToken} onToken={setBotToken} />
+        ) : null}
         <Summary
           view={view}
           choice={choice}
           placing={place.isPending}
           error={place.error}
           fresh={fresh}
+          needsBotCheck={view.cart.lines.some((l) => l.flash) && !botToken}
           onPlace={submit}
         />
       </div>
@@ -339,6 +347,7 @@ function Summary({
   placing,
   error,
   fresh,
+  needsBotCheck = false,
   onPlace,
 }: {
   view: CheckoutView;
@@ -346,6 +355,8 @@ function Summary({
   placing: boolean;
   error: unknown;
   fresh: number | null;
+  /** A live flash unit is in the order and the bot check isn't done (D-232). */
+  needsBotCheck?: boolean;
   onPlace: () => void;
 }) {
   const t = view.totals;
@@ -413,7 +424,7 @@ function Summary({
       <Button
         size="lg"
         className="w-full"
-        disabled={!view.canPlace}
+        disabled={!view.canPlace || needsBotCheck}
         loading={placing}
         onClick={onPlace}
       >

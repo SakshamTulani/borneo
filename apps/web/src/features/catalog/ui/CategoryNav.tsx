@@ -19,6 +19,14 @@ export function CategoryNav() {
             </Link>
           </li>
         ))}
+        <li>
+          <Link
+            to="/deals"
+            className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-sm font-medium whitespace-nowrap text-offer outline-none hover:underline focus-visible:outline-2 focus-visible:outline-brand data-[status=active]:font-semibold"
+          >
+            Deals
+          </Link>
+        </li>
       </ul>
     </nav>
   );

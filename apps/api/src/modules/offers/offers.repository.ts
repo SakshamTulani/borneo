@@ -92,3 +92,40 @@ export async function loadDisposableDomains(db: Db): Promise<Set<string>> {
   const rows = await db.select({ domain: disposableDomain.domain }).from(disposableDomain);
   return new Set(rows.map((r) => r.domain.toLowerCase()));
 }
+
+/** Sales on the deals page: not ended, starting within `until` (D-231). */
+export async function listFlashForDeals(db: Db, now: Date, until: Date) {
+  const rows = await db
+    .select({
+      sale: flashSale,
+      productId: product.id,
+      productName: product.name,
+      productSlug: product.slug,
+      sku: variant.sku,
+      regularPricePaise: variant.pricePaise,
+    })
+    .from(flashSale)
+    .innerJoin(variant, eq(variant.id, flashSale.variantId))
+    .innerJoin(product, eq(product.id, variant.productId))
+    .where(
+      and(
+        lte(flashSale.startsAt, until),
+        gt(flashSale.endsAt, now),
+        inArray(product.status, ['live', 'preorder']),
+      ),
+    );
+  return rows.map(({ sale, ...rest }) => ({
+    ...rest,
+    sale: {
+      id: sale.id,
+      variantId: sale.variantId,
+      salePricePaise: sale.salePricePaise,
+      startsAt: sale.startsAt.getTime(),
+      endsAt: sale.endsAt.getTime(),
+      cap: sale.cap,
+      sold: sale.sold,
+      perCustomerLimit: 1 as const,
+    },
+  }));
+}
+export type DealRow = Awaited<ReturnType<typeof listFlashForDeals>>[number];

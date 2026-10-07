@@ -67,3 +67,39 @@ export function isDisposableEmail(email: string, domains: ReadonlySet<string>): 
   const parts = domain.split('.');
   return parts.some((_, i) => domains.has(parts.slice(i).join('.')));
 }
+
+/** Flash checkout attempts per customer and per address, each (D-143, D-230). */
+export const FLASH_CHECKOUT_LIMIT = { max: 5, windowMs: 10 * 60_000 };
+
+/** How far ahead the deals page lists sales that haven't started (D-231). */
+export const UPCOMING_FLASH_WINDOW_MS = 7 * 86_400_000;
+
+/**
+ * The deals page (D-140, D-231): live sales ending soonest first (sold-out ones stay, marked, until
+ * they end), then sales starting within 7 days, soonest first. Ended sales never show. "Only N
+ * left" comes from the real remaining cap at 5 or fewer (D-148); no countdown resets (it is the
+ * sale's own end).
+ */
+export function dealsSections<T extends { sale: FlashSale }>(
+  listings: T[],
+  now: number,
+): {
+  live: (T & { state: 'live' | 'soldOut'; remaining: number | null })[];
+  upcoming: (T & { state: 'upcoming' })[];
+} {
+  const live = listings
+    .flatMap((l) => {
+      const state = flashState(l.sale, now);
+      if (state !== 'live' && state !== 'soldOut') return [];
+      return [{ ...l, state, remaining: lowStockCount(l.sale, now) ?? null }];
+    })
+    .sort((a, b) => a.sale.endsAt - b.sale.endsAt);
+  const upcoming = listings
+    .filter(
+      (l) =>
+        flashState(l.sale, now) === 'upcoming' && l.sale.startsAt - now <= UPCOMING_FLASH_WINDOW_MS,
+    )
+    .map((l) => ({ ...l, state: 'upcoming' as const }))
+    .sort((a, b) => a.sale.startsAt - b.sale.startsAt);
+  return { live, upcoming };
+}

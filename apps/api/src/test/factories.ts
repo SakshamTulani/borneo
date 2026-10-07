@@ -20,6 +20,7 @@ import {
   variant,
 } from '../db/schema/index';
 import { seedId } from '../db/seed/ids';
+import { createUnconfiguredBotProtection } from '../adapters/bot/index';
 import { createUnconfiguredCourier } from '../adapters/courier/index';
 import { noJobs } from '../jobs/index';
 import { createAccountService } from '../modules/account/index';
@@ -218,6 +219,9 @@ export function fakeAppDeps(over: Partial<AppDeps> = {}): AppDeps {
       now: () => 0,
       loadOfferBook: async () => ({ coupons: [], paymentOffers: [], emiPlans: [] }),
       listFlashListings: async () => [],
+      listFlashForDeals: async () => [],
+      listProducts: async () => [],
+      summarize: async () => [],
     }),
     auth: createAuthService({
       identity: emptyIdentity(),
@@ -318,6 +322,8 @@ export function emptyOrdersDeps(over: Partial<OrdersDeps> = {}): OrdersDeps {
     loadImages: async () => new Map(),
     gateway: { available: false, startSession: async () => ({ gatewayRef: '' }) },
     courier: createUnconfiguredCourier(),
+    bot: createUnconfiguredBotProtection(),
+    limitFlash: () => {},
     jobs: noJobs,
     notifications: { send: async () => null },
     renderInvoice: () => new Uint8Array(),

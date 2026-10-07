@@ -15,6 +15,11 @@ export function FooterCategories() {
         </li>
       ))}
       <li>
+        <Link to="/deals" className={footerLinkClass}>
+          Deals
+        </Link>
+      </li>
+      <li>
         <Link to="/categories" className={footerLinkClass}>
           All categories
         </Link>

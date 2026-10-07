@@ -248,7 +248,13 @@ export function OrderDetailPage({ orderId }: { orderId: string }) {
               <h3 id="tracking" className="font-semibold">
                 Tracking
               </h3>
-              {order.status !== 'delivered' && !ended && order.eta ? (
+              {order.preorderDispatch ? (
+                <p className="flex items-center gap-1.5 text-sm">
+                  <TruckIcon className="size-4 text-info" aria-hidden />
+                  Pre-order: expected to dispatch{' '}
+                  {formatDateRange(order.preorderDispatch.from, order.preorderDispatch.to)}
+                </p>
+              ) : order.status !== 'delivered' && !ended && order.eta ? (
                 <p className="flex items-center gap-1.5 text-sm">
                   <TruckIcon className="size-4 text-success" aria-hidden />
                   Arrives {formatDateRange(order.eta.from, order.eta.to)}

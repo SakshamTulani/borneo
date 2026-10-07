@@ -1,3 +1,3 @@
-import { offerStripSchema } from '@borneo/shared';
+import { dealsViewSchema, offerStripSchema } from '@borneo/shared';
 
-export { offerStripSchema };
+export { dealsViewSchema, offerStripSchema };

@@ -148,6 +148,30 @@ describe('CheckoutPage, signed in', () => {
     expect(screen.getByText(/We hold your items for 5 minutes/)).toBeTruthy();
   });
 
+  it('D-232: a live flash unit needs the bot check; its token goes with the order', async () => {
+    const order = orderFixture();
+    const flashView = checkoutFixture({ blocks: [], canPlace: true });
+    flashView.cart.lines = flashView.cart.lines.map((l) => ({
+      ...l,
+      flash: { unitPricePaise: 1_999_900, endsAt: Date.UTC(2026, 9, 6, 9) },
+    }));
+    const { api, onPlaced, rendered } = renderCheckout({ method: 'upi' }, flashView, {
+      'POST /me/bot-check': [200, { token: 'demo_t1', expiresAt: 1 }],
+      'POST /me/orders': [200, order],
+    });
+    await rendered;
+    const pay = await screen.findByRole('button', { name: 'Pay ₹24,999' });
+    expect((pay as HTMLButtonElement).disabled).toBe(true);
+    await userEvent.click(screen.getByRole('button', { name: "I'm not a robot" }));
+    expect(await screen.findByText('Bot check passed')).toBeTruthy();
+    await userEvent.click(pay);
+    await waitFor(() => expect(onPlaced).toHaveBeenCalledWith(order));
+    const init = api.mock.calls.find(
+      ([u, i]) => String(u).endsWith('/me/orders') && i?.method === 'POST',
+    )![1]!;
+    expect((init.headers as Record<string, string>)['X-Bot-Token']).toBe('demo_t1');
+  });
+
   it('D-201: after a server error the retry reuses the key, so it can never order twice', async () => {
     const order = orderFixture();
     let calls = 0;

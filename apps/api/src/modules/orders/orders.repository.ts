@@ -310,6 +310,8 @@ export async function findOrder(customerId: CustomerId, db: Db, orderId: string)
           bundleName: bundle.name,
           bundleSlug: bundle.slug,
           isPreorder: sql<boolean>`${product.status} = 'preorder'`,
+          dispatchFrom: product.dispatchFrom,
+          dispatchTo: product.dispatchTo,
           warehouseState: warehouse.state,
           warehouseName: warehouse.name,
           warehousePincode: warehouse.pincode,

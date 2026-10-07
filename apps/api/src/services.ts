@@ -1,4 +1,4 @@
-import type { CustomerId } from '@borneo/shared';
+import { FLASH_CHECKOUT_LIMIT, type CustomerId } from '@borneo/shared';
 import type { AppDeps } from './app';
 import {
   createDemoNotifier,
@@ -10,6 +10,11 @@ import {
   createUnconfiguredGateway,
   type PaymentGateway,
 } from './adapters/payments/index';
+import {
+  createDemoBotProtection,
+  createUnconfiguredBotProtection,
+  type BotProtection,
+} from './adapters/bot/index';
 import { createDemoCourier, createUnconfiguredCourier } from './adapters/courier/index';
 import type { Db } from './db/client';
 import { renderInvoicePdf } from './documents/invoice';
@@ -78,6 +83,7 @@ import {
 } from './modules/delivery/index';
 import {
   createOffersService,
+  listFlashForDeals,
   listFlashListings,
   loadDisposableDomains,
   loadOfferBook,
@@ -209,11 +215,18 @@ export function notificationAdapter(db: Db, demoMode: boolean, log: NotifierDeps
   return demoMode ? createDemoNotifier(deps) : createInboxOnlyNotifier(deps);
 }
 
-export function offersService(db: Db, now: () => number = Date.now) {
+export function offersService(
+  db: Db,
+  catalog: ReturnType<typeof catalogService>,
+  now: () => number = Date.now,
+) {
   return createOffersService({
     now,
     loadOfferBook: (at) => loadOfferBook(db, new Date(at)),
     listFlashListings: (at) => listFlashListings(db, new Date(at)),
+    listFlashForDeals: (at, until) => listFlashForDeals(db, new Date(at), new Date(until)),
+    listProducts: (ids) => listProductsByIds(db, ids),
+    summarize: (rows) => catalog.summarize(rows),
   });
 }
 
@@ -271,6 +284,8 @@ export function ordersService(
     notifications: ReturnType<typeof notificationAdapter>;
     now: () => number;
     log: NotifierDeps['log'];
+    bot: BotProtection;
+    rateLimiter: ReturnType<typeof createRateLimiter>;
   },
 ) {
   return createOrdersService({
@@ -308,6 +323,8 @@ export function ordersService(
     loadImages: (ids) => loadImages(db, ids),
     gateway: options.gateway,
     courier: options.demoMode ? createDemoCourier() : createUnconfiguredCourier(),
+    bot: options.bot,
+    limitFlash: (key) => options.rateLimiter.hit(key, FLASH_CHECKOUT_LIMIT),
     jobs: options.jobs,
     notifications: options.notifications,
     renderInvoice: renderInvoicePdf,
@@ -412,6 +429,7 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
   const betterAuth = createBetterAuth(db, config.auth);
   const notifications = notificationAdapter(db, config.demoMode, config.log ?? consoleLog);
   const cart = cartService(db, catalog, delivery, now);
+  const rateLimiter = createRateLimiter();
   return {
     health: createHealthService({
       demoMode: config.demoMode,
@@ -420,7 +438,7 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
     catalog,
     search: searchService(db, catalog),
     delivery,
-    offers: offersService(db, now),
+    offers: offersService(db, catalog, now),
     auth: createAuthService({
       identity: betterAuthIdentity(betterAuth),
       notifications,
@@ -436,6 +454,9 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
       notifications,
       now,
       log: config.log ?? consoleLog,
+      // A real bot check is a production blocker (D-144): only the demo has a mock one.
+      bot: config.demoMode ? createDemoBotProtection(now) : createUnconfiguredBotProtection(),
+      rateLimiter,
     }),
     ...postPurchaseServices(db, catalog, {
       demoMode: config.demoMode,
@@ -444,7 +465,7 @@ export function appDeps(db: Db, config: AppConfig): AppDeps {
       log: config.log ?? consoleLog,
     }),
     session: betterAuthSession(betterAuth),
-    rateLimiter: createRateLimiter(),
+    rateLimiter,
     allowedOrigins: [config.webOrigin],
     trustProxy: config.trustProxy ?? '127.0.0.1,::1,::ffff:127.0.0.1',
   };

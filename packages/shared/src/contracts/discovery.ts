@@ -84,3 +84,24 @@ export const upgradeForProductSchema = z.object({
   changes: z.array(diffSchema),
 });
 export type UpgradeForProduct = z.infer<typeof upgradeForProductSchema>;
+
+/** One flash sale on the deals page (D-231). */
+export const dealSchema = z.object({
+  product: productSummarySchema,
+  sku: z.string(),
+  salePricePaise: z.number().int().nonnegative(),
+  regularPricePaise: z.number().int().nonnegative(),
+  startsAt: z.number().int(),
+  endsAt: z.number().int(),
+  state: z.enum(['live', 'soldOut', 'upcoming']),
+  /** Real remaining cap, only at 5 or fewer (D-148). */
+  remaining: z.number().int().nonnegative().nullable(),
+});
+export type Deal = z.infer<typeof dealSchema>;
+
+/** `GET /deals` (D-231). Offers come from `GET /offers/live`. */
+export const dealsViewSchema = z.object({
+  live: z.array(dealSchema),
+  upcoming: z.array(dealSchema),
+});
+export type DealsView = z.infer<typeof dealsViewSchema>;

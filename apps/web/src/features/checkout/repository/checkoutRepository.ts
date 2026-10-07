@@ -6,6 +6,7 @@ import {
   getOrder,
   invoiceHref,
   postMockPayment,
+  postBotCheck,
   postOrder,
   postRetry,
 } from '../api/checkoutApi';
@@ -48,8 +49,16 @@ export const orderQuery = (id: string) =>
 /** One key per checkout attempt, so a double click or a retry after a lost answer can't order twice. */
 export const newIdempotencyKey = () => `ord-${globalThis.crypto.randomUUID().replaceAll('-', '')}`;
 
-export const placeOrder = ({ key, request }: { key: string; request: PlaceOrderRequest }) =>
-  postOrder(key, request);
+export const placeOrder = ({
+  key,
+  request,
+  botToken,
+}: {
+  key: string;
+  request: PlaceOrderRequest;
+  botToken?: string | undefined;
+}) => postOrder(key, request, botToken);
+export const botCheck = postBotCheck;
 export const retryPayment = postRetry;
 export const mockPayment = ({
   id,

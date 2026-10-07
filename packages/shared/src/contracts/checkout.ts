@@ -182,6 +182,8 @@ export const orderViewSchema = z.object({
   tracking: trackingViewSchema,
   deliveredAt: epochMsSchema.nullable(),
   refunds: z.array(refundViewSchema),
+  /** Pre-orders before shipping: the expected dispatch range as it stands now (D-146, D-233). */
+  preorderDispatch: z.object({ from: z.string(), to: z.string() }).nullable(),
   /** Demo only: the step the demo courier's "Advance" moves to (D-215). */
   demoNextStep: trackingStepSchema.nullable(),
 });

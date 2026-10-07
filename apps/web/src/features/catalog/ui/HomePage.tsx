@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router';
-import { ArrowRightIcon, CompassIcon, PlugZapIcon } from 'lucide-react';
+import { ArrowRightIcon, CompassIcon, PlugZapIcon, ZapIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { imageSource } from '@/shared/lib/image';
 import { cn } from '@/shared/lib/utils';
@@ -20,7 +20,7 @@ import { ProductGrid, ProductGridSkeleton } from './ProductGrid';
 /** The hero product plus two rows of four. */
 export const HOME_NEWEST = 9;
 
-/** Entry points with somewhere real to go today. Deals and Upgrade join in Phases J, M and N. */
+/** Entry points with somewhere real to go (D-120); Deals is always listed after these. */
 const ENTRY_POINTS = [
   {
     key: 'helpMeChoose',
@@ -328,6 +328,26 @@ export function HomePage({
                 finder={e.key === 'helpMeChoose'}
               />
             ))}
+            <li className="flex flex-col gap-4 rounded-xl bg-canvas p-6 sm:p-8">
+              <span className="flex size-11 items-center justify-center rounded-full bg-offer-soft text-offer">
+                <ZapIcon className="size-5" aria-hidden />
+              </span>
+              <div className="space-y-1">
+                <h3 className="font-heading text-tagline tracking-tight">Deals</h3>
+                <p className="text-ink-muted">
+                  Flash sales with real end times and stock, bank offers and coupons.
+                </p>
+              </div>
+              <p className="-ml-3 flex flex-wrap">
+                <Link
+                  to="/deals"
+                  className="inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-brand outline-none hover:underline focus-visible:outline-2 focus-visible:outline-brand"
+                >
+                  See today's deals
+                  <ArrowRightIcon className="size-3.5" aria-hidden />
+                </Link>
+              </p>
+            </li>
           </ul>
         </Section>
       ) : null}

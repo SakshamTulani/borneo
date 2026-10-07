@@ -6,6 +6,8 @@ import {
   isDisposableEmail,
   lowStockCount,
   unitPriceWithFlash,
+  dealsSections,
+  FLASH_CHECKOUT_LIMIT,
 } from './flash';
 
 const sale: FlashSale = {
@@ -81,5 +83,53 @@ describe('flash sales', () => {
     expect(isDisposableEmail('x@gmail.com', domains)).toBe(false);
     expect(isDisposableEmail('not-an-email', domains)).toBe(false);
     expect(isDisposableEmail('a@b@mailinator.com', domains)).toBe(true);
+  });
+});
+
+describe('deals', () => {
+  const sale = (id: string, startsAt: number, endsAt: number, sold = 0, cap = 10) => ({
+    sale: {
+      id,
+      variantId: 'v',
+      salePricePaise: 100,
+      startsAt,
+      endsAt,
+      cap,
+      sold,
+      perCustomerLimit: 1 as const,
+    },
+  });
+  const now = 1_000_000_000;
+  const H = 3_600_000;
+
+  it('D-231: live sales end soonest first; upcoming within 7 days start soonest first; ended never', () => {
+    const { live, upcoming } = dealsSections(
+      [
+        sale('late', now - H, now + 5 * H),
+        sale('soon', now - H, now + H),
+        sale('over', now - 5 * H, now - H),
+        sale('next', now + 2 * H, now + 9 * H),
+        sale('first', now + H, now + 9 * H),
+        sale('far', now + 8 * 24 * H, now + 9 * 24 * H),
+      ],
+      now,
+    );
+    expect(live.map((l) => l.sale.id)).toEqual(['soon', 'late']);
+    expect(upcoming.map((l) => l.sale.id)).toEqual(['first', 'next']);
+  });
+
+  it('D-140: a sold-out sale stays marked until its real end; only N left from the real cap', () => {
+    const { live } = dealsSections(
+      [sale('gone', now - H, now + H, 10), sale('few', now - H, now + 2 * H, 7)],
+      now,
+    );
+    expect(live.map((l) => [l.sale.id, l.state, l.remaining])).toEqual([
+      ['gone', 'soldOut', null],
+      ['few', 'live', 3],
+    ]);
+  });
+
+  it('D-230: flash checkout is limited per customer and per address', () => {
+    expect(FLASH_CHECKOUT_LIMIT).toEqual({ max: 5, windowMs: 600_000 });
   });
 });

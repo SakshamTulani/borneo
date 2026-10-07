@@ -2,7 +2,7 @@ import { and, eq } from 'drizzle-orm';
 import { checkoutViewSchema, orderViewSchema, type CustomerId } from '@borneo/shared';
 import { describe, expect, it } from 'vitest';
 import { buildApp } from '../../app';
-import { inventory, notification, stockHold } from '../../db/schema/index';
+import { flashSale, inventory, notification, stockHold } from '../../db/schema/index';
 import { seedId } from '../../db/seed/ids';
 import { appDeps } from '../../services';
 import { TEST_ORIGIN } from '../../test/app';
@@ -47,8 +47,18 @@ async function place(
   app: ReturnType<typeof setup>['app'],
   shopper: { customerId: CustomerId; addressId: string },
   payment: { method: 'upi' | 'card' | 'emi' | 'cod' },
-  over: { key?: string; expectedTotalPaise?: number } = {},
+  over: { key?: string; expectedTotalPaise?: number; botToken?: string | null } = {},
 ) {
+  // Flash checkout needs the (mock) bot check (D-232): take a demo token unless told not to.
+  let botToken = over.botToken;
+  if (botToken === undefined) {
+    const res = await app.inject({
+      method: 'POST',
+      url: '/me/bot-check',
+      headers: as(shopper.customerId),
+    });
+    botToken = res.statusCode === 200 ? (res.json() as { token: string }).token : null;
+  }
   const quote = await app.inject({
     method: 'GET',
     url: `/me/checkout?method=${payment.method}`,
@@ -58,7 +68,11 @@ async function place(
   return app.inject({
     method: 'POST',
     url: '/me/orders',
-    headers: { ...as(shopper.customerId), 'idempotency-key': over.key ?? newKey() },
+    headers: {
+      ...as(shopper.customerId),
+      'idempotency-key': over.key ?? newKey(),
+      ...(botToken ? { 'x-bot-token': botToken } : {}),
+    },
     payload: {
       addressId: shopper.addressId,
       payment,
@@ -479,6 +493,68 @@ describe('flash sales at checkout', () => {
     const shopper = await shopperWith(item.key);
     const res = await place(app, shopper, { method: 'cod' });
     expect(res.statusCode).toBe(422);
+  });
+});
+
+describe('flash sale guards', () => {
+  const live = () => ({
+    salePricePaise: 100_000,
+    cap: 3,
+    endsAt: new Date(TEST_NOW.getTime() + 3_600_000),
+  });
+
+  it('D-232: a flash order needs a valid bot-check token', async () => {
+    const { app } = setup();
+    const item = await insertSellable(db, { stock: { blr: 5 }, flash: live(), now: TEST_NOW });
+    const shopper = await shopperWith(item.key);
+    for (const botToken of [null, 'demo_forged']) {
+      const res = await place(app, shopper, { method: 'upi' }, { botToken });
+      expect(res.statusCode).toBe(422);
+      expect(res.json().error.code).toBe('BOT_CHECK_REQUIRED');
+    }
+    expect((await place(app, shopper, { method: 'upi' })).statusCode).toBe(200);
+  });
+
+  it('D-144: outside demo mode flash checkout is refused (no provider yet)', async () => {
+    const { app } = setup(false);
+    const item = await insertSellable(db, { stock: { blr: 5 }, flash: live(), now: TEST_NOW });
+    const shopper = await shopperWith(item.key);
+    const res = await place(app, shopper, { method: 'upi' }, { botToken: null });
+    // No gateway and no bot check outside demo: a flash order can't be placed either way.
+    expect(res.statusCode).toBe(503);
+    expect(['PAYMENT_UNAVAILABLE', 'BOT_CHECK_UNAVAILABLE']).toContain(res.json().error.code);
+    expect(
+      (await app.inject({ method: 'POST', url: '/me/bot-check', headers: as(shopper.customerId) }))
+        .statusCode,
+    ).toBe(404);
+  });
+
+  it('D-230: flash checkout tries are rate limited per customer', async () => {
+    const { app } = setup();
+    const item = await insertSellable(db, { stock: { blr: 5 }, flash: live(), now: TEST_NOW });
+    const shopper = await shopperWith(item.key);
+    const codes: number[] = [];
+    for (let i = 0; i < 6; i++)
+      codes.push((await place(app, shopper, { method: 'upi' }, { botToken: null })).statusCode);
+    expect(codes).toEqual([422, 422, 422, 422, 422, 429]);
+  });
+
+  it('D-140: parallel flash orders never sell past the cap', async () => {
+    const { app } = setup();
+    const item = await insertSellable(db, { stock: { blr: 20 }, flash: live(), now: TEST_NOW });
+    const shoppers = await Promise.all(Array.from({ length: 8 }, () => shopperWith(item.key)));
+    const results = await Promise.all(shoppers.map((s) => place(app, s, { method: 'upi' })));
+    const placed = results.filter((r) => r.statusCode === 200);
+    const flashUnits = placed
+      .map((r) => orderViewSchema.parse(r.json()))
+      .filter((o) => o.items.some((i) => i.isFlash)).length;
+    expect(flashUnits).toBeLessThanOrEqual(3);
+    const [sale] = await db
+      .select({ sold: flashSale.sold, cap: flashSale.cap })
+      .from(flashSale)
+      .where(eq(flashSale.variantId, item.variantId));
+    expect(sale!.sold).toBeLessThanOrEqual(sale!.cap);
+    expect(sale!.sold).toBe(flashUnits);
   });
 });
 

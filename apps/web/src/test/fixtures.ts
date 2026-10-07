@@ -332,6 +332,7 @@ export const orderFixture = (over: Partial<OrderView> = {}): OrderView => ({
     trackingNo: null,
   },
   deliveredAt: null,
+  preorderDispatch: null,
   refunds: [],
   demoNextStep: null,
   ...over,

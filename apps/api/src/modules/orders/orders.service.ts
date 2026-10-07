@@ -37,6 +37,7 @@ import {
   type ReturnRequestView,
   type TrackingEvent,
 } from '@borneo/shared';
+import type { BotProtection } from '../../adapters/bot/index';
 import type { CourierTracking } from '../../adapters/courier/index';
 import type { NotificationAdapter } from '../../adapters/notifications/index';
 import type { PaymentGateway } from '../../adapters/payments/index';
@@ -136,6 +137,9 @@ export type OrdersDeps = {
   loadImages: (productIds: string[]) => Promise<Map<string, ProductImage[]>>;
   gateway: PaymentGateway;
   courier: CourierTracking;
+  bot: BotProtection;
+  /** Counts a flash checkout attempt; throws 429 over the limit (D-230). */
+  limitFlash: (key: string) => void;
   jobs: OrderJobs;
   notifications: NotificationAdapter;
   renderInvoice: (doc: InvoiceDocument) => Uint8Array;
@@ -361,6 +365,28 @@ export function createOrdersService(deps: OrdersDeps) {
     return events;
   }
 
+  /** The latest dispatch window among pre-order lines, while the order hasn't shipped (D-233). */
+  function preorderDispatch(record: OrderRecord): OrderView['preorderDispatch'] {
+    if (!['pending_payment', 'paid', 'confirmed', 'packed'].includes(record.order.status))
+      return null;
+    const windows = record.items.flatMap((i) =>
+      i.isPreorder && i.dispatchFrom && i.dispatchTo
+        ? [{ from: i.dispatchFrom, to: i.dispatchTo }]
+        : [],
+    );
+    if (windows.length === 0) return null;
+    return {
+      from: windows
+        .map((w) => w.from)
+        .sort()
+        .at(-1)!,
+      to: windows
+        .map((w) => w.to)
+        .sort()
+        .at(-1)!,
+    };
+  }
+
   async function toView(record: OrderRecord): Promise<OrderView> {
     const { order } = record;
     const now = deps.now();
@@ -444,6 +470,7 @@ export function createOrdersService(deps: OrdersDeps) {
         trackingNo: record.shipment?.trackingNo ?? null,
       },
       deliveredAt: deliveredAt ?? null,
+      preorderDispatch: preorderDispatch(record),
       refunds: record.refunds.map((f) => ({
         amountPaise: f.amountPaise,
         status: f.status,
@@ -537,6 +564,7 @@ export function createOrdersService(deps: OrdersDeps) {
       customerId: CustomerId,
       key: string,
       request: PlaceOrderRequest,
+      client: { ip: string; botToken?: string | undefined } = { ip: 'unknown' },
     ): Promise<OrderView> {
       const existing = await deps.findOrderIdByKey(customerId, key);
       if (existing) return view(customerId, existing);
@@ -575,6 +603,21 @@ export function createOrdersService(deps: OrdersDeps) {
         e.facts.kind === 'item' ? (liveFlashSale(e.facts, now) ?? []) : [],
       );
       if (sales.length) {
+        // Flash checkout: rate limit, then bot check (D-143, D-230, D-232).
+        deps.limitFlash(`flash:customer:${customerId}`);
+        deps.limitFlash(`flash:ip:${client.ip}`);
+        if (!deps.bot.available)
+          throw new AppError(
+            503,
+            'BOT_CHECK_UNAVAILABLE',
+            "Flash sale checkout isn't available right now.",
+          );
+        if (!deps.bot.verify(client.botToken))
+          throw new AppError(
+            422,
+            'BOT_CHECK_REQUIRED',
+            'Confirm you are not a robot to buy a flash sale item.',
+          );
         const [email, domains, bought] = await Promise.all([
           deps.findCustomerEmail(customerId),
           deps.loadDisposableDomains(),
@@ -819,6 +862,12 @@ export function createOrdersService(deps: OrdersDeps) {
         }
       }
       return view(customerId, orderId);
+    },
+
+    /** Demo only: the mock bot check's token (D-232). */
+    demoBotToken() {
+      if (!deps.demoMode || !deps.bot.available) throw notFound('NOT_FOUND', 'Not found');
+      return deps.bot.issue();
     },
 
     /** The GST invoice as a PDF, rendered from the order's snapshots (D-102, D-173, D-210). */

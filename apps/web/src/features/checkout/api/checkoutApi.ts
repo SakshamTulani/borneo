@@ -1,3 +1,4 @@
+import { z } from 'zod';
 import {
   checkoutViewSchema,
   orderViewSchema,
@@ -20,8 +21,21 @@ export const getCheckout = (query: CheckoutQuery): Promise<CheckoutView> =>
   getJson(`/me/checkout${search(query)}`, checkoutViewSchema);
 
 /** Placing is idempotent: the same key always answers with the same order. */
-export const postOrder = (key: string, request: PlaceOrderRequest): Promise<OrderView> =>
-  sendJson('POST', '/me/orders', request, orderViewSchema, { 'Idempotency-Key': key });
+export const postOrder = (
+  key: string,
+  request: PlaceOrderRequest,
+  botToken?: string,
+): Promise<OrderView> =>
+  sendJson('POST', '/me/orders', request, orderViewSchema, {
+    'Idempotency-Key': key,
+    ...(botToken ? { 'X-Bot-Token': botToken } : {}),
+  });
+
+const botTokenSchema = z.object({ token: z.string(), expiresAt: z.number() });
+
+/** Demo only: the mock bot check's token for flash checkout (D-232). */
+export const postBotCheck = (): Promise<{ token: string; expiresAt: number }> =>
+  sendJson('POST', '/me/bot-check', undefined, botTokenSchema);
 
 export const getOrder = (id: string): Promise<OrderView> =>
   getJson(`/me/orders/${encodeURIComponent(id)}`, orderViewSchema);

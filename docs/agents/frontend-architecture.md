@@ -35,6 +35,8 @@ Account (Phase L): `features/account` is the shell (sidebar nav on desktop, pill
 
 Discovery (Phase M): `features/finder` (`/finder/$id`, answers in the URL, one question at a time), `features/compare` (`/compare/$category?p=`, noindex; selection also kept as `compare=` on the category page, `CompareTray` in `catalog`), `features/upgrade` (`UpgradePanel` in the PDP `upgrade` slot, `UpgradeStrip` in the home `upgrades` slot with the card drawn by the route). Category explainers come from category config.
 
+Deals (Phase N): `features/deals` (`/deals`: live and upcoming flash sales with the shared `Countdown`, refetched when a sale starts or ends) composes `OfferList` from `features/offers`. Checkout shows `BotCheck` when a line has a live flash unit and sends `X-Bot-Token`.
+
 ## Rules (enforced)
 
 - Imports go down only: `ui → hooks → repository → mappers → api → model`. A layer never imports its own `index.ts`.
