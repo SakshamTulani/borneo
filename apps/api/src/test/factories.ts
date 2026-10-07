@@ -29,6 +29,7 @@ import { createReturnsService } from '../modules/returns/index';
 import { createReviewsService } from '../modules/reviews/index';
 import { createUpgradeService } from '../modules/upgrade/index';
 import { createWatchService } from '../modules/watch/index';
+import { createWishlistService } from '../modules/wishlist/index';
 import type { OrdersDeps } from '../modules/orders/orders.service';
 import type { AddressesDeps } from '../modules/addresses/addresses.service';
 import { createAddressesService } from '../modules/addresses/index';
@@ -261,6 +262,16 @@ export function fakeAppDeps(over: Partial<AppDeps> = {}): AppDeps {
       add: async () => {},
       remove: async () => {},
       loadImages: async () => new Map(),
+    }),
+    wishlist: createWishlistService({
+      now: () => 0,
+      findTarget: async () => undefined,
+      add: async () => {},
+      remove: async () => {},
+      list: async () => ({ rows: [], total: 0 }),
+      slugs: async () => [],
+      loadRows: async () => [],
+      summarize: async () => [],
     }),
     upgrade: createUpgradeService({
       now: () => 0,

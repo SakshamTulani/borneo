@@ -2,6 +2,7 @@ import type { ReactNode } from 'react';
 import { Link } from '@tanstack/react-router';
 import {
   EyeIcon,
+  HeartIcon,
   InboxIcon,
   LayoutDashboardIcon,
   LogOutIcon,
@@ -27,6 +28,7 @@ const SECTIONS = [
   { to: '/account/returns', label: 'Returns', icon: RotateCcwIcon },
   { to: '/account/devices', label: 'My devices', icon: SmartphoneIcon },
   { to: '/account/reviews', label: 'Reviews', icon: StarIcon },
+  { to: '/account/wishlist', label: 'Wishlist', icon: HeartIcon },
   { to: '/account/watch', label: 'Watch list', icon: EyeIcon },
   { to: '/account/addresses', label: 'Addresses', icon: MapPinIcon },
   { to: '/account/profile', label: 'Profile & security', icon: UserRoundIcon },

@@ -6,6 +6,7 @@ import {
   productListQuery,
   toListingParams,
 } from '../features/catalog';
+import { WishlistButton } from '../features/wishlist';
 import { pageHead } from '../shared/lib/seo';
 
 export const Route = createFileRoute('/categories/$slug')({
@@ -38,6 +39,7 @@ function CategoryRoute() {
   const navigate = Route.useNavigate();
   return (
     <CategoryPage
+      cardAction={({ slug: s, name }) => <WishlistButton slug={s} name={name} compact />}
       slug={slug}
       search={search}
       onSearchChange={(next) => void navigate({ search: next, resetScroll: false })}

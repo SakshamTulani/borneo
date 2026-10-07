@@ -22,6 +22,7 @@ const HELP = [
 const ACCOUNT = [
   { to: '/account/orders', label: 'Orders' },
   { to: '/account/returns', label: 'Returns' },
+  { to: '/account/wishlist', label: 'Wishlist' },
   { to: '/account/devices', label: 'My devices' },
   { to: '/account/watch', label: 'Watch list' },
   { to: '/account/addresses', label: 'Addresses' },

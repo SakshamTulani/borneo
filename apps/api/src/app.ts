@@ -15,6 +15,7 @@ import { reviewsRoutes, type ReviewsService } from './modules/reviews/index';
 import { searchRoutes, type SearchService } from './modules/search/index';
 import { upgradeRoutes, type UpgradeService } from './modules/upgrade/index';
 import { watchRoutes, type WatchService } from './modules/watch/index';
+import { wishlistRoutes, type WishlistService } from './modules/wishlist/index';
 import { registerErrorHandler } from './plugins/errors';
 import { registerOriginGuard } from './plugins/origin';
 import type { RateLimiter } from './plugins/rateLimit';
@@ -36,6 +37,7 @@ export type AppDeps = {
   watch: WatchService;
   account: AccountService;
   upgrade: UpgradeService;
+  wishlist: WishlistService;
   session: SessionReader;
   rateLimiter: RateLimiter;
   /** Browser origins allowed to make cookie-authenticated writes. */
@@ -66,5 +68,6 @@ export function buildApp(deps: AppDeps) {
   app.register(watchRoutes(deps.watch, deps.session));
   app.register(accountRoutes(deps.account, deps.session));
   app.register(upgradeRoutes(deps.upgrade, deps.session));
+  app.register(wishlistRoutes(deps.wishlist, deps.session));
   return app;
 }

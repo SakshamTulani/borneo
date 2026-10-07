@@ -5,6 +5,7 @@ import { AccountLink, sessionQuery } from '../features/auth';
 import { useCartCountQuery } from '../features/cart';
 import { categoriesQuery, CategoryNav, FooterCategories } from '../features/catalog';
 import { SearchBox } from '../features/search';
+import { WishlistLink } from '../features/wishlist';
 import appCss from '../index.css?url';
 import { pageHead } from '../shared/lib/seo';
 import { AppShell } from '../shared/ui/AppShell';
@@ -52,7 +53,12 @@ function RootLayout() {
     <AppShell
       nav={<CategoryNav />}
       search={<SearchBox />}
-      account={<AccountLink />}
+      account={
+        <div className="flex items-center gap-1">
+          <WishlistLink />
+          <AccountLink />
+        </div>
+      }
       cartCount={cartCount}
       footerCategories={<FooterCategories />}
     >

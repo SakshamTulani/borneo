@@ -123,6 +123,14 @@ import {
 import { createAccountService, findMemberSince } from './modules/account/index';
 import { createUpgradeService, listOwnedForUpgrade } from './modules/upgrade/index';
 import {
+  addToWishlist,
+  createWishlistService,
+  findWishlistTarget,
+  listWishlist,
+  listWishlistSlugs,
+  removeFromWishlist,
+} from './modules/wishlist/index';
+import {
   advanceReturn,
   countOpenReturns,
   createReturnRequest,
@@ -396,6 +404,16 @@ export function postPurchaseServices(
       add: (customerId, variantId, at) => addWatch(customerId, db, variantId, new Date(at)),
       remove: (customerId, variantId) => removeWatch(customerId, db, variantId),
       loadImages: (ids) => loadImages(db, ids),
+    }),
+    wishlist: createWishlistService({
+      now,
+      findTarget: (customerId, slug) => findWishlistTarget(customerId, db, slug),
+      add: (customerId, productId, at) => addToWishlist(customerId, db, productId, new Date(at)),
+      remove: (customerId, productId) => removeFromWishlist(customerId, db, productId),
+      list: (customerId, page) => listWishlist(customerId, db, page),
+      slugs: (customerId) => listWishlistSlugs(customerId, db),
+      loadRows: (ids) => listProductsByIds(db, ids),
+      summarize: (rows) => catalog.summarize(rows),
     }),
     upgrade: createUpgradeService({
       now,

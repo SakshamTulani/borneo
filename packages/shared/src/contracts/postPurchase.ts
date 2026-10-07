@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { RETURN_PHOTO_MAX, TRACKING_STEPS } from '../rules/postPurchase';
 import { mobileSchema, passwordSchema, personNameSchema } from './account';
+import { productSummarySchema } from './catalog';
 import { epochMsSchema, idSchema, pageSchema, paiseSchema } from './common';
 import { orderStatusSchema } from './orders';
 
@@ -220,3 +221,16 @@ export const passwordChangeInputSchema = z.object({
   newPassword: passwordSchema,
 });
 export type PasswordChangeInput = z.input<typeof passwordChangeInputSchema>;
+
+/** One saved product (D-235), priced and stocked as listings are. */
+export const wishlistItemSchema = z.object({
+  product: productSummarySchema,
+  addedAt: epochMsSchema,
+});
+export const wishlistPageSchema = pageSchema(wishlistItemSchema).extend({
+  total: z.number().int().nonnegative(),
+});
+export type WishlistPage = z.infer<typeof wishlistPageSchema>;
+/** Slugs on the wishlist, for the hearts on cards and product pages. */
+export const wishlistSlugsSchema = z.object({ slugs: z.array(z.string()) });
+export const wishlistParamsSchema = z.object({ slug: z.string().regex(/^[a-z0-9-]+$/) });

@@ -38,6 +38,8 @@ export type CategoryViewProps = {
   compare?: CompareControl | undefined;
   /** Finder link and explainers, below the listing (D-225, D-228). */
   guide?: ReactNode;
+  /** A control on each card, e.g. the wishlist heart. */
+  cardAction?: ((card: { slug: string; name: string }) => ReactNode) | undefined;
   list:
     | { status: 'pending' }
     | { status: 'error'; onRetry: () => void }
@@ -63,6 +65,7 @@ export function CategoryView(props: CategoryViewProps) {
     list,
     compare,
     guide,
+    cardAction,
   } = props;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const panelId = useId();
@@ -183,6 +186,7 @@ export function CategoryView(props: CategoryViewProps) {
             filtered={activeFilters.length > 0}
             onClear={() => onSearchChange(clearFilters(search))}
             compare={compare}
+            cardAction={cardAction}
           />
         </section>
       </div>
@@ -199,7 +203,9 @@ function Results({
   filtered,
   onClear,
   compare,
+  cardAction,
 }: {
+  cardAction?: CategoryViewProps['cardAction'];
   list: CategoryViewProps['list'];
   filtered: boolean;
   onClear: () => void;
@@ -228,7 +234,7 @@ function Results({
   }
   return (
     <div className="space-y-4">
-      <ProductGrid cards={list.cards} eager={4} compare={compare} />
+      <ProductGrid cards={list.cards} eager={4} compare={compare} cardAction={cardAction} />
       {list.hasMore ? (
         <div className="flex justify-center pt-4">
           <Button variant="outline" loading={list.loadingMore} onClick={list.onLoadMore}>

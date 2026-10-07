@@ -2,6 +2,7 @@ import { createFileRoute } from '@tanstack/react-router';
 import { HOME_NEWEST, HomePage, newestProductsQuery, toCatalogCard } from '../features/catalog';
 import { dealsQuery } from '../features/deals';
 import { UpgradeStrip } from '../features/upgrade';
+import { WishlistButton } from '../features/wishlist';
 import { ProductCard } from '../shared/ui/commerce/ProductCard';
 import { liveOffersQuery, OfferStrip } from '../features/offers';
 import { pageHead } from '../shared/lib/seo';
@@ -23,6 +24,7 @@ export const Route = createFileRoute('/')({
   component: () => (
     <HomePage
       offers={<OfferStrip />}
+      cardAction={({ slug, name }) => <WishlistButton slug={slug} name={name} compact />}
       upgrades={
         <UpgradeStrip
           renderCard={({ to }) => {

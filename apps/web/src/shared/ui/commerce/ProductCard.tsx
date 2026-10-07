@@ -25,6 +25,8 @@ export type ProductCardProps<
   onWatchToggle?: () => void;
   /** Above the fold: load the photo eagerly at high priority. */
   priority?: boolean;
+  /** A small control over the photo's corner (e.g. the wishlist heart), above the card link. */
+  action?: ReactNode;
   className?: string;
 };
 
@@ -44,6 +46,7 @@ export function ProductCard(props: ProductCardProps) {
     watching,
     onWatchToggle,
     priority,
+    action,
     className,
   } = props;
   return (
@@ -53,6 +56,9 @@ export function ProductCard(props: ProductCardProps) {
         className,
       )}
     >
+      {action ? (
+        <div className="absolute top-5 right-5 z-10 sm:top-6 sm:right-6">{action}</div>
+      ) : null}
       <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-[12px] bg-muted">
         {image ? (
           <img

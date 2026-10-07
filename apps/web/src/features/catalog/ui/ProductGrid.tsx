@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import { ProductCard } from '@/shared/ui/commerce/ProductCard';
 import { ProductCardSkeleton } from '@/shared/ui/commerce/ProductCardSkeleton';
 import type { CatalogCard, CompareControl } from '../model';
@@ -9,11 +10,14 @@ export function ProductGrid({
   cards,
   eager = 0,
   compare,
+  cardAction,
 }: {
   cards: CatalogCard[];
   eager?: number;
   /** Compare checkboxes under each card (D-122, D-227). */
   compare?: CompareControl | undefined;
+  /** A control over each card's photo, e.g. the wishlist heart (composed by the route). */
+  cardAction?: ((card: { slug: string; name: string }) => ReactNode) | undefined;
 }) {
   return (
     <ul className={grid}>
@@ -23,6 +27,7 @@ export function ProductGrid({
             {...card}
             link={{ to: '/products/$slug', params: { slug } }}
             priority={i < eager}
+            action={cardAction?.({ slug, name: card.name })}
             className="w-full flex-1"
           />
           {compare ? (

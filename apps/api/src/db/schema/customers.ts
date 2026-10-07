@@ -12,7 +12,7 @@ import {
   uuid,
 } from 'drizzle-orm/pg-core';
 import { at, createdAt, customerId, id, pincodeCheck } from './columns';
-import { variant } from './catalog';
+import { product, variant } from './catalog';
 
 // The customer's name, email and phone live on the Better Auth `user` (auth.ts).
 
@@ -55,6 +55,22 @@ export const watch = pgTable(
     createdAt: createdAt(),
   },
   (t) => [primaryKey({ columns: [t.customerId, t.variantId] })],
+);
+
+/** Saved for later (D-235): any product, not only out of stock (that is `watch`). */
+export const wishlist = pgTable(
+  'wishlist',
+  {
+    customerId: customerId(),
+    productId: uuid('product_id')
+      .notNull()
+      .references(() => product.id),
+    createdAt: createdAt(),
+  },
+  (t) => [
+    primaryKey({ columns: [t.customerId, t.productId] }),
+    index('wishlist_customer').on(t.customerId, t.createdAt),
+  ],
 );
 
 /** Demo inbox + adapter log (D-101). */

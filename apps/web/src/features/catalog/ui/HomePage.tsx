@@ -282,10 +282,13 @@ function EntryPoint({
 export function HomePage({
   offers,
   upgrades,
+  cardAction,
 }: {
   offers?: ReactNode;
   /** "Upgrade available" for signed-in owners (D-121, D-136). */
   upgrades?: ReactNode;
+  /** A control on each launch card, e.g. the wishlist heart. */
+  cardAction?: (card: { slug: string; name: string }) => ReactNode;
 } = {}) {
   const categories = useCategoriesQuery();
   const newest = useNewestProductsQuery(HOME_NEWEST);
@@ -359,7 +362,7 @@ export function HomePage({
         ) : newest.isError ? (
           <ErrorState title="Couldn't load products" onRetry={() => void newest.refetch()} />
         ) : rest.length ? (
-          <ProductGrid cards={rest} />
+          <ProductGrid cards={rest} cardAction={cardAction} />
         ) : launches.length === 0 ? (
           <EmptyState title="New launches are on their way" />
         ) : null}

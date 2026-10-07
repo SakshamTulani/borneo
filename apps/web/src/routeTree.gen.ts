@@ -26,6 +26,7 @@ import { Route as AccountProfileRouteImport } from './routes/account.profile'
 import { Route as AccountReturnsRouteImport } from './routes/account.returns'
 import { Route as AccountReviewsRouteImport } from './routes/account.reviews'
 import { Route as AccountWatchRouteImport } from './routes/account.watch'
+import { Route as AccountWishlistRouteImport } from './routes/account.wishlist'
 import { Route as CategoriesIndexRouteImport } from './routes/categories.index'
 import { Route as CategoriesSlugRouteImport } from './routes/categories.$slug'
 import { Route as CheckoutIndexRouteImport } from './routes/checkout.index'
@@ -125,6 +126,11 @@ const AccountWatchRoute = AccountWatchRouteImport.update({
   path: '/watch',
   getParentRoute: () => AccountRoute,
 } as any)
+const AccountWishlistRoute = AccountWishlistRouteImport.update({
+  id: '/wishlist',
+  path: '/wishlist',
+  getParentRoute: () => AccountRoute,
+} as any)
 const CategoriesIndexRoute = CategoriesIndexRouteImport.update({
   id: '/categories/',
   path: '/categories/',
@@ -208,6 +214,7 @@ export interface FileRoutesByFullPath {
   '/account/returns': typeof AccountReturnsRoute
   '/account/reviews': typeof AccountReviewsRoute
   '/account/watch': typeof AccountWatchRoute
+  '/account/wishlist': typeof AccountWishlistRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/compare/$category': typeof CompareCategoryRoute
   '/finder/$id': typeof FinderIdRoute
@@ -239,6 +246,7 @@ export interface FileRoutesByTo {
   '/account/returns': typeof AccountReturnsRoute
   '/account/reviews': typeof AccountReviewsRoute
   '/account/watch': typeof AccountWatchRoute
+  '/account/wishlist': typeof AccountWishlistRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/compare/$category': typeof CompareCategoryRoute
   '/finder/$id': typeof FinderIdRoute
@@ -272,6 +280,7 @@ export interface FileRoutesById {
   '/account/returns': typeof AccountReturnsRoute
   '/account/reviews': typeof AccountReviewsRoute
   '/account/watch': typeof AccountWatchRoute
+  '/account/wishlist': typeof AccountWishlistRoute
   '/categories/$slug': typeof CategoriesSlugRoute
   '/compare/$category': typeof CompareCategoryRoute
   '/finder/$id': typeof FinderIdRoute
@@ -306,6 +315,7 @@ export interface FileRouteTypes {
     | '/account/returns'
     | '/account/reviews'
     | '/account/watch'
+    | '/account/wishlist'
     | '/categories/$slug'
     | '/compare/$category'
     | '/finder/$id'
@@ -337,6 +347,7 @@ export interface FileRouteTypes {
     | '/account/returns'
     | '/account/reviews'
     | '/account/watch'
+    | '/account/wishlist'
     | '/categories/$slug'
     | '/compare/$category'
     | '/finder/$id'
@@ -369,6 +380,7 @@ export interface FileRouteTypes {
     | '/account/returns'
     | '/account/reviews'
     | '/account/watch'
+    | '/account/wishlist'
     | '/categories/$slug'
     | '/compare/$category'
     | '/finder/$id'
@@ -527,6 +539,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AccountWatchRouteImport
       parentRoute: typeof AccountRoute
     }
+    '/account/wishlist': {
+      id: '/account/wishlist'
+      path: '/wishlist'
+      fullPath: '/account/wishlist'
+      preLoaderRoute: typeof AccountWishlistRouteImport
+      parentRoute: typeof AccountRoute
+    }
     '/categories/': {
       id: '/categories/'
       path: '/categories'
@@ -628,6 +647,7 @@ interface AccountRouteChildren {
   AccountReturnsRoute: typeof AccountReturnsRoute
   AccountReviewsRoute: typeof AccountReviewsRoute
   AccountWatchRoute: typeof AccountWatchRoute
+  AccountWishlistRoute: typeof AccountWishlistRoute
   AccountIndexRoute: typeof AccountIndexRoute
   AccountAddressesIdRoute: typeof AccountAddressesIdRoute
   AccountAddressesNewRoute: typeof AccountAddressesNewRoute
@@ -643,6 +663,7 @@ const AccountRouteChildren: AccountRouteChildren = {
   AccountReturnsRoute: AccountReturnsRoute,
   AccountReviewsRoute: AccountReviewsRoute,
   AccountWatchRoute: AccountWatchRoute,
+  AccountWishlistRoute: AccountWishlistRoute,
   AccountIndexRoute: AccountIndexRoute,
   AccountAddressesIdRoute: AccountAddressesIdRoute,
   AccountAddressesNewRoute: AccountAddressesNewRoute,

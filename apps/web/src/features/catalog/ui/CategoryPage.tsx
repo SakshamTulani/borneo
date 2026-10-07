@@ -17,13 +17,15 @@ import type { ListingSearch } from '../model';
 import { CategoryView, type CategoryViewProps } from './CategoryView';
 
 type Props = {
+  /** A control on each card, e.g. the wishlist heart (composed by the route). */
+  cardAction?: CategoryViewProps['cardAction'];
   slug: string;
   search: ListingSearch;
   onSearchChange: (next: ListingSearch) => void;
 };
 
 /** Category page: config-driven filters in the URL (D-18), sorted, paged listing (D-19). */
-export function CategoryPage({ slug, search, onSearchChange }: Props) {
+export function CategoryPage({ slug, search, onSearchChange, cardAction }: Props) {
   const categoryQuery = useCategoryQuery(slug);
   const detail = categoryQuery.data;
   const facets = useMemo(
@@ -122,6 +124,7 @@ export function CategoryPage({ slug, search, onSearchChange }: Props) {
 
   return (
     <CategoryView
+      cardAction={cardAction}
       compare={compare}
       guide={guide}
       category={detail.category}

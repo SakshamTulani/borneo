@@ -2,6 +2,7 @@ import { useDefaultPincodeQuery } from '@/features/addresses';
 import { BundleOffers, ProductPurchase } from '@/features/cart';
 import { UpgradePanel } from '@/features/upgrade';
 import { WatchButton } from '@/features/watch';
+import { WishlistButton } from '@/features/wishlist';
 import { ProductDelivery } from '@/features/delivery';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
@@ -50,6 +51,7 @@ export function ProductPage({ slug, sku, onSkuChange }: Props) {
             sellingPaise={variant.price.sellingPaise}
           />
           <WatchButton sku={variant.sku} availability={variant.availability} />
+          <WishlistButton slug={query.data.slug} name={query.data.name} />
         </div>
       }
       bundles={<BundleOffers bundles={query.data.bundles} />}
