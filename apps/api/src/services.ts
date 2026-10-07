@@ -52,6 +52,7 @@ import {
   listAttributeDefs,
   listCategories,
   listCategoryProducts,
+  loadLineFor,
   countProducts,
   listLineProducts,
   findUpgradeTarget,
@@ -180,7 +181,8 @@ export function catalogService(db: Db, now: () => number = Date.now) {
     loadBundlesFor: (productId, at) => loadCartBundles(db, { productId }, new Date(at)),
     loadReviews: (productId, page) => loadReviews(db, productId, page),
     loadRatingCounts: (productId) => loadRatingCounts(db, productId),
-    listCategoryProducts: (categoryId) => listCategoryProducts(db, categoryId),
+    listCategoryProducts: (categoryId, withOld) => listCategoryProducts(db, categoryId, withOld),
+    loadLine: (productId) => loadLineFor(db, productId),
     countProducts: (query) => countProducts(db, query),
   });
 }

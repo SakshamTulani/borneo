@@ -137,7 +137,11 @@ export function ComparePage({
                       >
                         {p.name}
                       </Link>
-                      <PriceBlock {...card.price} size="sm" />
+                      {p.status === 'discontinued' ? (
+                        <p className="text-sm text-ink-muted">No longer sold</p>
+                      ) : (
+                        <PriceBlock {...card.price} size="sm" />
+                      )}
                       <Button
                         variant="ghost"
                         size="icon"

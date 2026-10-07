@@ -2,6 +2,8 @@ import { describe, expect, it } from 'vitest';
 import {
   isUpgrade,
   upgradeBadge,
+  lineCompareCandidates,
+  newerModel,
   upgradeStrip,
   whatYouGain,
   type OwnedItem,
@@ -161,5 +163,53 @@ describe('upgrade', () => {
       formatAttributeValue,
     );
     expect(r).toEqual({ gains: [], changes: [] });
+  });
+});
+
+describe('newer model and compare picks', () => {
+  const p = (
+    id: string,
+    generation: number,
+    familyTier: 'standard' | 'pro' | 'premium',
+    status: 'live' | 'preorder' | 'discontinued' = 'live',
+  ) => ({ id, slug: id, name: id, lineId: 'pulse', generation, familyTier, status });
+  const line = [
+    p('p3', 3, 'standard', 'discontinued'),
+    p('p4', 4, 'standard'),
+    p('p4pro', 4, 'pro'),
+    p('p5', 5, 'standard', 'preorder'),
+    p('p5pro', 5, 'pro'),
+  ];
+
+  it('D-237: points to the newest generation that is sold, same tier first, pre-orders included', () => {
+    expect(newerModel(p('p4', 4, 'standard'), line)).toMatchObject({
+      product: { id: 'p5' },
+      kind: 'newerGeneration',
+    });
+    expect(newerModel(p('p4pro', 4, 'pro'), line)?.product.id).toBe('p5pro');
+  });
+
+  it('D-237: without a newer generation, a higher tier of this one; nothing for the top model', () => {
+    const now = line.filter((x) => x.generation < 5);
+    expect(newerModel(p('p4', 4, 'standard'), now)).toMatchObject({
+      product: { id: 'p4pro' },
+      kind: 'higherTier',
+    });
+    expect(newerModel(p('p4pro', 4, 'pro'), now)).toBeUndefined();
+    expect(
+      newerModel(p('p4', 4, 'standard'), [p('p5', 5, 'standard', 'discontinued')]),
+    ).toBeUndefined();
+  });
+
+  it('D-238: previous model (even if no longer sold), newer model, then siblings; at most 3', () => {
+    const picks = lineCompareCandidates(p('p4', 4, 'standard'), line);
+    expect(picks.map((x) => [x.product.id, x.relation])).toEqual([
+      ['p3', 'previous'],
+      ['p5', 'newer'],
+      ['p4pro', 'sibling'],
+    ]);
+    expect(
+      lineCompareCandidates(p('p3', 3, 'standard', 'discontinued'), [p('p3', 3, 'standard')]),
+    ).toEqual([]);
   });
 });

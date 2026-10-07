@@ -107,3 +107,72 @@ export function whatYouGain(
   }
   return { gains, changes };
 }
+
+/** A product in the same line as seen by the PDP nudge and compare picks (D-237, D-238). */
+export type LineProduct = UpgradeProduct & {
+  slug: string;
+  status: 'live' | 'preorder' | 'discontinued';
+};
+
+/**
+ * The PDP nudge for everyone (D-237): the newest generation in the line that is sold (live or
+ * pre-order), same tier if it exists, else the nearest tier; failing that, a higher tier of this
+ * generation. Never a lower generation or tier, never a discontinued model (D-131, D-138).
+ */
+export function newerModel<T extends LineProduct>(
+  current: UpgradeProduct,
+  line: T[],
+): { product: T; kind: 'newerGeneration' | 'higherTier' } | undefined {
+  const sold = line.filter(
+    (p) => p.lineId === current.lineId && p.id !== current.id && p.status !== 'discontinued',
+  );
+  const newer = sold
+    .filter((p) => p.generation > current.generation)
+    .sort(
+      (a, b) =>
+        b.generation - a.generation ||
+        Math.abs(TIER_RANK[a.familyTier] - TIER_RANK[current.familyTier]) -
+          Math.abs(TIER_RANK[b.familyTier] - TIER_RANK[current.familyTier]),
+    )[0];
+  if (newer) return { product: newer, kind: 'newerGeneration' };
+  const stepUp = sold
+    .filter(
+      (p) =>
+        p.generation === current.generation &&
+        TIER_RANK[p.familyTier] > TIER_RANK[current.familyTier],
+    )
+    .sort((a, b) => TIER_RANK[a.familyTier] - TIER_RANK[b.familyTier])[0];
+  return stepUp ? { product: stepUp, kind: 'higherTier' } : undefined;
+}
+
+/**
+ * One-tap compares from a PDP (D-238): the previous generation (same tier if it exists, even if
+ * no longer sold, so owners can see what changed), the newer model from `newerModel`, and the
+ * other tiers of this generation. At most 3, in that order.
+ */
+export function lineCompareCandidates<T extends LineProduct>(
+  current: UpgradeProduct,
+  line: T[],
+): { product: T; relation: 'previous' | 'newer' | 'sibling' }[] {
+  const same = line.filter((p) => p.lineId === current.lineId && p.id !== current.id);
+  const previous = same
+    .filter((p) => p.generation === current.generation - 1)
+    .sort(
+      (a, b) =>
+        Math.abs(TIER_RANK[a.familyTier] - TIER_RANK[current.familyTier]) -
+        Math.abs(TIER_RANK[b.familyTier] - TIER_RANK[current.familyTier]),
+    )[0];
+  // A higher tier of this generation is a sibling, not a newer model.
+  const next = newerModel(current, same);
+  const newer = next?.kind === 'newerGeneration' ? next.product : undefined;
+  const siblings = same
+    .filter((p) => p.generation === current.generation && p.status !== 'discontinued')
+    .sort((a, b) => TIER_RANK[a.familyTier] - TIER_RANK[b.familyTier]);
+  const picks = [
+    ...(previous ? [{ product: previous, relation: 'previous' as const }] : []),
+    ...(newer ? [{ product: newer, relation: 'newer' as const }] : []),
+    ...siblings.map((product) => ({ product, relation: 'sibling' as const })),
+  ];
+  const seen = new Set<string>();
+  return picks.filter((p) => !seen.has(p.product.id) && seen.add(p.product.id)).slice(0, 3);
+}

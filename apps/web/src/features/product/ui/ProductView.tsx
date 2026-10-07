@@ -12,6 +12,8 @@ import { SpecTable } from '@/shared/ui/commerce/SpecTable';
 import { StatusBadge, type StatusBadgeProps } from '@/shared/ui/commerce/StatusBadge';
 import { VariantSelector } from '@/shared/ui/commerce/VariantSelector';
 import { Container } from '@/shared/ui/layout/Container';
+import { NewerModelNudge } from './NewerModelNudge';
+import { ProductCompare } from './ProductCompare';
 import { Breadcrumbs } from '@/shared/ui/navigation/Breadcrumbs';
 import { toOfferCards } from '../mappers/toOfferCards';
 import { optionGroups, variantFor } from '../mappers/variantSelection';
@@ -133,6 +135,7 @@ export function ProductView({
                   size="lg"
                   unavailable={variant.availability === 'outOfStock'}
                 />
+                {product.newerModel ? <NewerModelNudge newer={product.newerModel} /> : null}
                 {variant.flash ? (
                   <Countdown endsAt={new Date(variant.flash.endsAt).toISOString()} />
                 ) : null}
@@ -176,6 +179,8 @@ export function ProductView({
               <RotateCcwIcon className="size-5 shrink-0 text-ink-muted" aria-hidden />
               <p>{product.returnPolicy}</p>
             </div>
+
+            <ProductCompare product={product} />
 
             {product.compatibility.length ? (
               <section aria-labelledby="pdp-compat" className="space-y-2">

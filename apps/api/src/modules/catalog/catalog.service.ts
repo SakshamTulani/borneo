@@ -2,6 +2,8 @@ import { z } from 'zod';
 import {
   bundleOffer,
   compareRows,
+  lineCompareCandidates,
+  newerModel,
   FINDERS,
   runFinder,
   ratingCounts,
@@ -43,6 +45,7 @@ import type {
   ReviewRow,
   ListingQuery,
   ListingRow,
+  LineRow,
   ProductRow,
   VariantState,
 } from './catalog.repository';
@@ -78,7 +81,9 @@ export type CatalogDeps = {
   countProducts: (query: Omit<ListingQuery, 'after' | 'limit' | 'sort'>) => Promise<number>;
   listCategoryProducts: (
     categoryId: string,
+    includeDiscontinued?: boolean,
   ) => Promise<(ListingRow & { attributes: Record<string, unknown> })[]>;
+  loadLine: (productId: string) => Promise<LineRow[]>;
 };
 
 /** Reviews shown on the product page before "Show more". */
@@ -293,7 +298,7 @@ export function createCatalogService(deps: CatalogDeps) {
     async compare(categorySlug: string, slugs: string[]): Promise<CompareView> {
       const category = await deps.findCategoryBySlug(categorySlug);
       if (!category) throw notFound('CATEGORY_NOT_FOUND', `No category "${categorySlug}"`);
-      const rows = await deps.listCategoryProducts(category.category.id);
+      const rows = await deps.listCategoryProducts(category.category.id, true);
       const chosen = slugs.flatMap((s) => rows.find((r) => r.slug === s) ?? []);
       const cards = new Map((await summarize(chosen)).map((c) => [c.id, c]));
       const kept = chosen.filter((r) => cards.has(r.id));
@@ -388,7 +393,7 @@ export function createCatalogService(deps: CatalogDeps) {
       if (!product) throw notFound('PRODUCT_NOT_FOUND', `No product "${slug}"`);
       const now = deps.now();
       const categoryId = product.category.id;
-      const [defs, variants, ratings, book, faqs, edges, images, bundles, reviews, counts] =
+      const [defs, variants, ratings, book, faqs, edges, images, bundles, reviews, counts, line] =
         await Promise.all([
           deps.listAttributeDefs(categoryId),
           deps.loadVariantStates([product.id], now),
@@ -400,6 +405,7 @@ export function createCatalogService(deps: CatalogDeps) {
           deps.loadBundlesFor(product.id, now),
           deps.loadReviews(product.id, { limit: PDP_REVIEWS }),
           deps.loadRatingCounts(product.id),
+          deps.loadLine(product.id),
         ]);
       if (variants.length === 0) throw notFound('PRODUCT_NOT_FOUND', `No product "${slug}"`);
 
@@ -415,6 +421,14 @@ export function createCatalogService(deps: CatalogDeps) {
         (await summarize(picks.map((p) => buyable.get(p.productId)!))).map((s) => [s.id, s]),
       );
       const next = edges.find((e) => e.type === 'next_gen' && buyable.has(e.toProductId));
+
+      // Newer model nudge and one-tap compares from the whole line (D-237, D-238).
+      const self = line.find((l) => l.id === product.id);
+      const newer = self ? newerModel(self, line) : undefined;
+      const compareWith = self ? lineCompareCandidates(self, line) : [];
+      const newerCard = newer
+        ? (await summarize(await deps.listProductsByIds([newer.product.id])))[0]
+        : undefined;
 
       const optionKeys = [...new Set(variants.flatMap((v) => Object.keys(v.options)))];
       return {
@@ -471,6 +485,22 @@ export function createCatalogService(deps: CatalogDeps) {
         successor: next
           ? { slug: buyable.get(next.toProductId)!.slug, name: buyable.get(next.toProductId)!.name }
           : null,
+        newerModel:
+          newer && newerCard
+            ? {
+                slug: newer.product.slug,
+                name: newer.product.name,
+                kind: newer.kind,
+                preorder: newer.product.status === 'preorder',
+                pricePaise: newerCard.price.sellingPaise,
+              }
+            : null,
+        compareWith: compareWith.map((c) => ({
+          slug: c.product.slug,
+          name: c.product.name,
+          relation: c.relation,
+          discontinued: c.product.status === 'discontinued',
+        })),
         reviews: { counts: ratingCounts(counts), page: reviewPage(reviews, PDP_REVIEWS) },
         bundles: bundles.flatMap((b): BundleOffer[] => {
           const offer = bundleOffer(b.facts, now);

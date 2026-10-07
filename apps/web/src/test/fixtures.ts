@@ -119,6 +119,8 @@ export const productFixture = (over: Partial<ProductDetail> = {}): ProductDetail
   ],
   successor: null,
   bundles: [],
+  newerModel: null,
+  compareWith: [],
   reviews: { counts: [0, 0, 0, 0, 0], page: { items: [], nextCursor: null } },
   ...over,
 });

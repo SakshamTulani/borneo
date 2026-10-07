@@ -94,6 +94,7 @@ export function emptyCatalogDeps(over: Partial<CatalogDeps> = {}): CatalogDeps {
     loadRelationsFrom: async () => [],
     loadBundlesFor: async () => [],
     listCategoryProducts: async () => [],
+    loadLine: async () => [],
     countProducts: async () => 0,
     loadReviews: async () => [],
     loadRatingCounts: async () => [],

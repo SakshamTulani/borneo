@@ -720,6 +720,8 @@ export async function loadOrderFacts(db: Db, skus: string[]): Promise<OrderFacts
 export async function listCategoryProducts(
   db: Db,
   categoryId: string,
+  /** Compare may show a discontinued predecessor (D-238). */
+  includeDiscontinued = false,
 ): Promise<(ListingRow & { attributes: Attributes })[]> {
   const cheapest = cheapestVariant(db);
   return db
@@ -740,7 +742,12 @@ export async function listCategoryProducts(
     .innerJoin(category, eq(category.id, product.categoryId))
     .innerJoin(productLine, eq(productLine.id, product.lineId))
     .innerJoin(cheapest, eq(cheapest.productId, product.id))
-    .where(and(eq(product.categoryId, categoryId), inArray(product.status, [...LISTED])));
+    .where(
+      and(
+        eq(product.categoryId, categoryId),
+        inArray(product.status, includeDiscontinued ? [...LISTED, 'discontinued'] : [...LISTED]),
+      ),
+    );
 }
 
 /** Live products in the given lines, for upgrade suggestions (D-131, D-136). */
@@ -778,3 +785,26 @@ export async function findUpgradeTarget(db: Db, slug: string) {
   return row;
 }
 export type UpgradeTarget = NonNullable<Awaited<ReturnType<typeof findUpgradeTarget>>>;
+
+/** Every product in the product's line except drafts, for the PDP nudge and compares (D-237, D-238). */
+export async function loadLineFor(db: Db, productId: string) {
+  const [self] = await db
+    .select({ lineId: product.lineId })
+    .from(product)
+    .where(eq(product.id, productId));
+  if (!self) return [];
+  const rows = await db
+    .select({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      lineId: product.lineId,
+      generation: product.generation,
+      familyTier: product.familyTier,
+      status: product.status,
+    })
+    .from(product)
+    .where(and(eq(product.lineId, self.lineId), ne(product.status, 'draft')));
+  return rows.map((r) => ({ ...r, status: r.status as 'live' | 'preorder' | 'discontinued' }));
+}
+export type LineRow = Awaited<ReturnType<typeof loadLineFor>>[number];

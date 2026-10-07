@@ -76,4 +76,27 @@ describe('ComparePage', () => {
     });
     expect(await screen.findByText('Choose at least two to compare')).toBeTruthy();
   });
+
+  it('D-238: a discontinued predecessor shows as no longer sold, not with a price', async () => {
+    stubApi({
+      'GET /compare': [
+        200,
+        {
+          ...view,
+          products: [
+            summaryFixture({ id: 'a', slug: 'pulse-4', name: 'Pulse 4' }),
+            summaryFixture({ id: 'b', slug: 'pulse-3', name: 'Pulse 3', status: 'discontinued' }),
+          ],
+          rows: [],
+        },
+      ],
+    });
+    await renderWithRouter(
+      <ComparePage category="smartphones" slugs={['pulse-4', 'pulse-3']} onChange={() => {}} />,
+      {
+        queryClient: qc(),
+      },
+    );
+    expect(await screen.findByText('No longer sold')).toBeTruthy();
+  });
 });

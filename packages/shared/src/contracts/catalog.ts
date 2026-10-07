@@ -370,6 +370,25 @@ export const productDetailSchema = z.object({
   suggestions: z.array(z.object({ product: productSummarySchema, reason: z.string().min(1) })),
   /** Discontinued products point to their next generation, if any (D-17). */
   successor: z.object({ slug: z.string().min(1), name: z.string().min(1) }).nullable(),
+  /** A newer generation or a higher tier that is sold now (D-237). */
+  newerModel: z
+    .object({
+      slug: z.string().min(1),
+      name: z.string().min(1),
+      kind: z.enum(['newerGeneration', 'higherTier']),
+      preorder: z.boolean(),
+      pricePaise: paiseSchema,
+    })
+    .nullable(),
+  /** One-tap compares from this page (D-238). */
+  compareWith: z.array(
+    z.object({
+      slug: z.string().min(1),
+      name: z.string().min(1),
+      relation: z.enum(['previous', 'newer', 'sibling']),
+      discontinued: z.boolean(),
+    }),
+  ),
   /** Bundles this product is in that can be bought now (D-197). */
   bundles: z.array(bundleOfferSchema),
   /** Newest verified reviews and how many there are at each star rating (D-150). */
