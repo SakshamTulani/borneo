@@ -65,7 +65,8 @@ export function Carousel({
     <section
       aria-roledescription="carousel"
       aria-label={label}
-      className={cn('relative', className)}
+      // Clip: nothing in the carousel may widen the page (the track scrolls inside).
+      className={cn('relative overflow-x-clip', className)}
       onMouseEnter={() => setHeld(true)}
       onMouseLeave={() => setHeld(false)}
       onFocus={() => setHeld(true)}
@@ -105,6 +106,10 @@ export function Carousel({
             >
               <ChevronLeftIcon className="size-5" aria-hidden />
             </button>
+            {/* Phones: "2 / 7" keeps the bar narrow; dots (44px each) from the sm breakpoint. */}
+            <span className="px-2 text-sm text-ink tabular-nums sm:hidden" aria-hidden>
+              {index + 1} / {count}
+            </span>
             {slides.map((s, i) => (
               <button
                 key={s.key}
@@ -112,7 +117,7 @@ export function Carousel({
                 aria-label={`Show slide ${i + 1}: ${s.label}`}
                 aria-current={i === index ? 'true' : undefined}
                 onClick={() => go(i)}
-                className="group inline-flex size-11 items-center justify-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-brand"
+                className="group hidden size-11 items-center justify-center rounded-full outline-none focus-visible:outline-2 focus-visible:outline-brand sm:inline-flex"
               >
                 <span
                   aria-hidden
