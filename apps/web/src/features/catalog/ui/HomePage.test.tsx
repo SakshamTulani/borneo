@@ -15,21 +15,49 @@ function seededClient() {
     { slug: 'accessories', name: 'Accessories', homeEntry: 'buildYourSetup' as const },
     { slug: 'tvs', name: 'TVs' },
   ]);
-  queryClient.setQueryData(newestProductsQuery(HOME_NEWEST).queryKey, [
-    toCatalogCard(summaryFixture()),
-    toCatalogCard(summaryFixture({ id: 'p-max', slug: 'echo-max-2', name: 'Echo Max 2' })),
-  ]);
+  const names = ['Echo Buds 2', 'Nova 3', 'Pulse 4', 'Vista 55', 'Echo Max 2', 'Watch S2'];
+  queryClient.setQueryData(
+    newestProductsQuery(HOME_NEWEST).queryKey,
+    names.map((name, i) => toCatalogCard(summaryFixture({ id: `p${i}`, slug: `s-${i}`, name }))),
+  );
+  queryClient.setQueryData(['deals'], {
+    live: [
+      {
+        product: summaryFixture({ id: 'd1', slug: 'boom-2', name: 'Boom 2' }),
+        sku: 'BOOM2-BLK',
+        salePricePaise: 399_900,
+        regularPricePaise: 499_900,
+        startsAt: Date.UTC(2026, 9, 6),
+        endsAt: Date.UTC(2026, 9, 7),
+        state: 'live',
+        remaining: null,
+      },
+    ],
+    upcoming: [],
+  });
   return queryClient;
 }
 
 describe('HomePage', () => {
   it('D-120, D-181: product hero, latest launches, categories and entry points; axe clean', async () => {
     const { container } = await renderWithRouter(<HomePage />, { queryClient: seededClient() });
-    // The hero is the newest product, not a slogan (D-181); the next launches follow.
-    const hero = screen.getByRole('region', { name: 'Echo Buds 2' });
+    // The hero carousel: live deals first, then the four newest launches (D-181, owner request).
+    const hero = screen.getByRole('region', { name: 'Deals and new launches' });
     expect(container.querySelector('section')).toBe(hero);
-    expect(hero.textContent).toContain('Just launched');
-    expect(screen.getByRole('link', { name: 'View details of the Echo Buds 2' })).toBeTruthy();
+    const slides = screen
+      .getAllByRole('group')
+      .filter((g) => g.getAttribute('aria-roledescription') === 'slide');
+    expect(slides.map((g) => g.getAttribute('aria-label'))).toEqual([
+      '1 of 5: Flash deal: Boom 2',
+      '2 of 5: Just launched: Echo Buds 2',
+      '3 of 5: Just launched: Nova 3',
+      '4 of 5: Just launched: Pulse 4',
+      '5 of 5: Just launched: Vista 55',
+    ]);
+    expect(screen.getByRole('link', { name: 'View deal: Boom 2' }).getAttribute('href')).toContain(
+      'variant=BOOM2-BLK',
+    );
+    expect(screen.getByRole('link', { name: 'View details: Echo Buds 2' })).toBeTruthy();
     const latest = screen.getByRole('region', { name: 'Latest launches' });
     expect(latest.textContent).toContain('Echo Max 2');
     expect(latest.textContent).not.toContain('Echo Buds 2');
@@ -49,5 +77,18 @@ describe('HomePage', () => {
     const featured = screen.getByRole('region', { name: 'Featured' });
     const links = [...featured.querySelectorAll('a')].map((a) => a.getAttribute('href'));
     expect(links).toEqual(['/categories/tvs']);
+  });
+
+  it('the carousel moves with its controls and can be paused', async () => {
+    const { default: userEvent } = await import('@testing-library/user-event');
+    await renderWithRouter(<HomePage />, { queryClient: seededClient() });
+    const dot = (n: number) =>
+      screen.getByRole('button', { name: new RegExp(`^Show slide ${n}:`) });
+    expect(dot(1).getAttribute('aria-current')).toBe('true');
+    await userEvent.click(screen.getByRole('button', { name: 'Next slide' }));
+    expect(dot(2).getAttribute('aria-current')).toBe('true');
+    await userEvent.click(screen.getByRole('button', { name: 'Previous slide' }));
+    await userEvent.click(screen.getByRole('button', { name: 'Previous slide' }));
+    expect(dot(5).getAttribute('aria-current')).toBe('true');
   });
 });

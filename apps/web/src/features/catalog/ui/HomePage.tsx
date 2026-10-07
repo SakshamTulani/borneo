@@ -1,4 +1,8 @@
 import { Link } from '@tanstack/react-router';
+import { useDealsQuery } from '@/features/deals';
+import { toCatalogCard } from '../mappers/toCatalogCard';
+import { Countdown } from '@/shared/ui/commerce/Countdown';
+import { Carousel, type CarouselSlide } from '@/shared/ui/layout/Carousel';
 import { ArrowRightIcon, CompassIcon, PlugZapIcon, ZapIcon } from 'lucide-react';
 import type { ReactNode } from 'react';
 import { imageSource } from '@/shared/lib/image';
@@ -17,8 +21,8 @@ import { CategoryGrid } from './CategoryGrid';
 import { HOME_BANNERS, type HomeBanner } from './homeContent';
 import { ProductGrid, ProductGridSkeleton } from './ProductGrid';
 
-/** The hero product plus two rows of four. */
-export const HOME_NEWEST = 9;
+/** Four launches in the hero carousel plus two rows of four. */
+export const HOME_NEWEST = 12;
 
 /** Entry points with somewhere real to go (D-120); Deals is always listed after these. */
 const ENTRY_POINTS = [
@@ -68,14 +72,33 @@ function Section({
 }
 
 /** The hero is the newest launch (D-181): its photo, real price and a way in. No slogans. */
-function ProductHero({ card }: { card: CatalogCard }) {
+/** One hero slide: a just-launched product or a live flash deal, with real price and CTA (D-181). */
+function ProductHero({
+  card,
+  id,
+  eyebrow,
+  deal,
+  priority = false,
+}: {
+  card: CatalogCard;
+  id: string;
+  eyebrow: string;
+  /** Live flash sale: its real end and the normal price (D-140). */
+  deal?: { endsAt: number; sku: string };
+  priority?: boolean;
+}) {
   return (
-    <section aria-labelledby="home-hero" className="bg-surface">
-      <Container className="grid items-center gap-8 py-8 sm:py-12 md:grid-cols-2 lg:gap-16 lg:py-16">
+    <div className="bg-surface">
+      <Container className="grid items-center gap-8 pt-8 pb-24 sm:pt-12 md:grid-cols-2 lg:gap-16 lg:pt-16">
         <div className="order-2 space-y-6 md:order-1">
           <div className="flex flex-wrap items-center gap-2">
-            <span className="rounded-full bg-brand-soft px-3 py-1 text-xs font-semibold text-brand">
-              Just launched
+            <span
+              className={cn(
+                'rounded-full px-3 py-1 text-xs font-semibold',
+                deal ? 'bg-offer-soft text-offer' : 'bg-brand-soft text-brand',
+              )}
+            >
+              {eyebrow}
             </span>
             {card.badges?.map((b, i) => (
               <StatusBadge key={i} {...b} />
@@ -84,27 +107,33 @@ function ProductHero({ card }: { card: CatalogCard }) {
           <div className="space-y-2">
             {card.familyLabel ? <p className="text-ink-muted">{card.familyLabel}</p> : null}
             <h2
-              id="home-hero"
+              id={id}
               className="font-heading text-[2.5rem] leading-[1.05] font-semibold tracking-[-0.03em] sm:text-display"
             >
               {card.name}
             </h2>
           </div>
           <PriceBlock {...card.price} size="lg" unavailable={card.availability === 'outOfStock'} />
+          {deal ? <Countdown endsAt={new Date(deal.endsAt).toISOString()} label="Ends in" /> : null}
           <div className="flex flex-wrap gap-3">
             {/* The label starts with the visible text (WCAG 2.5.3). */}
             <Button asChild size="lg">
               <Link
                 to="/products/$slug"
                 params={{ slug: card.slug }}
-                aria-label={`View details of the ${card.name}`}
+                search={deal ? { variant: deal.sku } : {}}
+                aria-label={`${deal ? 'View deal' : 'View details'}: ${card.name}`}
               >
-                View details
+                {deal ? 'View deal' : 'View details'}
                 <ArrowRightIcon aria-hidden />
               </Link>
             </Button>
             <Button asChild size="lg" variant="outline">
-              <Link to="/categories">Browse categories</Link>
+              {deal ? (
+                <Link to="/deals">All deals</Link>
+              ) : (
+                <Link to="/categories">Browse categories</Link>
+              )}
             </Button>
           </div>
         </div>
@@ -116,15 +145,20 @@ function ProductHero({ card }: { card: CatalogCard }) {
                 ? { srcSet: card.image.srcSet, sizes: '(min-width: 768px) 50vw, 100vw' }
                 : {})}
               alt={card.image.alt}
-              fetchPriority="high"
+              {...(priority ? { fetchPriority: 'high' as const } : { loading: 'lazy' as const })}
               className="size-full object-cover"
             />
           ) : null}
         </div>
       </Container>
-    </section>
+    </div>
   );
 }
+
+/** Launches in the hero carousel; the "Latest launches" grid shows the ones after these. */
+const HERO_LAUNCHES = 4;
+/** Live deals in the hero carousel, ending soonest first (D-231). */
+const HERO_DEALS = 3;
 
 function ProductHeroSkeleton() {
   return (
@@ -260,13 +294,51 @@ export function HomePage({
     ...e,
     categories: all.filter((c) => c.homeEntry === e.key),
   })).filter((e) => e.categories.length > 0);
-  const [hero, ...rest] = newest.data ?? [];
+  const launches = newest.data ?? [];
+  const rest = launches.slice(HERO_LAUNCHES);
+  const deals = (useDealsQuery().data?.live ?? [])
+    .filter((d) => d.state === 'live')
+    .slice(0, HERO_DEALS);
+  const slides: CarouselSlide[] = [
+    ...deals.map((d, i) => {
+      const card = toCatalogCard(d.product);
+      return {
+        key: `deal-${d.sku}`,
+        label: `Flash deal: ${card.name}`,
+        node: (
+          <ProductHero
+            card={card}
+            id={`hero-deal-${i}`}
+            eyebrow="Flash deal"
+            deal={{ endsAt: d.endsAt, sku: d.sku }}
+            priority={i === 0}
+          />
+        ),
+      };
+    }),
+    ...launches.slice(0, HERO_LAUNCHES).map((card, i) => ({
+      key: `new-${card.slug}`,
+      label: `Just launched: ${card.name}`,
+      node: (
+        <ProductHero
+          card={card}
+          id={`hero-new-${i}`}
+          eyebrow="Just launched"
+          priority={deals.length === 0 && i === 0}
+        />
+      ),
+    })),
+  ];
   const banners = HOME_BANNERS.filter((b) => all.some((c) => c.slug === b.categorySlug));
 
   return (
     <>
       <h1 className="sr-only">Borneo: phones, audio and home tech, direct</h1>
-      {newest.isPending ? <ProductHeroSkeleton /> : hero ? <ProductHero card={hero} /> : null}
+      {newest.isPending ? (
+        <ProductHeroSkeleton />
+      ) : slides.length ? (
+        <Carousel label="Deals and new launches" slides={slides} />
+      ) : null}
       {offers}
       {upgrades}
       <Section
@@ -288,7 +360,7 @@ export function HomePage({
           <ErrorState title="Couldn't load products" onRetry={() => void newest.refetch()} />
         ) : rest.length ? (
           <ProductGrid cards={rest} />
-        ) : !hero ? (
+        ) : launches.length === 0 ? (
           <EmptyState title="New launches are on their way" />
         ) : null}
       </Section>

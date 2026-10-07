@@ -22,6 +22,7 @@ import { ChoiceList } from '@/shared/ui/forms/ChoiceList';
 import { FormAlert } from '@/shared/ui/forms/FormAlert';
 import { PasswordField } from '@/shared/ui/forms/PasswordField';
 import { TextField } from '@/shared/ui/forms/TextField';
+import { Carousel } from '@/shared/ui/layout/Carousel';
 import { footerLinkClass, SiteFooter } from '@/shared/ui/navigation/SiteFooter';
 import { Specimen, State } from './Specimen';
 
@@ -227,6 +228,26 @@ export function BaseSection() {
           <DemoBox>
             Password reset code: <strong className="font-mono">482913</strong>
           </DemoBox>
+        </State>
+      </Specimen>
+
+      <Specimen
+        title="Carousel"
+        note="Pauses on hover, focus and with its button; still under reduced motion."
+      >
+        <State label="Three slides">
+          <Carousel
+            label="Example slides"
+            slides={['One', 'Two', 'Three'].map((n) => ({
+              key: n,
+              label: n,
+              node: (
+                <div className="flex h-40 items-center justify-center bg-muted pb-16 text-lg">
+                  Slide {n}
+                </div>
+              ),
+            }))}
+          />
         </State>
       </Specimen>
 
