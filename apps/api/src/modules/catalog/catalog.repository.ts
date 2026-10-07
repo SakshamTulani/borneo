@@ -697,3 +697,66 @@ export async function loadOrderFacts(db: Db, skus: string[]): Promise<OrderFacts
     .innerJoin(category, eq(category.id, product.categoryId))
     .where(inArray(variant.sku, [...new Set(skus)]));
 }
+
+/** Listed products of a category with their attributes, for the finder and compare (D-225, D-227). */
+export async function listCategoryProducts(
+  db: Db,
+  categoryId: string,
+): Promise<(ListingRow & { attributes: Attributes })[]> {
+  const cheapest = cheapestVariant(db);
+  return db
+    .select({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      categoryId: product.categoryId,
+      categorySlug: category.slug,
+      lineName: productLine.name,
+      tier: product.tier,
+      status: product.status,
+      pricePaise: cheapest.pricePaise,
+      launched: sql<string>`coalesce(${product.launchedAt}::text, ${UNKNOWN_LAUNCH})`,
+      attributes: product.attributes,
+    })
+    .from(product)
+    .innerJoin(category, eq(category.id, product.categoryId))
+    .innerJoin(productLine, eq(productLine.id, product.lineId))
+    .innerJoin(cheapest, eq(cheapest.productId, product.id))
+    .where(and(eq(product.categoryId, categoryId), inArray(product.status, [...LISTED])));
+}
+
+/** Live products in the given lines, for upgrade suggestions (D-131, D-136). */
+export async function listLineProducts(db: Db, lineIds: string[]) {
+  if (lineIds.length === 0) return [];
+  return db
+    .select({
+      id: product.id,
+      slug: product.slug,
+      name: product.name,
+      lineId: product.lineId,
+      generation: product.generation,
+      familyTier: product.familyTier,
+    })
+    .from(product)
+    .where(and(inArray(product.lineId, lineIds), eq(product.status, 'live')));
+}
+
+/** A product's line, generation and tier, for the upgrade badge (D-130–132). */
+export async function findUpgradeTarget(db: Db, slug: string) {
+  const [row] = await db
+    .select({
+      id: product.id,
+      name: product.name,
+      lineId: product.lineId,
+      generation: product.generation,
+      familyTier: product.familyTier,
+      attributes: product.attributes,
+      categoryId: product.categoryId,
+      compare: sql<string[]>`${category.config} -> 'compare'`,
+    })
+    .from(product)
+    .innerJoin(category, eq(category.id, product.categoryId))
+    .where(and(eq(product.slug, slug), ne(product.status, 'draft')));
+  return row;
+}
+export type UpgradeTarget = NonNullable<Awaited<ReturnType<typeof findUpgradeTarget>>>;

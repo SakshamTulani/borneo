@@ -16,6 +16,7 @@ export * from './contracts/account';
 export * from './contracts/addresses';
 export * from './contracts/notifications';
 export * from './contracts/postPurchase';
+export * from './contracts/discovery';
 
 export * from './rules/account';
 export * from './rules/addresses';
@@ -23,8 +24,10 @@ export * from './rules/cart';
 export * from './rules/catalog';
 export * from './rules/checkout';
 export * from './rules/cod';
+export * from './rules/compare';
 export * from './rules/compatibility';
 export * from './rules/emi';
+export * from './rules/finder';
 export * from './rules/flash';
 export * from './rules/hold';
 export * from './rules/offers';

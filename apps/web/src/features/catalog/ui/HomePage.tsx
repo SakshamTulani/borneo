@@ -26,7 +26,7 @@ const ENTRY_POINTS = [
     key: 'helpMeChoose',
     icon: <CompassIcon className="size-5" aria-hidden />,
     title: 'Help me choose',
-    body: "Full specs for every model, with who each one is for and who it isn't.",
+    body: 'Three quick questions, then the models that fit you, with the facts they were picked on.',
   },
   {
     key: 'buildYourSetup',
@@ -196,11 +196,13 @@ function EntryPoint({
   title,
   body,
   categories,
+  finder = false,
 }: {
   icon: ReactNode;
   title: string;
   body: string;
   categories: CategoryLink[];
+  finder?: boolean;
 }) {
   return (
     <li className="flex flex-col gap-4 rounded-xl bg-canvas p-6 sm:p-8">
@@ -212,17 +214,26 @@ function EntryPoint({
         <p className="text-ink-muted">{body}</p>
       </div>
       <p className="-ml-3 flex flex-wrap">
-        {categories.map((c) => (
-          <Link
-            key={c.slug}
-            to="/categories/$slug"
-            params={{ slug: c.slug }}
-            className="group inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-brand outline-none hover:underline focus-visible:outline-2 focus-visible:outline-brand"
-          >
-            {c.name}
-            <ArrowRightIcon className="size-3.5" aria-hidden />
-          </Link>
-        ))}
+        {categories.map((c) => {
+          const cls =
+            'group inline-flex min-h-11 items-center gap-1 rounded-full px-3 text-brand outline-none hover:underline focus-visible:outline-2 focus-visible:outline-brand';
+          const label = (
+            <>
+              {c.name}
+              <ArrowRightIcon className="size-3.5" aria-hidden />
+            </>
+          );
+          // "Help me choose" opens the category's guided finder when it has one (D-225).
+          return finder && c.finder ? (
+            <Link key={c.slug} to="/finder/$id" params={{ id: c.finder }} className={cls}>
+              {label}
+            </Link>
+          ) : (
+            <Link key={c.slug} to="/categories/$slug" params={{ slug: c.slug }} className={cls}>
+              {label}
+            </Link>
+          );
+        })}
       </p>
     </li>
   );
@@ -230,11 +241,18 @@ function EntryPoint({
 
 /**
  * Hybrid home (D-120, D-181): products first. The hero is the newest launch, the next launches
- * follow, then category banners, categories with artwork, and mindset entry points. Same for everyone; the upgrade strip for
- * signed-in customers arrives with accounts (D-121).
+ * follow, then category banners, categories with artwork, and mindset entry points. Same for everyone, plus the upgrade strip
+ * for signed-in owners (D-121).
  */
 /** `offers` is the live offer strip, shown under the hero (D-191). */
-export function HomePage({ offers }: { offers?: ReactNode } = {}) {
+export function HomePage({
+  offers,
+  upgrades,
+}: {
+  offers?: ReactNode;
+  /** "Upgrade available" for signed-in owners (D-121, D-136). */
+  upgrades?: ReactNode;
+} = {}) {
   const categories = useCategoriesQuery();
   const newest = useNewestProductsQuery(HOME_NEWEST);
   const all = categories.data ?? [];
@@ -250,6 +268,7 @@ export function HomePage({ offers }: { offers?: ReactNode } = {}) {
       <h1 className="sr-only">Borneo: phones, audio and home tech, direct</h1>
       {newest.isPending ? <ProductHeroSkeleton /> : hero ? <ProductHero card={hero} /> : null}
       {offers}
+      {upgrades}
       <Section
         id="home-new"
         title="Latest launches"
@@ -306,6 +325,7 @@ export function HomePage({ offers }: { offers?: ReactNode } = {}) {
                 title={e.title}
                 body={e.body}
                 categories={e.categories}
+                finder={e.key === 'helpMeChoose'}
               />
             ))}
           </ul>

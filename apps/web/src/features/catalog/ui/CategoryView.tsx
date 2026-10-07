@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { SlidersHorizontalIcon, XIcon } from 'lucide-react';
-import { useId, useState } from 'react';
+import { useId, useState, type ReactNode } from 'react';
 import type { ProductSort } from '@borneo/shared';
 import { cn } from '@/shared/lib/utils';
 import { Button } from '@/shared/ui/base/button';
@@ -10,7 +10,14 @@ import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
 import { Breadcrumbs } from '@/shared/ui/navigation/Breadcrumbs';
 import { clearFilters } from '../mappers/listingSearch';
-import type { ActiveFilter, CatalogCard, FilterControl, ListingSearch } from '../model';
+import type {
+  ActiveFilter,
+  CatalogCard,
+  CompareControl,
+  FilterControl,
+  ListingSearch,
+} from '../model';
+import { CompareTray } from './CompareTray';
 import { FilterPanel } from './FilterPanel';
 import { ProductGrid, ProductGridSkeleton } from './ProductGrid';
 
@@ -27,6 +34,10 @@ export type CategoryViewProps = {
   activeFilters: ActiveFilter[];
   search: ListingSearch;
   onSearchChange: (next: ListingSearch) => void;
+  /** Compare selection, for categories with compare rows (D-227). */
+  compare?: CompareControl | undefined;
+  /** Finder link and explainers, below the listing (D-225, D-228). */
+  guide?: ReactNode;
   list:
     | { status: 'pending' }
     | { status: 'error'; onRetry: () => void }
@@ -40,7 +51,17 @@ export type CategoryViewProps = {
 };
 
 export function CategoryView(props: CategoryViewProps) {
-  const { category, controls, priceOptions, activeFilters, search, onSearchChange, list } = props;
+  const {
+    category,
+    controls,
+    priceOptions,
+    activeFilters,
+    search,
+    onSearchChange,
+    list,
+    compare,
+    guide,
+  } = props;
   const [filtersOpen, setFiltersOpen] = useState(false);
   const panelId = useId();
   const sortId = useId();
@@ -157,9 +178,14 @@ export function CategoryView(props: CategoryViewProps) {
             list={list}
             filtered={activeFilters.length > 0}
             onClear={() => onSearchChange(clearFilters(search))}
+            compare={compare}
           />
         </section>
       </div>
+      {guide}
+      {compare && compare.selected.length ? (
+        <CompareTray categorySlug={category.slug} compare={compare} />
+      ) : null}
     </Container>
   );
 }
@@ -168,10 +194,12 @@ function Results({
   list,
   filtered,
   onClear,
+  compare,
 }: {
   list: CategoryViewProps['list'];
   filtered: boolean;
   onClear: () => void;
+  compare?: CompareControl | undefined;
 }) {
   if (list.status === 'pending') return <ProductGridSkeleton />;
   if (list.status === 'error') {
@@ -196,7 +224,7 @@ function Results({
   }
   return (
     <div className="space-y-4">
-      <ProductGrid cards={list.cards} eager={4} />
+      <ProductGrid cards={list.cards} eager={4} compare={compare} />
       {list.hasMore ? (
         <div className="flex justify-center pt-4">
           <Button variant="outline" loading={list.loadingMore} onClick={list.onLoadMore}>

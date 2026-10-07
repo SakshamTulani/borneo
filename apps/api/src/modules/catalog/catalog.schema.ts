@@ -2,7 +2,11 @@ import { z } from 'zod';
 import {
   categoryDetailSchema,
   categoryDtoSchema,
+  compareQuerySchema,
+  compareViewSchema,
   errorResponseSchema,
+  finderQuerySchema,
+  finderViewSchema,
   MAX_PAGE_LIMIT,
   pageSchema,
   paiseSchema,
@@ -55,3 +59,6 @@ export const reviewsQuery = z.object({
 export const reviewPageResponse = reviewPageSchema;
 
 export { errorResponseSchema };
+
+export const finderParams = z.object({ id: slug });
+export { compareQuerySchema, compareViewSchema, finderQuerySchema, finderViewSchema };

@@ -13,6 +13,7 @@ import { accountRoutes, type AccountService } from './modules/account/index';
 import { returnsRoutes, type ReturnsService } from './modules/returns/index';
 import { reviewsRoutes, type ReviewsService } from './modules/reviews/index';
 import { searchRoutes, type SearchService } from './modules/search/index';
+import { upgradeRoutes, type UpgradeService } from './modules/upgrade/index';
 import { watchRoutes, type WatchService } from './modules/watch/index';
 import { registerErrorHandler } from './plugins/errors';
 import { registerOriginGuard } from './plugins/origin';
@@ -34,6 +35,7 @@ export type AppDeps = {
   reviews: ReviewsService;
   watch: WatchService;
   account: AccountService;
+  upgrade: UpgradeService;
   session: SessionReader;
   rateLimiter: RateLimiter;
   /** Browser origins allowed to make cookie-authenticated writes. */
@@ -63,5 +65,6 @@ export function buildApp(deps: AppDeps) {
   app.register(reviewsRoutes(deps.reviews, deps.session));
   app.register(watchRoutes(deps.watch, deps.session));
   app.register(accountRoutes(deps.account, deps.session));
+  app.register(upgradeRoutes(deps.upgrade, deps.session));
   return app;
 }

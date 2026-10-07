@@ -77,6 +77,8 @@ export const categoryConfigSchema = z.object({
   finder: z.string().min(1).optional(),
   /** Which home entry point lists this category (D-120). */
   homeEntry: z.enum(['helpMeChoose', 'buildYourSetup']).optional(),
+  /** Brand-written guides for the category page and finder (D-228). */
+  explainers: z.array(z.object({ title: z.string().min(1), body: z.string().min(1) })).optional(),
 });
 export type CategoryConfig = z.infer<typeof categoryConfigSchema>;
 

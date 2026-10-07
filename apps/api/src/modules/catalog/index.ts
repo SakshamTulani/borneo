@@ -7,6 +7,7 @@ export type {
   ListingRow,
   OrderFactsRow,
   ReviewRow,
+  UpgradeTarget,
 } from './catalog.repository';
 export {
   cheapestVariant,
@@ -14,6 +15,9 @@ export {
   findProductBySlug,
   listAttributeDefs,
   listCategories,
+  listCategoryProducts,
+  listLineProducts,
+  findUpgradeTarget,
   listedProductFacts,
   listProducts,
   listProductsByIds,

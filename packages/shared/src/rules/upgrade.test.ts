@@ -3,9 +3,12 @@ import {
   isUpgrade,
   upgradeBadge,
   upgradeStrip,
+  whatYouGain,
   type OwnedItem,
   type UpgradeProduct,
 } from './upgrade';
+import { formatAttributeValue } from './catalog';
+import type { AttributeDef } from '../contracts/catalog';
 
 const p = (
   id: string,
@@ -112,5 +115,51 @@ describe('upgrade', () => {
       )[0]?.to.id,
     ).toBe('p6');
     expect(upgradeStrip([own(p('s4', 4, 'standard'), now)], [p('p6', 6, 'pro')], now)).toEqual([]);
+  });
+
+  const gainDefs: AttributeDef[] = [
+    { key: 'battery_mah', label: 'Battery', type: 'number', unit: 'mAh', compat: false },
+    { key: 'weight_g', label: 'Weight', type: 'number', unit: 'g', compat: false },
+    { key: 'nfc', label: 'NFC', type: 'bool', compat: false },
+    { key: 'ip', label: 'Water', type: 'enum', options: ['IP54', 'IP68'], compat: false },
+    { key: 'codecs', label: 'Codecs', type: 'list', options: ['SBC', 'LDAC'], compat: false },
+    { key: 'chipset', label: 'Chipset', type: 'text', compat: false },
+  ];
+
+  it('D-133: what you gain lists differences against the owned device', () => {
+    const r = whatYouGain(
+      gainDefs,
+      ['battery_mah', 'chipset'],
+      { battery_mah: 5000, chipset: 'A' },
+      { battery_mah: 5500, chipset: 'B' },
+      formatAttributeValue,
+    );
+    expect(r.gains).toEqual([{ label: 'Battery', from: '5,000 mAh', to: '5,500 mAh' }]);
+    expect(r.changes).toEqual([{ label: 'Chipset', from: 'A', to: 'B' }]);
+  });
+
+  it('D-226: gains are higher numbers (lighter weight), new features, later options, added list items', () => {
+    const r = whatYouGain(
+      gainDefs,
+      gainDefs.map((d) => d.key),
+      { battery_mah: 5000, weight_g: 200, nfc: false, ip: 'IP54', codecs: ['SBC'] },
+      { battery_mah: 4800, weight_g: 180, nfc: true, ip: 'IP68', codecs: ['SBC', 'LDAC'] },
+      formatAttributeValue,
+    );
+    expect(r.gains.map((g) => g.label)).toEqual(['Weight', 'NFC', 'Water', 'Codecs']);
+    expect(r.changes.map((c) => c.label)).toEqual(['Battery']);
+    const same = whatYouGain(gainDefs, ['nfc'], { nfc: true }, { nfc: true }, formatAttributeValue);
+    expect(same).toEqual({ gains: [], changes: [] });
+  });
+
+  it('D-22: an unknown value on the candidate is never a gain or a change', () => {
+    const r = whatYouGain(
+      gainDefs,
+      ['nfc', 'battery_mah'],
+      { nfc: false, battery_mah: 5000 },
+      {},
+      formatAttributeValue,
+    );
+    expect(r).toEqual({ gains: [], changes: [] });
   });
 });

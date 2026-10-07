@@ -12,6 +12,7 @@ export const categoriesQuery = queryOptions({
       slug,
       name,
       ...(config.homeEntry ? { homeEntry: config.homeEntry } : {}),
+      ...(config.finder ? { finder: config.finder } : {}),
     })),
   staleTime: 5 * 60_000,
 });

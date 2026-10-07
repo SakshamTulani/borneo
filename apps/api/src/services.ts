@@ -46,6 +46,9 @@ import {
   findProductBySlug,
   listAttributeDefs,
   listCategories,
+  listCategoryProducts,
+  listLineProducts,
+  findUpgradeTarget,
   listedProductFacts,
   listProducts,
   listProductsByIds,
@@ -111,6 +114,7 @@ import {
 } from './modules/relations/index';
 
 import { createAccountService, findMemberSince } from './modules/account/index';
+import { createUpgradeService, listOwnedForUpgrade } from './modules/upgrade/index';
 import {
   advanceReturn,
   countOpenReturns,
@@ -158,6 +162,7 @@ export function catalogService(db: Db, now: () => number = Date.now) {
     loadBundlesFor: (productId, at) => loadCartBundles(db, { productId }, new Date(at)),
     loadReviews: (productId, page) => loadReviews(db, productId, page),
     loadRatingCounts: (productId) => loadRatingCounts(db, productId),
+    listCategoryProducts: (categoryId) => listCategoryProducts(db, categoryId),
   });
 }
 
@@ -370,6 +375,15 @@ export function postPurchaseServices(
       add: (customerId, variantId, at) => addWatch(customerId, db, variantId, new Date(at)),
       remove: (customerId, variantId) => removeWatch(customerId, db, variantId),
       loadImages: (ids) => loadImages(db, ids),
+    }),
+    upgrade: createUpgradeService({
+      now,
+      listOwned: (customerId) => listOwnedForUpgrade(customerId, db),
+      listLineProducts: (lineIds) => listLineProducts(db, lineIds),
+      findTarget: (slug) => findUpgradeTarget(db, slug),
+      listAttributeDefs: (categoryId) => listAttributeDefs(db, categoryId),
+      listBuyable: (ids) => listProductsByIds(db, ids),
+      summarize: (rows) => catalog.summarize(rows),
     }),
     account: createAccountService({
       listDelivered,

@@ -1,5 +1,6 @@
 import { useDefaultPincodeQuery } from '@/features/addresses';
 import { BundleOffers, ProductPurchase } from '@/features/cart';
+import { UpgradePanel } from '@/features/upgrade';
 import { WatchButton } from '@/features/watch';
 import { ProductDelivery } from '@/features/delivery';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
@@ -52,6 +53,7 @@ export function ProductPage({ slug, sku, onSkuChange }: Props) {
         </div>
       }
       bundles={<BundleOffers bundles={query.data.bundles} />}
+      upgrade={<UpgradePanel slug={query.data.slug} />}
     />
   );
 }

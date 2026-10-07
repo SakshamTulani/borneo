@@ -26,6 +26,7 @@ import { createAccountService } from '../modules/account/index';
 import { createOrdersService } from '../modules/orders/index';
 import { createReturnsService } from '../modules/returns/index';
 import { createReviewsService } from '../modules/reviews/index';
+import { createUpgradeService } from '../modules/upgrade/index';
 import { createWatchService } from '../modules/watch/index';
 import type { OrdersDeps } from '../modules/orders/orders.service';
 import type { AddressesDeps } from '../modules/addresses/addresses.service';
@@ -89,6 +90,7 @@ export function emptyCatalogDeps(over: Partial<CatalogDeps> = {}): CatalogDeps {
     loadFaqs: async () => [],
     loadRelationsFrom: async () => [],
     loadBundlesFor: async () => [],
+    listCategoryProducts: async () => [],
     loadReviews: async () => [],
     loadRatingCounts: async () => [],
     ...over,
@@ -253,6 +255,15 @@ export function fakeAppDeps(over: Partial<AppDeps> = {}): AppDeps {
       add: async () => {},
       remove: async () => {},
       loadImages: async () => new Map(),
+    }),
+    upgrade: createUpgradeService({
+      now: () => 0,
+      listOwned: async () => [],
+      listLineProducts: async () => [],
+      findTarget: async () => undefined,
+      listAttributeDefs: async () => [],
+      listBuyable: async () => [],
+      summarize: async () => [],
     }),
     account: createAccountService({
       listDelivered: async () => [],

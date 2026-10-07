@@ -29,6 +29,8 @@ type Props = {
   purchase?: ReactNode;
   /** Bundles with this product (D-197). */
   bundles?: ReactNode;
+  /** "Upgrade from your X" and what you gain, for signed-in owners (D-130–133). */
+  upgrade?: ReactNode;
 };
 
 function variantBadges(product: ProductDetail, v: ProductVariant): StatusBadgeProps[] {
@@ -52,6 +54,7 @@ export function ProductView({
   delivery,
   purchase,
   bundles,
+  upgrade,
 }: Props) {
   const groups = optionGroups(product, variant);
   const badges = variantBadges(product, variant);
@@ -160,6 +163,8 @@ export function ProductView({
                 ))}
               </div>
             ) : null}
+
+            {upgrade && !discontinued ? upgrade : null}
 
             {purchase && !discontinued ? purchase : null}
 

@@ -3,7 +3,12 @@ import type { ZodTypeProvider } from 'fastify-type-provider-zod';
 import {
   categoryDetailResponse,
   categoryListResponse,
+  compareQuerySchema,
+  compareViewSchema,
   errorResponseSchema,
+  finderParams,
+  finderQuerySchema,
+  finderViewSchema,
   productDetailResponse,
   productListQuery,
   productListResponse,
@@ -32,6 +37,28 @@ export function catalogRoutes(service: CatalogService): FastifyPluginAsync {
         },
       },
       (request) => service.getCategory(request.params.slug),
+    );
+    // Guided finder (D-225) and compare (D-227): public, cacheable like listings.
+    r.get(
+      '/finder/:id',
+      {
+        schema: {
+          params: finderParams,
+          querystring: finderQuerySchema,
+          response: { 200: finderViewSchema, 404: errorResponseSchema },
+        },
+      },
+      (request) => service.finder(request.params.id, request.query),
+    );
+    r.get(
+      '/compare',
+      {
+        schema: {
+          querystring: compareQuerySchema,
+          response: { 200: compareViewSchema, 400: errorResponseSchema, 404: errorResponseSchema },
+        },
+      },
+      (request) => service.compare(request.query.category, request.query.p),
     );
     r.get(
       '/products',

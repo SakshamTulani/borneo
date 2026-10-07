@@ -1,6 +1,9 @@
 import { z } from 'zod';
 import {
   bundleOffer,
+  compareRows,
+  FINDERS,
+  runFinder,
   ratingCounts,
   cardVariant,
   compatibilityFacts,
@@ -18,6 +21,9 @@ import {
   variantAvailability,
   type CategoryDetail,
   type CategoryDto,
+  type CompareView,
+  type FinderAnswers,
+  type FinderView,
   type FlashSale,
   type ListingFilter,
   type ProductDetail,
@@ -69,6 +75,9 @@ export type CatalogDeps = {
     page: { limit: number; after?: { createdAt: Date; id: string } },
   ) => Promise<ReviewRow[]>;
   loadRatingCounts: (productId: string) => Promise<{ rating: number; count: number }[]>;
+  listCategoryProducts: (
+    categoryId: string,
+  ) => Promise<(ListingRow & { attributes: Record<string, unknown> })[]>;
 };
 
 /** Reviews shown on the product page before "Show more". */
@@ -217,6 +226,82 @@ export function createCatalogService(deps: CatalogDeps) {
   return {
     /** Cards for listing rows, priced and badged by the shared rules; other modules reuse it. */
     summarize,
+
+    /**
+     * Guided finder (D-225): answers from the query string, kept only when they name a real
+     * option. Results once every question is answered; live products only.
+     */
+    async finder(id: string, query: Record<string, string>): Promise<FinderView> {
+      const def = FINDERS[id];
+      const category = (await deps.listCategories()).find((c) => c.config.finder === id);
+      if (!def || !category) throw notFound('FINDER_NOT_FOUND', `No finder "${id}"`);
+      const answers: FinderAnswers = {};
+      for (const q of def.questions) {
+        const valid = new Set(q.options.map((o) => o.value));
+        const chosen = (query[q.key] ?? '').split(',').filter((v) => valid.has(v));
+        if (chosen.length) answers[q.key] = q.multi ? [...new Set(chosen)] : chosen.slice(0, 1);
+      }
+      // A multi question may be answered with "none of these" (an empty choice, `key=`).
+      const complete = def.questions.every((q) => answers[q.key] || (q.multi && q.key in query));
+      let results: FinderView['results'] = [];
+      let relax: FinderView['relax'] = null;
+      if (complete) {
+        const [rows, defs] = await Promise.all([
+          deps.listCategoryProducts(category.id),
+          deps.listAttributeDefs(category.id),
+        ]);
+        const live = rows.filter((r) => r.status === 'live');
+        const run = runFinder(def, answers, live, defs);
+        const byId = new Map(live.map((r) => [r.id, r]));
+        const cards = new Map(
+          (await summarize(run.matches.map((m) => byId.get(m.id)!))).map((c) => [c.id, c]),
+        );
+        results = run.matches.flatMap((m) => {
+          const product = cards.get(m.id);
+          return product ? [{ product, reasons: m.reasons }] : [];
+        });
+        if (run.relax) {
+          const q = def.questions.find((x) => x.key === run.relax!.question)!;
+          const o = q.options.find((x) => x.value === run.relax!.option)!;
+          relax = { ...run.relax, label: o.label };
+        }
+      }
+      return {
+        id: def.id,
+        title: def.title,
+        category: { slug: category.slug, name: category.name },
+        questions: def.questions.map((q) => ({
+          key: q.key,
+          prompt: q.prompt,
+          multi: q.multi,
+          options: q.options.map((o) => ({
+            value: o.value,
+            label: o.label,
+            detail: o.detail ?? null,
+          })),
+        })),
+        answers,
+        complete,
+        results,
+        relax,
+        explainers: category.config.explainers ?? [],
+      };
+    },
+
+    /** Side by side within one category (D-122, D-227); unknown or other-category slugs drop out. */
+    async compare(categorySlug: string, slugs: string[]): Promise<CompareView> {
+      const category = await deps.findCategoryBySlug(categorySlug);
+      if (!category) throw notFound('CATEGORY_NOT_FOUND', `No category "${categorySlug}"`);
+      const rows = await deps.listCategoryProducts(category.category.id);
+      const chosen = slugs.flatMap((s) => rows.find((r) => r.slug === s) ?? []);
+      const cards = new Map((await summarize(chosen)).map((c) => [c.id, c]));
+      const kept = chosen.filter((r) => cards.has(r.id));
+      return {
+        category: { slug: category.category.slug, name: category.category.name },
+        products: kept.map((r) => cards.get(r.id)!),
+        rows: compareRows(category.defs, category.category.config.compare, kept),
+      };
+    },
 
     /** More reviews after the product page's first ones (D-150). */
     async listReviews(

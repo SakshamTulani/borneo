@@ -1,4 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { Link } from '@tanstack/react-router';
+import { SparklesIcon } from 'lucide-react';
+import { COMPARE_MAX, toggleCompare } from '@borneo/shared';
+import { buttonVariants } from '@/shared/ui/base/button';
 import { EmptyState } from '@/shared/ui/feedback/EmptyState';
 import { ErrorState } from '@/shared/ui/feedback/ErrorState';
 import { useCategoryQuery } from '../hooks/useCategoryQuery';
@@ -28,6 +32,7 @@ export function CategoryPage({ slug, search, onSearchChange }: Props) {
   );
   const params = useMemo(() => toListingParams(slug, search, facets), [slug, search, facets]);
   const products = useProductListQuery(params);
+  const [compareMessage, setCompareMessage] = useState<string | null>(null);
 
   if (categoryQuery.isError) {
     return (
@@ -56,8 +61,68 @@ export function CategoryPage({ slug, search, onSearchChange }: Props) {
           onLoadMore: () => void products.fetchNextPage(),
         };
 
+  const selected = String(search.compare ?? '')
+    .split(',')
+    .filter(Boolean)
+    .slice(0, COMPARE_MAX);
+  const setSelection = (next: string[]) => {
+    const { compare: _drop, ...rest } = search;
+    void _drop;
+    onSearchChange(next.length ? { ...rest, compare: next.join(',') } : rest);
+  };
+  const config = detail.category.config;
+  const compare = config.compare.length
+    ? {
+        selected,
+        message: compareMessage,
+        onClear: () => {
+          setCompareMessage(null);
+          setSelection([]);
+        },
+        onToggle: (slug: string) => {
+          const r = toggleCompare(selected, slug);
+          setCompareMessage(
+            r.refused ? `You can compare up to ${COMPARE_MAX}. Remove one to add another.` : null,
+          );
+          if (!r.refused) setSelection(r.selection);
+        },
+      }
+    : undefined;
+  const guide =
+    config.finder || config.explainers?.length ? (
+      <section aria-labelledby="guide" className="mt-12 space-y-5 rounded-xl bg-surface p-6 sm:p-8">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <h2 id="guide" className="font-heading text-tagline font-semibold">
+            Choosing {detail.category.name.toLowerCase()}
+          </h2>
+          {config.finder ? (
+            <Link
+              to="/finder/$id"
+              params={{ id: config.finder }}
+              className={buttonVariants({ variant: 'outline' })}
+            >
+              <SparklesIcon aria-hidden />
+              Help me choose
+            </Link>
+          ) : null}
+        </div>
+        {config.explainers?.length ? (
+          <dl className="grid gap-5 sm:grid-cols-2">
+            {config.explainers.map((e) => (
+              <div key={e.title}>
+                <dt className="font-semibold">{e.title}</dt>
+                <dd className="text-[15px] text-ink-muted">{e.body}</dd>
+              </div>
+            ))}
+          </dl>
+        ) : null}
+      </section>
+    ) : null;
+
   return (
     <CategoryView
+      compare={compare}
+      guide={guide}
       category={detail.category}
       controls={toFilterControls(facets.filters, search)}
       priceOptions={priceOptions(facets.priceCapsPaise)}

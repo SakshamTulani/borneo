@@ -1,4 +1,4 @@
-import type { FamilyTier } from '../contracts/catalog';
+import type { AttributeDef, Attributes, FamilyTier } from '../contracts/catalog';
 
 const TIER_RANK: Record<FamilyTier, number> = { standard: 0, pro: 1, premium: 2 };
 
@@ -65,4 +65,45 @@ export function upgradeStrip(
       )[0];
     return to ? [{ from: base, to }] : [];
   });
+}
+
+/**
+ * "What you gain" against the customer's owned device (D-133, D-226), from the category's compare
+ * attributes. A gain is a higher number (a lower one for weight in grams), a feature it gains, an
+ * enum option later in the configured order (options are listed weakest first), or list items it
+ * adds. Other differences are listed as changes, with no claim of better or worse (D-22).
+ */
+export function whatYouGain(
+  defs: AttributeDef[],
+  keys: string[],
+  owned: Attributes,
+  candidate: Attributes,
+  format: (def: AttributeDef, value: unknown) => string | undefined,
+): {
+  gains: { label: string; from: string | null; to: string }[];
+  changes: { label: string; from: string | null; to: string | null }[];
+} {
+  const byKey = new Map(defs.map((d) => [d.key, d]));
+  const gains: { label: string; from: string | null; to: string }[] = [];
+  const changes: { label: string; from: string | null; to: string | null }[] = [];
+  for (const key of keys) {
+    const def = byKey.get(key);
+    if (!def) continue;
+    const a = owned[key];
+    const b = candidate[key];
+    const from = format(def, a) ?? null;
+    const to = format(def, b) ?? null;
+    if (from === to || to === null) continue;
+    let gain = false;
+    if (def.type === 'number' && typeof a === 'number' && typeof b === 'number')
+      gain = def.unit === 'g' ? b < a : b > a;
+    else if (def.type === 'bool') gain = b === true && a !== true;
+    else if (def.type === 'enum' && def.options && typeof b === 'string')
+      gain = def.options.indexOf(b) > (typeof a === 'string' ? def.options.indexOf(a) : -1);
+    else if (def.type === 'list' && Array.isArray(b))
+      gain = b.some((v) => !(Array.isArray(a) && a.includes(v)));
+    if (gain) gains.push({ label: def.label, from, to });
+    else changes.push({ label: def.label, from, to });
+  }
+  return { gains, changes };
 }

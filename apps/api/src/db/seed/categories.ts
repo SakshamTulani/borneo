@@ -116,6 +116,24 @@ export const categories: SeedCategory[] = [
       ],
       finder: 'phones',
       homeEntry: 'helpMeChoose',
+      explainers: [
+        {
+          title: 'Refresh rate',
+          body: 'How many times a second the screen redraws. 120 Hz makes scrolling and games look smoother than 60 Hz, and uses a little more battery.',
+        },
+        {
+          title: 'RAM',
+          body: 'Working memory. 8 GB keeps more apps open in the background without reloading; 6 GB is plenty for messaging, UPI and streaming.',
+        },
+        {
+          title: 'Battery and charging',
+          body: 'mAh is how much the battery holds; watts is how fast it can charge. A 5,000 mAh phone usually lasts a full day of mixed use.',
+        },
+        {
+          title: 'Water and dust ratings',
+          body: 'IP54 shrugs off splashes and rain. IP68 survives being dropped in water. The higher the rating, the more it can take.',
+        },
+      ],
     },
     faqs: [
       {
@@ -198,6 +216,24 @@ export const categories: SeedCategory[] = [
       ],
       finder: 'audio',
       homeEntry: 'helpMeChoose',
+      explainers: [
+        {
+          title: 'Active noise cancellation (ANC)',
+          body: 'Microphones listen to the noise around you and cancel it out. It makes trains, flights and busy offices much quieter.',
+        },
+        {
+          title: 'Multipoint',
+          body: 'Stays connected to two devices at once, so a call on your phone comes through while you watch something on your laptop.',
+        },
+        {
+          title: 'Codecs: AAC and LDAC',
+          body: 'How music travels over Bluetooth. AAC suits iPhone and most Android phones; LDAC carries more detail on Android phones that support it.',
+        },
+        {
+          title: 'Water resistance',
+          body: 'IPX4 handles sweat and light rain, IPX5 a strong splash, IP67 a dunk. Pick IPX5 or better for workouts.',
+        },
+      ],
     },
     faqs: [
       {

@@ -33,6 +33,8 @@ Checkout (Phase K): `features/checkout`. `/checkout` keeps the customer's choice
 
 Account (Phase L): `features/account` is the shell (sidebar nav on desktop, pills on mobile), overview (`/me/summary` + recent orders + review prompts), profile and password, and owned devices. `features/orders` lists orders, shows one order (tracking timeline, cancel, return requests with photos read as base64, refunds, demo courier and support-desk controls when the API sends `demoNextStep` / `demoNextStatus`) and the returns list. `features/reviews` (prompts and the star-rating form), `features/watch` (`WatchButton` on the PDP purchase slot, watch list) and `features/help` (`/help`, text from shared rules). The site footer is `shared/ui/navigation/SiteFooter` with the catalog's `FooterCategories` in its slot. `ChoiceList` lives in `shared/ui/forms`.
 
+Discovery (Phase M): `features/finder` (`/finder/$id`, answers in the URL, one question at a time), `features/compare` (`/compare/$category?p=`, noindex; selection also kept as `compare=` on the category page, `CompareTray` in `catalog`), `features/upgrade` (`UpgradePanel` in the PDP `upgrade` slot, `UpgradeStrip` in the home `upgrades` slot with the card drawn by the route). Category explainers come from category config.
+
 ## Rules (enforced)
 
 - Imports go down only: `ui → hooks → repository → mappers → api → model`. A layer never imports its own `index.ts`.

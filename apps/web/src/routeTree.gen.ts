@@ -28,6 +28,8 @@ import { Route as AccountWatchRouteImport } from './routes/account.watch'
 import { Route as CategoriesIndexRouteImport } from './routes/categories.index'
 import { Route as CategoriesSlugRouteImport } from './routes/categories.$slug'
 import { Route as CheckoutIndexRouteImport } from './routes/checkout.index'
+import { Route as CompareCategoryRouteImport } from './routes/compare.$category'
+import { Route as FinderIdRouteImport } from './routes/finder.$id'
 import { Route as ProductsSlugRouteImport } from './routes/products.$slug'
 import { Route as AccountAddressesIndexRouteImport } from './routes/account.addresses.index'
 import { Route as AccountAddressesIdRouteImport } from './routes/account.addresses.$id'
@@ -132,6 +134,16 @@ const CheckoutIndexRoute = CheckoutIndexRouteImport.update({
   path: '/checkout/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CompareCategoryRoute = CompareCategoryRouteImport.update({
+  id: '/compare/$category',
+  path: '/compare/$category',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FinderIdRoute = FinderIdRouteImport.update({
+  id: '/finder/$id',
+  path: '/finder/$id',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProductsSlugRoute = ProductsSlugRouteImport.update({
   id: '/products/$slug',
   path: '/products/$slug',
@@ -190,6 +202,8 @@ export interface FileRoutesByFullPath {
   '/account/reviews': typeof AccountReviewsRoute
   '/account/watch': typeof AccountWatchRoute
   '/categories/$slug': typeof CategoriesSlugRoute
+  '/compare/$category': typeof CompareCategoryRoute
+  '/finder/$id': typeof FinderIdRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/account/': typeof AccountIndexRoute
   '/categories/': typeof CategoriesIndexRoute
@@ -218,6 +232,8 @@ export interface FileRoutesByTo {
   '/account/reviews': typeof AccountReviewsRoute
   '/account/watch': typeof AccountWatchRoute
   '/categories/$slug': typeof CategoriesSlugRoute
+  '/compare/$category': typeof CompareCategoryRoute
+  '/finder/$id': typeof FinderIdRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/account': typeof AccountIndexRoute
   '/categories': typeof CategoriesIndexRoute
@@ -248,6 +264,8 @@ export interface FileRoutesById {
   '/account/reviews': typeof AccountReviewsRoute
   '/account/watch': typeof AccountWatchRoute
   '/categories/$slug': typeof CategoriesSlugRoute
+  '/compare/$category': typeof CompareCategoryRoute
+  '/finder/$id': typeof FinderIdRoute
   '/products/$slug': typeof ProductsSlugRoute
   '/account/': typeof AccountIndexRoute
   '/categories/': typeof CategoriesIndexRoute
@@ -279,6 +297,8 @@ export interface FileRouteTypes {
     | '/account/reviews'
     | '/account/watch'
     | '/categories/$slug'
+    | '/compare/$category'
+    | '/finder/$id'
     | '/products/$slug'
     | '/account/'
     | '/categories/'
@@ -307,6 +327,8 @@ export interface FileRouteTypes {
     | '/account/reviews'
     | '/account/watch'
     | '/categories/$slug'
+    | '/compare/$category'
+    | '/finder/$id'
     | '/products/$slug'
     | '/account'
     | '/categories'
@@ -336,6 +358,8 @@ export interface FileRouteTypes {
     | '/account/reviews'
     | '/account/watch'
     | '/categories/$slug'
+    | '/compare/$category'
+    | '/finder/$id'
     | '/products/$slug'
     | '/account/'
     | '/categories/'
@@ -360,6 +384,8 @@ export interface RootRouteChildren {
   SignInRoute: typeof SignInRoute
   SignUpRoute: typeof SignUpRoute
   CategoriesSlugRoute: typeof CategoriesSlugRoute
+  CompareCategoryRoute: typeof CompareCategoryRoute
+  FinderIdRoute: typeof FinderIdRoute
   ProductsSlugRoute: typeof ProductsSlugRoute
   CategoriesIndexRoute: typeof CategoriesIndexRoute
   CheckoutIndexRoute: typeof CheckoutIndexRoute
@@ -502,6 +528,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CheckoutIndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/compare/$category': {
+      id: '/compare/$category'
+      path: '/compare/$category'
+      fullPath: '/compare/$category'
+      preLoaderRoute: typeof CompareCategoryRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/finder/$id': {
+      id: '/finder/$id'
+      path: '/finder/$id'
+      fullPath: '/finder/$id'
+      preLoaderRoute: typeof FinderIdRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products/$slug': {
       id: '/products/$slug'
       path: '/products/$slug'
@@ -605,6 +645,8 @@ const rootRouteChildren: RootRouteChildren = {
   SignInRoute: SignInRoute,
   SignUpRoute: SignUpRoute,
   CategoriesSlugRoute: CategoriesSlugRoute,
+  CompareCategoryRoute: CompareCategoryRoute,
+  FinderIdRoute: FinderIdRoute,
   ProductsSlugRoute: ProductsSlugRoute,
   CategoriesIndexRoute: CategoriesIndexRoute,
   CheckoutIndexRoute: CheckoutIndexRoute,

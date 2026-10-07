@@ -1,5 +1,7 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { HOME_NEWEST, HomePage, newestProductsQuery } from '../features/catalog';
+import { HOME_NEWEST, HomePage, newestProductsQuery, toCatalogCard } from '../features/catalog';
+import { UpgradeStrip } from '../features/upgrade';
+import { ProductCard } from '../shared/ui/commerce/ProductCard';
 import { liveOffersQuery, OfferStrip } from '../features/offers';
 import { pageHead } from '../shared/lib/seo';
 
@@ -16,5 +18,25 @@ export const Route = createFileRoute('/')({
       context.queryClient.prefetchQuery(newestProductsQuery(HOME_NEWEST)),
       context.queryClient.prefetchQuery(liveOffersQuery),
     ]),
-  component: () => <HomePage offers={<OfferStrip />} />,
+  component: () => (
+    <HomePage
+      offers={<OfferStrip />}
+      upgrades={
+        <UpgradeStrip
+          renderCard={({ to }) => {
+            const { id: _id, slug, ...card } = toCatalogCard(to);
+            void _id;
+            return (
+              <ProductCard
+                {...card}
+                badges={[{ kind: 'upgradeAvailable' }, ...(card.badges ?? [])]}
+                link={{ to: '/products/$slug', params: { slug } }}
+                className="w-full flex-1"
+              />
+            );
+          }}
+        />
+      }
+    />
+  ),
 });
