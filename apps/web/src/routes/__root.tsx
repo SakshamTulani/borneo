@@ -5,6 +5,7 @@ import { AccountLink, sessionQuery } from '../features/auth';
 import { useCartCountQuery } from '../features/cart';
 import { categoriesQuery, CategoryNav, FooterCategories } from '../features/catalog';
 import { SearchBox } from '../features/search';
+import { InboxLink } from '../features/notifications';
 import { WishlistLink } from '../features/wishlist';
 import appCss from '../index.css?url';
 import { pageHead } from '../shared/lib/seo';
@@ -53,6 +54,7 @@ function RootLayout() {
     <AppShell
       nav={<CategoryNav />}
       search={<SearchBox />}
+      inbox={<InboxLink />}
       account={
         <div className="flex items-center gap-1">
           <WishlistLink />

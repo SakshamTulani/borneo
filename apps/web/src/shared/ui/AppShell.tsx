@@ -16,6 +16,7 @@ export function AppShell({
   nav,
   search,
   account,
+  inbox,
   cartCount,
   footerCategories,
 }: {
@@ -26,6 +27,8 @@ export function AppShell({
   search?: ReactNode;
   /** Sign-in / account link (desktop; mobile uses the bottom nav). */
   account?: ReactNode;
+  /** Inbox link with the unread count, at every size (signed in only). */
+  inbox?: ReactNode;
   /** Units in the cart (header link and bottom nav); undefined until known. */
   cartCount?: number | undefined;
 }) {
@@ -60,6 +63,7 @@ export function AppShell({
             <Logo />
           </Link>
           {search ? <div className="mx-auto w-full max-w-xl min-w-0">{search}</div> : null}
+          {inbox ? <div className="shrink-0">{inbox}</div> : null}
           {account ? <div className="hidden shrink-0 lg:block">{account}</div> : null}
           <div className="hidden shrink-0 lg:block">
             <CartLink count={cartCount} />
