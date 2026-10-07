@@ -183,6 +183,16 @@ describe('OrderDetailPage', () => {
     });
     await userEvent.click(await screen.findByRole('button', { name: 'Return or replace' }));
     const dialog = screen.getByRole('dialog');
+    // D-06: neither the kind nor the reason is chosen for the customer.
+    const kinds = within(dialog).getByRole('radiogroup', { name: 'What would you like?' });
+    expect(
+      within(kinds)
+        .getAllByRole('radio')
+        .every((r) => r.getAttribute('aria-checked') === 'false'),
+    ).toBe(true);
+    await userEvent.click(within(dialog).getByRole('button', { name: 'Send request' }));
+    expect(within(dialog).getByText('Choose return or replacement')).toBeTruthy();
+    await userEvent.click(within(kinds).getByText('Return'));
     const reasons = within(dialog).getByRole('radiogroup', { name: 'Reason' });
     expect(
       within(reasons)
@@ -220,6 +230,7 @@ describe('OrderDetailPage', () => {
     await renderWithRouter(<OrderDetailPage orderId={order.id} />, { queryClient: client() });
     await userEvent.click(await screen.findByRole('button', { name: 'Return or replace' }));
     const dialog = screen.getByRole('dialog');
+    await userEvent.click(within(dialog).getByText('Return'));
     await userEvent.click(within(dialog).getByText('Something else'));
     await userEvent.click(within(dialog).getByRole('button', { name: 'Send request' }));
     expect(await within(dialog).findByRole('alert')).toBeTruthy();

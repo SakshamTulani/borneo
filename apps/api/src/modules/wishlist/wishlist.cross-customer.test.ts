@@ -21,7 +21,7 @@ describe('wishlists are scoped to their customer (D-96)', () => {
       .select({ id: product.id })
       .from(product)
       .where(eq(product.slug, 'pulse-4'));
-    await addToWishlist(owner, db, p!.id, TEST_NOW);
+    await addToWishlist(owner, db, p!.id, TEST_NOW, 200);
     expect(await listWishlistSlugs(other, db)).toEqual([]);
     expect((await listWishlist(other, db, { limit: 10 })).total).toBe(0);
     expect((await findWishlistTarget(other, db, 'pulse-4'))!.saved).toBe(false);

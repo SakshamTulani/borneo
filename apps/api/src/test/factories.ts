@@ -241,7 +241,7 @@ export function fakeAppDeps(over: Partial<AppDeps> = {}): AppDeps {
       list: async () => [],
       find: async () => undefined,
       findPhoto: async () => undefined,
-      advance: async () => false,
+      advance: async () => ({ moved: false, refundedPaise: 0 }),
       findCustomerEmail: async () => undefined,
       notifications: { send: async () => null },
       log: { warn: () => {} },
@@ -267,7 +267,7 @@ export function fakeAppDeps(over: Partial<AppDeps> = {}): AppDeps {
     wishlist: createWishlistService({
       now: () => 0,
       findTarget: async () => undefined,
-      add: async () => {},
+      add: async () => false,
       remove: async () => {},
       list: async () => ({ rows: [], total: 0 }),
       slugs: async () => [],

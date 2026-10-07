@@ -14,7 +14,8 @@ export type WishlistDeps<Row extends { id: string } = { id: string }> = {
     customerId: CustomerId,
     slug: string,
   ) => Promise<{ id: string; status: ProductStatus; saved: boolean; count: number } | undefined>;
-  add: (customerId: CustomerId, productId: string, now: number) => Promise<void>;
+  /** False when the cap was reached meanwhile (checked in the insert itself). */
+  add: (customerId: CustomerId, productId: string, now: number) => Promise<boolean>;
   remove: (customerId: CustomerId, productId: string) => Promise<void>;
   list: (
     customerId: CustomerId,
@@ -77,7 +78,12 @@ export function createWishlistService<Row extends { id: string }>(deps: Wishlist
             ? 'This product is no longer sold.'
             : 'Your wishlist is full (200). Remove something first.',
         );
-      if (!target.saved) await deps.add(customerId, target.id, deps.now());
+      if (!target.saved && !(await deps.add(customerId, target.id, deps.now())))
+        throw new AppError(
+          422,
+          'WISHLIST_FULL',
+          'Your wishlist is full (200). Remove something first.',
+        );
       return { slugs: await deps.slugs(customerId) };
     },
 

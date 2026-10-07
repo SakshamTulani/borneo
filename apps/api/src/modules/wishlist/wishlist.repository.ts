@@ -1,4 +1,4 @@
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, desc, eq, inArray, sql } from 'drizzle-orm';
 import type { CustomerId } from '@borneo/shared';
 import type { Db } from '../../db/client';
 import { product, wishlist } from '../../db/schema/index';
@@ -12,15 +12,33 @@ export async function findWishlistTarget(customerId: CustomerId, db: Db, slug: s
       id: product.id,
       status: product.status,
       saved: sql<boolean>`exists (select 1 from ${wishlist} where ${wishlist.customerId} = ${customerId} and ${wishlist.productId} = ${product.id})`,
-      count: sql<number>`(select count(*)::int from ${wishlist} where ${wishlist.customerId} = ${customerId})`,
+      count: sql<number>`(select count(*)::int from ${wishlist} w join ${product} p on p.id = w.product_id where w.customer_id = ${customerId} and p.status in ('live', 'preorder'))`,
     })
     .from(product)
     .where(eq(product.slug, slug));
   return row;
 }
 
-export async function addToWishlist(customerId: CustomerId, db: Db, productId: string, now: Date) {
-  await db.insert(wishlist).values({ customerId, productId, createdAt: now }).onConflictDoNothing();
+/**
+ * Saves one product unless the customer already has `max` products that are still sold, in the
+ * same statement, so parallel saves can't pass the cap (D-235). False when full.
+ */
+export async function addToWishlist(
+  customerId: CustomerId,
+  db: Db,
+  productId: string,
+  now: Date,
+  max: number,
+): Promise<boolean> {
+  const result = await db.execute(sql`
+    insert into ${wishlist} (customer_id, product_id, created_at)
+    select ${customerId}, ${productId}, ${now}
+    where (
+      select count(*) from ${wishlist} w join ${product} p on p.id = w.product_id
+      where w.customer_id = ${customerId} and p.status in ('live', 'preorder')
+    ) < ${max}
+    on conflict do nothing`);
+  return (result.rowCount ?? 0) > 0;
 }
 
 export async function removeFromWishlist(customerId: CustomerId, db: Db, productId: string) {
@@ -39,9 +57,11 @@ export async function listWishlist(
     db
       .select({ productId: wishlist.productId, createdAt: wishlist.createdAt })
       .from(wishlist)
+      .innerJoin(product, eq(product.id, wishlist.productId))
       .where(
         and(
           eq(wishlist.customerId, customerId),
+          inArray(product.status, ['live', 'preorder']),
           page.after
             ? sql`(${wishlist.createdAt}, ${wishlist.productId}) < (${page.after.at}, ${page.after.id})`
             : undefined,
@@ -52,7 +72,10 @@ export async function listWishlist(
     db
       .select({ n: sql<number>`count(*)::int` })
       .from(wishlist)
-      .where(eq(wishlist.customerId, customerId)),
+      .innerJoin(product, eq(product.id, wishlist.productId))
+      .where(
+        and(eq(wishlist.customerId, customerId), inArray(product.status, ['live', 'preorder'])),
+      ),
   ]);
   return { rows, total: count?.n ?? 0 };
 }

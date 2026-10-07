@@ -1,4 +1,4 @@
-import { FLASH_CHECKOUT_LIMIT, type CustomerId } from '@borneo/shared';
+import { FLASH_CHECKOUT_LIMIT, WISHLIST_MAX, type CustomerId } from '@borneo/shared';
 import type { AppDeps } from './app';
 import {
   createDemoNotifier,
@@ -320,8 +320,8 @@ export function ordersService(
     startAttempt: (customerId, id, at) => startAttempt(customerId, db, id, new Date(at)),
     setGatewayRef: (customerId, id, attemptId, ref) =>
       setGatewayRef(customerId, db, id, attemptId, ref),
-    issueInvoice: (customerId, id, number, at) =>
-      issueInvoice(customerId, db, id, number, new Date(at)),
+    issueInvoice: (customerId, id, number, at, fallback) =>
+      issueInvoice(customerId, db, id, number, new Date(at), fallback),
     listOrders: (customerId, page) => listOrders(customerId, db, page),
     cancelOrder: (customerId, id, decide, at) =>
       cancelOrder(customerId, db, id, decide, new Date(at)),
@@ -338,7 +338,9 @@ export function ordersService(
     limitFlash: (key) => options.rateLimiter.hit(key, FLASH_CHECKOUT_LIMIT),
     analytics: options.analytics,
     countOrders: async (customerId) =>
-      [...(await countOrders(customerId, db)).values()].reduce((a, b) => a + b, 0),
+      [...(await countOrders(customerId, db)).entries()]
+        .filter(([status]) => status !== 'cancelled' && status !== 'refunded')
+        .reduce((a, [, n]) => a + n, 0),
     jobs: options.jobs,
     notifications: options.notifications,
     renderInvoice: renderInvoicePdf,
@@ -414,7 +416,8 @@ export function postPurchaseServices(
     wishlist: createWishlistService({
       now,
       findTarget: (customerId, slug) => findWishlistTarget(customerId, db, slug),
-      add: (customerId, productId, at) => addToWishlist(customerId, db, productId, new Date(at)),
+      add: (customerId, productId, at) =>
+        addToWishlist(customerId, db, productId, new Date(at), WISHLIST_MAX),
       remove: (customerId, productId) => removeFromWishlist(customerId, db, productId),
       list: (customerId, page) => listWishlist(customerId, db, page),
       slugs: (customerId) => listWishlistSlugs(customerId, db),

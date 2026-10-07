@@ -3,6 +3,7 @@ import { ImagePlusIcon, XIcon } from 'lucide-react';
 import {
   RETURN_PHOTO_MAX,
   RETURN_PHOTO_MAX_BYTES,
+  photosRequired,
   RETURN_REASONS,
   type ReturnReason,
 } from '@borneo/shared';
@@ -25,7 +26,7 @@ import type { OrderItem } from '../model';
 import { fileToBase64 } from '../repository/ordersRepository';
 
 const ACCEPT = 'image/jpeg,image/png,image/webp';
-const needsPhotos = (reason: string) => reason === 'defect' || reason === 'damage';
+const needsPhotos = (reason: ReturnReason | '') => reason !== '' && photosRequired(reason);
 
 /**
  * Return or replacement for one delivered line (D-86, D-217): only the kinds and reasons its
@@ -34,7 +35,12 @@ const needsPhotos = (reason: string) => reason === 'defect' || reason === 'damag
 export function ReturnRequestDialog({ orderId, item }: { orderId: string; item: OrderItem }) {
   const [open, setOpen] = useState(false);
   const options = item.returnOptions;
-  const form = useReturnForm({ kind: options[0]!.kind, reason: '', details: '' });
+  // One kind allowed: that's the only choice. Both: nothing chosen for the customer (D-06).
+  const form = useReturnForm({
+    kind: options.length === 1 ? options[0]!.kind : '',
+    reason: '',
+    details: '',
+  });
   const [photos, setPhotos] = useState<File[]>([]);
   const [photoError, setPhotoError] = useState<string>();
   const mutation = useRequestReturnMutation();
@@ -55,6 +61,7 @@ export function ReturnRequestDialog({ orderId, item }: { orderId: string; item: 
   };
 
   const submit = form.handleSubmit(async (values) => {
+    if (!values.kind) return form.setError('kind', { message: 'Choose return or replacement' });
     if (!values.reason) return form.setError('reason', { message: 'Choose a reason' });
     if (needsPhotos(values.reason) && photos.length === 0)
       return setPhotoError('Add at least one photo showing the defect or damage.');
@@ -93,9 +100,10 @@ export function ReturnRequestDialog({ orderId, item }: { orderId: string; item: 
               <legend className="text-sm font-semibold">What would you like?</legend>
               <ChoiceList
                 label="What would you like?"
-                value={kind}
+                value={kind || undefined}
                 onChange={(v) => {
                   form.setValue('kind', v as 'return' | 'replacement');
+                  form.clearErrors('kind');
                   form.setValue('reason', '');
                 }}
                 choices={options.map((o) => ({
@@ -107,6 +115,9 @@ export function ReturnRequestDialog({ orderId, item }: { orderId: string; item: 
                       : 'We swap it for the same item.',
                 }))}
               />
+              {form.formState.errors.kind ? (
+                <p className="text-sm text-danger">{form.formState.errors.kind.message}</p>
+              ) : null}
             </fieldset>
           ) : null}
           <fieldset className="space-y-2">

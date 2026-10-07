@@ -126,7 +126,8 @@ function SignedInCheckout({ choice, onChoice, onPlaced }: Props) {
           const details = (e as { details?: { totalPaise?: number } }).details;
           if (errorCode(e) === 'PRICE_CHANGED' && details?.totalPaise !== undefined)
             setFresh(details.totalPaise);
-          if (errorCode(e) === 'BOT_CHECK_REQUIRED') setBotToken(null);
+          // Bot-check tokens are single use (D-232): any failed try needs a fresh check.
+          setBotToken(null);
           void query.refetch();
         },
       },

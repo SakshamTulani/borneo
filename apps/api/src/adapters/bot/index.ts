@@ -28,8 +28,10 @@ export function createDemoBotProtection(now: () => number = Date.now): BotProtec
       tokens.set(token, expiresAt);
       return { token, expiresAt };
     },
+    /** Single use: a solved check covers one order attempt (D-232). */
     verify(token) {
       const exp = token ? tokens.get(token) : undefined;
+      if (token) tokens.delete(token);
       return exp !== undefined && exp > now();
     },
   };

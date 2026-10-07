@@ -64,9 +64,9 @@ export function ordersRoutes(service: OrdersService, session: SessionReader): Fa
       '/me/bot-check',
       { schema: { response: { 200: botTokenSchema, ...errors } } },
       async (request, reply) => {
-        await requireCustomerId(session, request);
+        const customerId = await requireCustomerId(session, request);
         noStore(reply);
-        return service.demoBotToken();
+        return service.demoBotToken(customerId);
       },
     );
 

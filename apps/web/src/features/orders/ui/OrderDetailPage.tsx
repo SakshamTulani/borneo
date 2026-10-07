@@ -9,7 +9,13 @@ import {
   StarIcon,
   TruckIcon,
 } from 'lucide-react';
-import { formatInr, orderNoticeText, policySummary } from '@borneo/shared';
+import {
+  cancelOutcome,
+  formatInr,
+  linePaidPaise,
+  orderNoticeText,
+  policySummary,
+} from '@borneo/shared';
 import { errorMessage } from '@/shared/lib/errors';
 import { formatDateRange, formatDateTime, formatDay } from '@/shared/lib/format';
 import { imageSource } from '@/shared/lib/image';
@@ -45,7 +51,12 @@ const row = 'flex items-baseline justify-between gap-4';
 function CancelOrder({ order }: { order: OrderView }) {
   const [open, setOpen] = useState(false);
   const cancel = useCancelOrderMutation();
-  const paid = order.payment.method !== 'cod' && order.status !== 'pending_payment';
+  const outcome = cancelOutcome({
+    status: order.status,
+    prepaid: order.payment.method !== 'cod',
+    totalPaise: order.totalPaise,
+  });
+  const paid = outcome.ok && outcome.refundPaise > 0;
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -147,9 +158,7 @@ function ItemRow({ order, item }: { order: OrderView; item: OrderItem }) {
                 .join(' · ')}
             </p>
           </div>
-          <span className="shrink-0 tabular-nums">
-            {formatInr(item.unitPricePaise * item.qty - item.discountPaise)}
-          </span>
+          <span className="shrink-0 tabular-nums">{formatInr(linePaidPaise(item))}</span>
         </div>
         <ReturnState item={item} />
         {order.status === 'delivered' ? (

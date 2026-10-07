@@ -1,6 +1,6 @@
 import { Link } from '@tanstack/react-router';
 import { CheckCircle2Icon, FileTextIcon, TruckIcon } from 'lucide-react';
-import { formatInr } from '@borneo/shared';
+import { formatInr, linePaidPaise } from '@borneo/shared';
 import { formatDateRange } from '@/shared/lib/format';
 import { cn } from '@/shared/lib/utils';
 import { buttonVariants } from '@/shared/ui/base/button';
@@ -78,9 +78,7 @@ export function OrderConfirmedPage({ orderId }: { orderId: string }) {
                     .join(' · ')}
                 </span>
               </span>
-              <span className="shrink-0 tabular-nums">
-                {formatInr(i.unitPricePaise * i.qty - i.discountPaise)}
-              </span>
+              <span className="shrink-0 tabular-nums">{formatInr(linePaidPaise(i))}</span>
             </li>
           ))}
         </ul>

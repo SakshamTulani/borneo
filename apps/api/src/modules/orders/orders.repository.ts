@@ -1,4 +1,4 @@
-import { and, asc, desc, eq, inArray, lte, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, inArray, lte, sql, TransactionRollbackError } from 'drizzle-orm';
 import type { AddressSnapshot, CustomerId, PaymentMethod } from '@borneo/shared';
 import type { Db } from '../../db/client';
 import {
@@ -711,6 +711,8 @@ export async function issueInvoice(
   orderId: string,
   number: (seq: number) => string,
   now: Date,
+  /** For an order of pre-orders only, which no warehouse holds: where it ships from (D-208). */
+  fallbackWarehouseId?: string,
 ): Promise<void> {
   await db.transaction(async (tx) => {
     const [row] = await tx
@@ -718,7 +720,7 @@ export async function issueInvoice(
       .from(order)
       .where(and(eq(order.customerId, customerId), eq(order.id, orderId)))
       .for('update');
-    if (row?.status !== 'confirmed') return;
+    if (!row || !['confirmed', 'packed', 'shipped'].includes(row.status)) return;
     const [already] = await tx.select().from(invoice).where(eq(invoice.orderId, orderId));
     if (already) return;
     const [supplier] = await tx
@@ -728,13 +730,23 @@ export async function issueInvoice(
       .where(eq(orderItem.orderId, orderId))
       .orderBy(asc(orderItem.id))
       .limit(1);
-    if (!supplier?.state) return;
+    const fallback =
+      !supplier && fallbackWarehouseId
+        ? (
+            await tx
+              .select({ state: warehouse.state })
+              .from(warehouse)
+              .where(eq(warehouse.id, fallbackWarehouseId))
+          )[0]
+        : undefined;
+    const state = supplier?.state ?? fallback?.state;
+    if (!state) return;
     const [{ seq }] = (await tx.execute(sql`select nextval(${invoiceNumberSeq.seqName}) as seq`))
       .rows as [{ seq: string }];
     await tx.insert(invoice).values({
       orderId,
       number: number(Number(seq)),
-      supplierState: supplier.state,
+      supplierState: state,
       placeOfSupply: String((row.address as { state?: string }).state ?? ''),
       issuedAt: now,
     });
@@ -888,12 +900,18 @@ export async function cancelOrder(
           status: 'processed',
           createdAt: now,
         });
+      // Report only what was actually refunded (no payment, no refund row).
+      else return finish(0);
     }
-    await tx
-      .update(order)
-      .set({ status: 'cancelled', notice: 'CANCELLED_BY_CUSTOMER', cancelledAt: now })
-      .where(eq(order.id, orderId));
-    return { refundPaise: decision.refundPaise };
+    return finish(decision.refundPaise);
+
+    async function finish(refundPaise: number) {
+      await tx
+        .update(order)
+        .set({ status: 'cancelled', notice: 'CANCELLED_BY_CUSTOMER', cancelledAt: now })
+        .where(eq(order.id, orderId));
+      return { refundPaise };
+    }
   });
 }
 
@@ -918,6 +936,21 @@ export async function advanceOrder(
   },
 ): Promise<boolean> {
   const { orderId, at } = input;
+  try {
+    return await advanceInTx(customerId, db, input, orderId, at);
+  } catch (e) {
+    if (e instanceof TransactionRollbackError) return false;
+    throw e;
+  }
+}
+
+async function advanceInTx(
+  customerId: CustomerId,
+  db: Db,
+  input: Parameters<typeof advanceOrder>[2],
+  orderId: string,
+  at: Date,
+): Promise<boolean> {
   return db.transaction(async (tx) => {
     const moved = await tx
       .update(order)
@@ -935,12 +968,16 @@ export async function advanceOrder(
       .values({ orderId, step: input.step, at })
       .onConflictDoNothing()
       .returning({ id: orderEvent.id });
-    if (added.length === 0) throw new Error(`step ${input.step} already recorded`);
+    // A repeated click (out for delivery keeps the status `shipped`): undo, change nothing.
+    if (added.length === 0) {
+      tx.rollback();
+    }
     if (input.step === 'shipped') {
       const holds = await tx
         .select()
         .from(stockHold)
         .where(and(eq(stockHold.orderId, orderId), eq(stockHold.status, 'converted')));
+      // In-stock units leave the warehouse; pre-order units never sat in one (D-65).
       for (const h of holds)
         if (h.warehouseId)
           await tx
@@ -952,6 +989,11 @@ export async function advanceOrder(
             .where(
               and(eq(inventory.warehouseId, h.warehouseId), eq(inventory.variantId, h.variantId)),
             );
+      // Shipped holds are spent: nothing may release them again.
+      await tx
+        .update(stockHold)
+        .set({ status: 'shipped' })
+        .where(and(eq(stockHold.orderId, orderId), eq(stockHold.status, 'converted')));
       await tx.insert(shipment).values({
         orderId,
         courier: input.courier.name,

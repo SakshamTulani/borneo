@@ -177,7 +177,7 @@ export async function advanceReturn(
     refundPaise: number;
     at: Date;
   },
-): Promise<boolean> {
+): Promise<{ moved: boolean; refundedPaise: number }> {
   return db.transaction(async (tx) => {
     const moved = await tx
       .update(returnRequest)
@@ -190,7 +190,8 @@ export async function advanceReturn(
         ),
       )
       .returning({ orderItemId: returnRequest.orderItemId });
-    if (moved.length === 0) return false;
+    if (moved.length === 0) return { moved: false, refundedPaise: 0 };
+    let refundedPaise = 0;
     if (input.refundPaise > 0) {
       const [paid] = await tx
         .select({ id: payment.id, orderId: payment.orderId })
@@ -208,8 +209,10 @@ export async function advanceReturn(
           status: 'processed',
           createdAt: input.at,
         });
+      // No successful payment on record: nothing was refunded, and nobody is told otherwise.
+      refundedPaise = paid ? input.refundPaise : 0;
     }
-    return true;
+    return { moved: true, refundedPaise };
   });
 }
 

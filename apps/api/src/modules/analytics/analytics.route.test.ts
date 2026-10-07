@@ -47,6 +47,15 @@ describe('POST /events', () => {
     const { a, seen } = app();
     expect((await post(a, batch(1, 'card_number'))).statusCode).toBe(400);
     expect((await post(a, batch(21))).statusCode).toBe(400);
+    // Only the props each event allows: no room for an email or phone.
+    expect(
+      (
+        await post(a, {
+          anonymousId: 'device-12345678',
+          events: [{ name: 'search', props: { email: 'a@b.in' }, at: 0 }],
+        })
+      ).statusCode,
+    ).toBe(400);
     expect(
       (
         await post(a, {

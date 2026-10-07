@@ -18,15 +18,29 @@ export type AnalyticsEventName = z.infer<typeof analyticsEventNameSchema>;
 
 const propValue = z.union([z.string().max(80), z.number().finite(), z.boolean()]);
 
-export const analyticsEventSchema = z.object({
-  name: analyticsEventNameSchema,
-  props: z
-    .record(z.string().regex(/^[a-zA-Z]{1,30}$/), propValue)
-    .refine((p) => Object.keys(p).length <= 10, 'At most 10 props')
-    .default({}),
-  /** Client time, epoch ms. */
-  at: z.number().int().nonnegative(),
-});
+/** The only props each event may carry (D-236): product facts and counts, never a person. */
+export const ANALYTICS_PROPS: Record<AnalyticsEventName, readonly string[]> = {
+  product_view: ['slug'],
+  add_to_cart: ['sku'],
+  begin_checkout: [],
+  search: ['query', 'results'],
+  finder_complete: ['finder', 'results'],
+  compare_view: ['category', 'products'],
+  wishlist_add: ['slug'],
+  deals_view: [],
+};
+
+export const analyticsEventSchema = z
+  .object({
+    name: analyticsEventNameSchema,
+    props: z.record(z.string().regex(/^[a-zA-Z]{1,30}$/), propValue).default({}),
+    /** Client time, epoch ms. */
+    at: z.number().int().nonnegative(),
+  })
+  .refine((e) => Object.keys(e.props).every((k) => ANALYTICS_PROPS[e.name].includes(k)), {
+    message: 'Prop not allowed for this event',
+    path: ['props'],
+  });
 export type AnalyticsEvent = z.infer<typeof analyticsEventSchema>;
 
 /** `POST /events`: a small batch from one browser; `anonymousId` is random, kept on the device. */

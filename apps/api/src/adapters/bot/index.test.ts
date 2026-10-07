@@ -12,10 +12,12 @@ describe('bot protection adapters', () => {
     const { token, expiresAt } = bot.issue();
     expect(expiresAt).toBe(1_000 + BOT_TOKEN_TTL_MS);
     expect(bot.verify(token)).toBe(true);
+    expect(bot.verify(token)).toBe(false); // single use
     expect(bot.verify('made-up')).toBe(false);
     expect(bot.verify(undefined)).toBe(false);
-    t = expiresAt;
-    expect(bot.verify(token)).toBe(false);
+    const late = bot.issue();
+    t = late.expiresAt;
+    expect(bot.verify(late.token)).toBe(false);
   });
 
   it('D-144: without a provider nothing verifies and nothing is issued', () => {

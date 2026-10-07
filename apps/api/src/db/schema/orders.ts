@@ -69,8 +69,14 @@ export const trackingStep = pgEnum('tracking_step', [
   'outForDelivery',
   'delivered',
 ]);
-/** `released`: given back when the customer cancelled (D-216). */
-export const holdStatus = pgEnum('hold_status', ['active', 'converted', 'expired', 'released']);
+/** `released`: given back when the customer cancelled (D-216); `shipped`: left the warehouse (D-215). */
+export const holdStatus = pgEnum('hold_status', [
+  'active',
+  'converted',
+  'expired',
+  'released',
+  'shipped',
+]);
 export const returnStatus = pgEnum('return_status', [
   'requested',
   'approved',

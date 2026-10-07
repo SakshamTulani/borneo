@@ -152,6 +152,9 @@ export function returnOptions(input: {
   });
 }
 
+/** Defect or damage needs photos; change of mind doesn't (D-88). */
+export const photosRequired = (reason: ReturnReason) => reason === 'defect' || reason === 'damage';
+
 /** Return photos (D-217): 1–3 for defect or damage, JPEG, PNG or WebP, up to 2 MB each. */
 export const RETURN_PHOTO_MAX = 3;
 export const RETURN_PHOTO_MAX_BYTES = 2 * 1024 * 1024;

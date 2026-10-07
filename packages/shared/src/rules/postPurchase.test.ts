@@ -9,6 +9,7 @@ import {
   ownedProducts,
   photoProblem,
   photoType,
+  photosRequired,
   RETURN_PHOTO_MAX_BYTES,
   returnOptions,
   returnRefundPaise,
@@ -167,6 +168,10 @@ describe('returns', () => {
   });
 
   it('D-88: defect or damage needs at least one photo; change of mind does not', () => {
+    expect(photosRequired('defect')).toBe(true);
+    expect(photosRequired('damage')).toBe(true);
+    expect(photosRequired('changedMind')).toBe(false);
+    expect(photosRequired('other')).toBe(false);
     expect(photoProblem([], true)).toBe('PHOTOS_REQUIRED');
     expect(photoProblem([], false)).toBeNull();
   });

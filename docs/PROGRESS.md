@@ -24,6 +24,20 @@
 
 ## Phase O: hardening
 
+**Architecture review of L–O (fixed):**
+
+- Orders with a pre-order never got an invoice. They are now invoiced at shipping, with the fastest warehouse as the state of supply for pre-order-only orders.
+- A refund message could claim a refund that wasn't recorded (no successful payment). Messages now use the amount actually refunded.
+- The return dialog pre-chose "Return". Nothing is chosen now (D-06).
+- A double click on Advance at the shipped step returned 500. It is now a no-op.
+- Hardening:
+  - Shipped holds get the status `shipped` (migration 0012), so nothing can release them twice.
+  - Analytics props are allow-listed per event.
+  - `firstOrder` ignores cancelled orders.
+  - Bot tokens are single use and rate-limited.
+  - The wishlist cap is checked inside the insert, and counts only products still sold.
+  - The UI calls `cancelOutcome`, `linePaidPaise` and `photosRequired` instead of repeating them.
+
 - **Accessibility:** component tests already ran axe; the new audit runs it on whole server-rendered pages, which caught what components can't: the shipping line outside any landmark, and `aria-label` on plain `div` loaders (now `role="status"`). jsdom can't check contrast or layout; contrast stays covered by `tokens.test.ts`. Keyboard paths and screen-reader runs still need a person before launch.
 - **Performance:** budgets are gzipped bytes of the built client. They're conservative for a demo on 4G; real numbers (LCP, INP) need field data once hosted.
 - **Analytics:** schema-limited to known event names and short flat props; the browser keeps a random id. The schema can't stop someone sending a personal value under an allowed key: call sites only send slugs, SKUs, counts and search words.
@@ -63,7 +77,7 @@ Built on owner request together with three extras: a fuller profile section, bet
 
 ## Phase L: gaps and risks
 
-- Pre-order lines carry no warehouse, so an all-pre-order order still gets no invoice when it ships (D-208 promised one); needs a dispatch warehouse for pre-orders.
+- (Fixed in Phase O review) Orders with a pre-order now get their invoice when they ship.
 - Cash-on-delivery refunds still wait on D-75; the UI says the team will be in touch.
 - Return photos in Postgres grow the database; move to S3 once ADR-0009 is accepted (D-218).
 - No GST credit note on cancellation of an invoiced order (blocker, D-216).

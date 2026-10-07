@@ -12,7 +12,8 @@ export type OrderItem = OrderView['items'][number];
 
 /** What the return dialog collects; photos are files until sent (D-217). */
 export type ReturnFormValues = {
-  kind: ReturnRequestInput['kind'];
+  /** Empty until chosen when both kinds are allowed (D-06). */
+  kind: ReturnRequestInput['kind'] | '';
   reason: ReturnRequestInput['reason'] | '';
   details: string;
 };

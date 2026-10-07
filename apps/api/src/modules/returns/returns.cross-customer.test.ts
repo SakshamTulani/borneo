@@ -50,13 +50,15 @@ describe('returns are scoped to their customer (D-96, D-218)', () => {
     expect(await countOpenReturns(other, db)).toBe(0);
     const at = new Date(TEST_NOW.getTime() + 1_000);
     expect(
-      await advanceReturn(other, db, {
-        id: request.id,
-        from: 'requested',
-        to: 'approved',
-        refundPaise: 0,
-        at,
-      }),
+      (
+        await advanceReturn(other, db, {
+          id: request.id,
+          from: 'requested',
+          to: 'approved',
+          refundPaise: 0,
+          at,
+        })
+      ).moved,
     ).toBe(false);
     expect((await findReturn(owner, db, request.id))!.request.status).toBe('requested');
     expect(await findReturnPhoto(owner, db, request.id, photoId)).toBeDefined();

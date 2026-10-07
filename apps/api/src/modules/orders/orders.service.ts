@@ -112,6 +112,7 @@ export type OrdersDeps = {
     orderId: string,
     number: (seq: number) => string,
     now: number,
+    fallbackWarehouseId?: string,
   ) => Promise<void>;
   listOrders: (
     customerId: CustomerId,
@@ -143,6 +144,7 @@ export type OrdersDeps = {
   limitFlash: (key: string) => void;
   /** Product analytics (D-236): the order event, with no personal data. */
   analytics: Analytics;
+  /** Orders that stand (not cancelled or refunded), for the first-order flag (D-05). */
   countOrders: (customerId: CustomerId) => Promise<number>;
   jobs: OrderJobs;
   notifications: NotificationAdapter;
@@ -871,6 +873,24 @@ export function createOrdersService(deps: OrdersDeps) {
         courier: deps.courier.book({ orderId, orderNumber: order.number }),
         returnWindowEndsAt: returnWindowEndsAt(at),
       });
+      // Orders with a pre-order are invoiced when they ship (D-208); a pre-order-only order takes
+      // the fastest warehouse for the address as its state of supply.
+      if (moved && step === 'shipped' && !record.invoice) {
+        try {
+          const lanes = await deps.listLanes();
+          const pincode = (order.address as AddressSnapshot).pincode;
+          const fastest = warehousesBySpeed(pincode, lanes)[0]?.warehouseId;
+          await deps.issueInvoice(
+            customerId,
+            orderId,
+            (seq) => invoiceNumber(seq, at),
+            at,
+            fastest,
+          );
+        } catch (error) {
+          deps.log.warn({ orderId, error: String(error) }, 'invoice at shipping failed');
+        }
+      }
       if (moved && (step === 'shipped' || step === 'delivered')) {
         try {
           await notify(
@@ -889,8 +909,9 @@ export function createOrdersService(deps: OrdersDeps) {
     },
 
     /** Demo only: the mock bot check's token (D-232). */
-    demoBotToken() {
+    demoBotToken(customerId: CustomerId) {
       if (!deps.demoMode || !deps.bot.available) throw notFound('NOT_FOUND', 'Not found');
+      deps.limitFlash(`bot-check:${customerId}`);
       return deps.bot.issue();
     },
 

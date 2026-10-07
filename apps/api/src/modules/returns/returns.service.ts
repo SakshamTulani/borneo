@@ -62,7 +62,7 @@ export type ReturnsDeps = {
       refundPaise: number;
       at: number;
     },
-  ) => Promise<boolean>;
+  ) => Promise<{ moved: boolean; refundedPaise: number }>;
   findCustomerEmail: (customerId: CustomerId) => Promise<string | undefined>;
   notifications: NotificationAdapter;
   log: { warn(obj: object, msg: string): void };
@@ -222,7 +222,7 @@ export function createReturnsService(deps: ReturnsDeps) {
               linePaidPaise: linePaidPaise(record.item),
             })
           : 0;
-      const moved = await deps.advance(customerId, {
+      const { moved, refundedPaise } = await deps.advance(customerId, {
         id,
         from: record.request.status,
         to,
@@ -235,10 +235,10 @@ export function createReturnsService(deps: ReturnsDeps) {
           'return_updated',
           `${KIND[record.request.kind]} ${to}: ${record.productName}`,
           `Your ${record.request.kind} request for ${record.productName} ${STATUS_TEXT[to]}` +
-            (refundPaise > 0
-              ? ` We refunded ${formatInr(refundPaise)} to your original payment method.`
+            (refundedPaise > 0
+              ? ` We refunded ${formatInr(refundedPaise)} to your original payment method.`
               : to === 'completed' && record.request.kind === 'return'
-                ? ' For cash-on-delivery orders our team will contact you about the refund.'
+                ? ' Our team will contact you about your refund.'
                 : ''),
         );
       return view(customerId, id);

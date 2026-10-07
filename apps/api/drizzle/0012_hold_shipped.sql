@@ -1,0 +1,1 @@
+ALTER TYPE "public"."hold_status" ADD VALUE 'shipped';
