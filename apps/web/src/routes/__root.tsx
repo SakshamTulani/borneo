@@ -59,6 +59,7 @@ function RootLayout() {
         <div className="flex items-center gap-1">
           <WishlistLink />
           <AccountLink />
+          <InboxLink />
         </div>
       }
       cartCount={cartCount}
